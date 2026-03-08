@@ -6,6 +6,7 @@ import type { ManualQuestion, Subject, QuestionStatus, QuestionStatusCounts } fr
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,6 +22,8 @@ import {
   Sparkles,
   Trash2,
   Loader2,
+  Pencil,
+  Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -56,6 +59,13 @@ export default function AdminQuestionsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const [quizTitle, setQuizTitle] = useState('');
+
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editQuestion, setEditQuestion] = useState('');
+  const [editAnswer, setEditAnswer] = useState('');
+  const [editSubjectId, setEditSubjectId] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
     subjectsApi.list(1, 100).then((res) => {
@@ -119,6 +129,44 @@ export default function AdminQuestionsPage() {
       loadCounts();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to delete');
+    }
+  };
+
+  const startEdit = (q: ManualQuestion) => {
+    setEditingId(q.id);
+    setEditQuestion(q.questionText);
+    setEditAnswer(q.answerText);
+    setEditSubjectId(q.subjectId);
+    setExpandedId(q.id);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditQuestion('');
+    setEditAnswer('');
+    setEditSubjectId('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !editQuestion.trim() || !editAnswer.trim()) {
+      toast.error('Question and answer are required');
+      return;
+    }
+    setEditSaving(true);
+    try {
+      await questionsApi.update(editingId, {
+        questionText: editQuestion.trim(),
+        answerText: editAnswer.trim(),
+        subjectId: editSubjectId,
+      });
+      toast.success('Question updated');
+      cancelEdit();
+      load(page);
+      loadCounts();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to update');
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -318,37 +366,80 @@ export default function AdminQuestionsPage() {
                       </span>
                     </div>
 
-                    <p
-                      className="font-medium text-gray-900 cursor-pointer"
-                      onClick={() => setExpandedId(expandedId === q.id ? null : q.id)}
-                    >
-                      {q.questionText}
-                    </p>
-
-                    {/* Expanded view */}
-                    {expandedId === q.id && (
-                      <div className="mt-3 space-y-3">
-                        <div className="rounded-lg bg-green-50 border border-green-200 p-4">
-                          <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1">Answer</p>
-                          <p className="text-gray-800 whitespace-pre-wrap">{q.answerText}</p>
+                    {/* Editing mode */}
+                    {editingId === q.id ? (
+                      <div className="mt-2 space-y-3" onClick={(e) => e.stopPropagation()}>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Subject</label>
+                          <Select value={editSubjectId} onChange={(e) => setEditSubjectId(e.target.value)}>
+                            {subjects.map((s) => (
+                              <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                          </Select>
                         </div>
-                        {q.imagePath && (
-                          <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Image</p>
-                            <img
-                              src={`${API_BASE}/uploads/question-images/${q.imagePath.split('/').pop()}`}
-                              alt="Question"
-                              className="max-w-full max-h-64 rounded-lg border"
-                            />
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Question</label>
+                          <Textarea value={editQuestion} onChange={(e) => setEditQuestion(e.target.value)} rows={2} />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Answer</label>
+                          <Textarea value={editAnswer} onChange={(e) => setEditAnswer(e.target.value)} rows={3} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" onClick={handleSaveEdit} disabled={editSaving}>
+                            <Save size={14} className="mr-1" /> {editSaving ? 'Saving…' : 'Save'}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={cancelEdit}>
+                            <X size={14} className="mr-1" /> Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p
+                          className="font-medium text-gray-900 cursor-pointer"
+                          onClick={() => setExpandedId(expandedId === q.id ? null : q.id)}
+                        >
+                          {q.questionText}
+                        </p>
+
+                        {/* Expanded view */}
+                        {expandedId === q.id && (
+                          <div className="mt-3 space-y-3">
+                            <div className="rounded-lg bg-green-50 border border-green-200 p-4">
+                              <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1">Answer</p>
+                              <p className="text-gray-800 whitespace-pre-wrap">{q.answerText}</p>
+                            </div>
+                            {q.imagePath && (
+                              <div>
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Image</p>
+                                <img
+                                  src={`${API_BASE}/uploads/question-images/${q.imagePath.split('/').pop()}`}
+                                  alt="Question"
+                                  className="max-w-full max-h-64 rounded-lg border"
+                                />
+                              </div>
+                            )}
                           </div>
                         )}
-                      </div>
+                      </>
                     )}
                   </div>
 
                   {/* Action buttons */}
                   <div className="flex items-center gap-1 shrink-0">
-                    {q.status === 'PENDING' && (
+                    {editingId !== q.id && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-gray-500 hover:bg-blue-50 hover:text-blue-600"
+                        onClick={() => startEdit(q)}
+                        title="Edit"
+                      >
+                        <Pencil size={15} />
+                      </Button>
+                    )}
+                    {q.status === 'PENDING' && editingId !== q.id && (
                       <>
                         <Button
                           size="sm"
@@ -370,7 +461,7 @@ export default function AdminQuestionsPage() {
                         </Button>
                       </>
                     )}
-                    {q.status === 'REJECTED' && (
+                    {q.status === 'REJECTED' && editingId !== q.id && (
                       <Button
                         size="sm"
                         variant="ghost"
@@ -381,7 +472,7 @@ export default function AdminQuestionsPage() {
                         <Check size={16} />
                       </Button>
                     )}
-                    {q.status === 'APPROVED' && (
+                    {q.status === 'APPROVED' && editingId !== q.id && (
                       <Button
                         size="sm"
                         variant="ghost"
@@ -392,15 +483,17 @@ export default function AdminQuestionsPage() {
                         <X size={16} />
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-gray-400 hover:bg-red-50 hover:text-red-600"
-                      onClick={() => handleDelete(q.id)}
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
+                    {editingId !== q.id && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-gray-400 hover:bg-red-50 hover:text-red-600"
+                        onClick={() => handleDelete(q.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

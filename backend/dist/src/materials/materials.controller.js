@@ -97,6 +97,9 @@ let MaterialsController = class MaterialsController {
     async updateQuiz(quizId, dto) {
         return this.materialsService.updateQuiz(quizId, dto);
     }
+    async deleteQuiz(quizId) {
+        return this.materialsService.deleteQuiz(quizId);
+    }
     async reviewMaterial(id, body) {
         if (!body.action || !['approve', 'reject'].includes(body.action)) {
             throw new common_1.BadRequestException('Action must be "approve" or "reject"');
@@ -212,6 +215,14 @@ __decorate([
     __metadata("design:paramtypes", [String, update_quiz_dto_js_1.UpdateQuizDto]),
     __metadata("design:returntype", Promise)
 ], MaterialsController.prototype, "updateQuiz", null);
+__decorate([
+    (0, common_1.Delete)('quizzes/:quizId'),
+    (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),
+    __param(0, (0, common_1.Param)('quizId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], MaterialsController.prototype, "deleteQuiz", null);
 __decorate([
     (0, common_1.Patch)(':id/review'),
     (0, index_js_2.Roles)(client_1.Role.ADMIN),

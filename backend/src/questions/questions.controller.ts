@@ -123,6 +123,14 @@ export class QuestionsController {
   }
 
   /**
+   * GET /questions/subject-counts — Get approved question counts grouped by subject
+   */
+  @Get('subject-counts')
+  async getSubjectCounts() {
+    return this.questionsService.getSubjectCounts();
+  }
+
+  /**
    * GET /questions/:id — Get a single question
    */
   @Get(':id')

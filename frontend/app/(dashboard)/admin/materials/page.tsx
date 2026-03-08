@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
-import { FileText, Eye } from 'lucide-react';
+import { FileText, Eye, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'All Statuses' },
@@ -63,6 +64,19 @@ export default function AdminMaterialsPage() {
   const handleStatusChange = (val: string) => {
     setStatus(val);
     load(1, val);
+  };
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this material? This will also delete all associated quizzes.')) return;
+    try {
+      await materialsApi.delete(id);
+      toast.success('Material deleted');
+      load(page);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to delete material');
+    }
   };
 
   const totalPages = Math.ceil(total / 20);
@@ -132,6 +146,13 @@ export default function AdminMaterialsPage() {
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <Badge variant={statusVariant(m.status)}>{m.status}</Badge>
+                    <button
+                      onClick={(e) => handleDelete(m.id, e)}
+                      className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      title="Delete material"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                     <Eye size={16} className="text-gray-400" />
                   </div>
                 </Link>

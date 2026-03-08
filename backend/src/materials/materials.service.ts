@@ -470,6 +470,15 @@ export class MaterialsService {
     return { message: 'Question deleted successfully' };
   }
 
+  async deleteQuiz(quizId: string) {
+    const quiz = await this.prisma.quiz.findUnique({ where: { id: quizId } });
+    if (!quiz) {
+      throw new NotFoundException('Quiz not found');
+    }
+    await this.prisma.quiz.delete({ where: { id: quizId } });
+    return { message: 'Quiz deleted successfully' };
+  }
+
   // ────── Change Material Status ──────
 
   async changeStatus(materialId: string, status: MaterialStatus) {

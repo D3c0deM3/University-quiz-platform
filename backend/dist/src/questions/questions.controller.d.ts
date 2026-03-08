@@ -17,13 +17,13 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         questionText: string;
-        status: import("@prisma/client").$Enums.QuestionStatus;
-        subjectId: string;
         answerText: string;
         imagePath: string | null;
+        status: import("@prisma/client").$Enums.QuestionStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        subjectId: string;
         createdById: string;
     }>;
     findAll(userId: string, userRole: Role, page: number, limit: number, subjectId?: string, status?: QuestionStatus, search?: string, mine?: string): Promise<{
@@ -40,13 +40,13 @@ export declare class QuestionsController {
             };
         } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             questionText: string;
-            status: import("@prisma/client").$Enums.QuestionStatus;
-            subjectId: string;
             answerText: string;
             imagePath: string | null;
+            status: import("@prisma/client").$Enums.QuestionStatus;
+            createdAt: Date;
+            updatedAt: Date;
+            subjectId: string;
             createdById: string;
         })[];
         meta: {
@@ -62,6 +62,12 @@ export declare class QuestionsController {
         rejected: number;
         total: number;
     }>;
+    getSubjectCounts(): Promise<{
+        subjectId: string;
+        subjectName: string;
+        subjectDescription: string | null;
+        questionCount: number;
+    }[]>;
     findOne(id: string): Promise<{
         subject: {
             id: string;
@@ -75,13 +81,13 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         questionText: string;
-        status: import("@prisma/client").$Enums.QuestionStatus;
-        subjectId: string;
         answerText: string;
         imagePath: string | null;
+        status: import("@prisma/client").$Enums.QuestionStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        subjectId: string;
         createdById: string;
     }>;
     update(id: string, dto: UpdateQuestionDto, userId: string, userRole: Role, image?: Express.Multer.File): Promise<{
@@ -97,13 +103,13 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         questionText: string;
-        status: import("@prisma/client").$Enums.QuestionStatus;
-        subjectId: string;
         answerText: string;
         imagePath: string | null;
+        status: import("@prisma/client").$Enums.QuestionStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        subjectId: string;
         createdById: string;
     }>;
     remove(id: string, userId: string, userRole: Role): Promise<{
@@ -122,13 +128,13 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         questionText: string;
-        status: import("@prisma/client").$Enums.QuestionStatus;
-        subjectId: string;
         answerText: string;
         imagePath: string | null;
+        status: import("@prisma/client").$Enums.QuestionStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        subjectId: string;
         createdById: string;
     }>;
     generateQuiz(dto: GenerateQuizFromQADto): Promise<{
@@ -145,11 +151,11 @@ export declare class QuestionsController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            subjectId: string;
             description: string | null;
             title: string;
-            isPublished: boolean;
-            subjectId: string;
             materialId: string | null;
+            isPublished: boolean;
         }) | null;
     }>;
 }

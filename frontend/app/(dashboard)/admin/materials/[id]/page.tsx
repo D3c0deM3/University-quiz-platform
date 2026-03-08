@@ -25,6 +25,7 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
@@ -142,6 +143,28 @@ export default function MaterialReviewPage() {
     }
   };
 
+  const handleDeleteMaterial = async () => {
+    if (!confirm('Are you sure you want to delete this material? All associated quizzes will also be deleted.')) return;
+    try {
+      await materialsApi.delete(id);
+      toast.success('Material deleted');
+      router.push('/admin/materials');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to delete material');
+    }
+  };
+
+  const handleDeleteQuiz = async (quizId: string) => {
+    if (!confirm('Are you sure you want to delete this quiz and all its questions?')) return;
+    try {
+      await materialsApi.deleteQuiz(quizId);
+      toast.success('Quiz deleted');
+      loadQuizzes();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to delete quiz');
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6 max-w-4xl">
@@ -215,6 +238,9 @@ export default function MaterialReviewPage() {
               <RotateCcw size={16} /> Reprocess
             </Button>
           )}
+          <Button variant="outline" onClick={handleDeleteMaterial} className="gap-1 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200">
+            <Trash2 size={16} /> Delete
+          </Button>
         </div>
       </div>
 
@@ -295,6 +321,16 @@ export default function MaterialReviewPage() {
                       <Badge variant={q.isPublished ? 'success' : 'secondary'}>
                         {q.isPublished ? 'Published' : 'Draft'}
                       </Badge>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteQuiz(q.id);
+                        }}
+                        className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        title="Delete quiz"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                       {expandedQuiz === q.id ? (
                         <ChevronDown size={18} className="text-gray-400" />
                       ) : (

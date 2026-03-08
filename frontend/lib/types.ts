@@ -120,6 +120,11 @@ export interface QuizAttempt {
   createdAt: string;
   quiz?: Quiz;
   answers?: QuizAttemptAnswer[];
+  // Flat fields returned by history endpoint
+  quizTitle?: string;
+  subjectName?: string;
+  totalQuestions?: number;
+  status?: string;
 }
 
 export interface QuizAttemptAnswer {
@@ -149,7 +154,7 @@ export interface QuizStats {
   subjectStats: {
     subjectId: string;
     subjectName: string;
-    attempts: number;
+    totalAttempts: number;
     averageScore: number;
     bestScore: number;
   }[];

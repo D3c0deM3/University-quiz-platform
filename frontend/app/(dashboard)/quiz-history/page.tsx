@@ -121,7 +121,7 @@ export default function QuizHistoryPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold text-gray-900">{Math.round(ss.averageScore)}%</p>
-                    <p className="text-xs text-gray-400">{ss.attempts} attempts</p>
+                    <p className="text-xs text-gray-400">{ss.totalAttempts} attempts</p>
                   </div>
                 </div>
               ))}
@@ -171,7 +171,7 @@ export default function QuizHistoryPage() {
                 return (
                   <Link
                     key={att.id}
-                    href={att.quiz ? `/quizzes/${att.quizId}/results/${att.id}` : '#'}
+                    href={`/quizzes/${att.quizId}/results/${att.id}`}
                     className="flex items-center gap-4 rounded-lg border border-gray-100 p-4 hover:bg-gray-50 transition-colors"
                   >
                     <div className={`flex h-10 w-10 items-center justify-center rounded-full ${scoreColor} shrink-0`}>
@@ -179,11 +179,16 @@ export default function QuizHistoryPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900">
-                        {att.quiz?.title || 'Quiz'}
+                        {att.quiz?.title || att.quizTitle || 'Quiz'}
                       </p>
                       <p className="text-sm text-gray-500">
+                        {att.subjectName || att.quiz?.subject?.name
+                          ? <span className="text-blue-600">{att.subjectName || att.quiz?.subject?.name}</span>
+                          : null}
+                        {(att.subjectName || att.quiz?.subject?.name) ? ' • ' : ''}
                         {formatDate(att.startedAt)}
                         {att.completedAt ? ' • Completed' : ' • In Progress'}
+                        {att.totalQuestions ? ` • ${att.totalQuestions} questions` : ''}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">

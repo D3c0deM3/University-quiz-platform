@@ -263,7 +263,7 @@ export default function DashboardPage() {
                   <p className="font-medium text-gray-900">{ss.subjectName}</p>
                   <div className="mt-2 grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <p className="text-lg font-bold text-blue-600">{ss.attempts}</p>
+                      <p className="text-lg font-bold text-blue-600">{ss.totalAttempts}</p>
                       <p className="text-xs text-gray-500">Attempts</p>
                     </div>
                     <div>

@@ -359,6 +359,9 @@ export declare class MaterialsService {
     deleteQuizQuestion(questionId: string): Promise<{
         message: string;
     }>;
+    deleteQuiz(quizId: string): Promise<{
+        message: string;
+    }>;
     changeStatus(materialId: string, status: MaterialStatus): Promise<{
         metadata: {
             id: string;

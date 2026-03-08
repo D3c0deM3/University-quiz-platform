@@ -79,6 +79,8 @@ export const materialsApi = {
   getQuizzes: (id: string) => api.get(`/materials/${id}/quizzes`),
   updateQuiz: (quizId: string, data: Record<string, unknown>) =>
     api.put(`/materials/quizzes/${quizId}`, data),
+  deleteQuiz: (quizId: string) =>
+    api.delete(`/materials/quizzes/${quizId}`),
   review: (id: string, action: 'approve' | 'reject', reason?: string) =>
     api.patch(`/materials/${id}/review`, { action, reason }),
   publish: (id: string, publish: boolean) =>
@@ -107,6 +109,7 @@ export const quizzesApi = {
   listBySubject: (subjectId: string, page = 1, limit = 20) =>
     api.get(`/subjects/${subjectId}/quizzes`, { params: { page, limit } }),
   get: (id: string) => api.get(`/quizzes/${id}`),
+  delete: (id: string) => api.delete(`/quizzes/${id}`),
   startAttempt: (quizId: string) => api.post(`/quizzes/${quizId}/attempts`),
   submitAttempt: (attemptId: string, answers: { questionId: string; selectedOptionId?: string; textAnswer?: string }[]) =>
     api.post(`/quiz-attempts/${attemptId}/submit`, { answers }),
@@ -158,6 +161,7 @@ export const questionsApi = {
     api.patch(`/questions/${id}/review`, { status }),
   counts: (subjectId?: string) =>
     api.get('/questions/counts', { params: subjectId ? { subjectId } : {} }),
+  subjectCounts: () => api.get('/questions/subject-counts'),
   generateQuiz: (subjectId: string, title?: string) =>
     api.post('/questions/generate-quiz', { subjectId, title }),
 };

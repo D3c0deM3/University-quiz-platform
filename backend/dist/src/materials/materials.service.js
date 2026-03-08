@@ -390,6 +390,14 @@ let MaterialsService = class MaterialsService {
         await this.prisma.quizQuestion.delete({ where: { id: questionId } });
         return { message: 'Question deleted successfully' };
     }
+    async deleteQuiz(quizId) {
+        const quiz = await this.prisma.quiz.findUnique({ where: { id: quizId } });
+        if (!quiz) {
+            throw new common_1.NotFoundException('Quiz not found');
+        }
+        await this.prisma.quiz.delete({ where: { id: quizId } });
+        return { message: 'Quiz deleted successfully' };
+    }
     async changeStatus(materialId, status) {
         const material = await this.prisma.material.findUnique({
             where: { id: materialId },

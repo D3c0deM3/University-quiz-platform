@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const quizzes_service_js_1 = require("./quizzes.service.js");
 const index_js_1 = require("../auth/guards/index.js");
 const index_js_2 = require("../auth/decorators/index.js");
+const client_1 = require("@prisma/client");
 const submit_quiz_dto_js_1 = require("./dto/submit-quiz.dto.js");
 let QuizzesController = class QuizzesController {
     quizzesService;
@@ -46,6 +47,9 @@ let QuizzesController = class QuizzesController {
     }
     async getMyStats(userId) {
         return this.quizzesService.getMyStats(userId);
+    }
+    async deleteQuiz(quizId) {
+        return this.quizzesService.deleteQuiz(quizId);
     }
 };
 exports.QuizzesController = QuizzesController;
@@ -114,6 +118,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], QuizzesController.prototype, "getMyStats", null);
+__decorate([
+    (0, common_1.Delete)('quizzes/:id'),
+    (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], QuizzesController.prototype, "deleteQuiz", null);
 exports.QuizzesController = QuizzesController = __decorate([
     (0, common_1.Controller)(),
     (0, common_1.UseGuards)(index_js_1.JwtAuthGuard, index_js_1.RolesGuard),

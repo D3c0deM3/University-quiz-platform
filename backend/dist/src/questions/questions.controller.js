@@ -81,6 +81,9 @@ let QuestionsController = class QuestionsController {
     async getCounts(subjectId) {
         return this.questionsService.getStatusCounts(subjectId);
     }
+    async getSubjectCounts() {
+        return this.questionsService.getSubjectCounts();
+    }
     async findOne(id) {
         return this.questionsService.findOne(id);
     }
@@ -132,6 +135,12 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], QuestionsController.prototype, "getCounts", null);
+__decorate([
+    (0, common_1.Get)('subject-counts'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], QuestionsController.prototype, "getSubjectCounts", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

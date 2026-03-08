@@ -365,50 +365,87 @@ IMPORTANT: Respond ONLY with a valid JSON array (no markdown code blocks, no ext
 Ensure exactly one option per question has isCorrect: true.`;
 
     try {
-      const model = this.configService.get<string>('AI_MODEL', 'gemini-2.0-flash');
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const primaryModel = this.configService.get<string>('AI_MODEL', 'gemini-3.1-flash-lite-preview');
+      // Fallback chain – deduplicated, preserving order
+      const fallbackModels = [primaryModel, 'gemini-2.5-flash-lite'].filter(
+        (m, i, arr) => arr.indexOf(m) === i,
+      );
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 8192,
-          },
-        }),
-      });
+      let lastError: Error | null = null;
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        this.logger.error(`Gemini API error: ${response.status} - ${errorBody}`);
-        throw new BadRequestException('AI service returned an error');
+      for (const model of fallbackModels) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                  temperature: 0.7,
+                  maxOutputTokens: 8192,
+                },
+              }),
+            });
+
+            if (response.status === 429) {
+              const errorBody = await response.text();
+              this.logger.warn(
+                `Rate limited on ${model} (attempt ${attempt + 1}): ${errorBody}`,
+              );
+              // Wait before retry / next model
+              await new Promise((r) => setTimeout(r, (attempt + 1) * 5000));
+              lastError = new Error(`429 rate limited on ${model}`);
+              continue;
+            }
+
+            if (!response.ok) {
+              const errorBody = await response.text();
+              this.logger.error(`Gemini API error: ${response.status} - ${errorBody}`);
+              throw new BadRequestException('AI service returned an error');
+            }
+
+            const data = (await response.json()) as GeminiResponse;
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!text) {
+              this.logger.error('Empty response from Gemini');
+              throw new BadRequestException('AI service returned empty response');
+            }
+
+            // Clean up the response (remove markdown code fences if present)
+            const cleaned = text
+              .replace(/```json\s*\n?/g, '')
+              .replace(/```\s*\n?/g, '')
+              .trim();
+
+            const parsed: GeneratedMCQ[] = JSON.parse(cleaned);
+
+            // Validate structure
+            return parsed.filter((mcq) => {
+              return (
+                mcq.question &&
+                Array.isArray(mcq.options) &&
+                mcq.options.length >= 2 &&
+                mcq.options.some((o) => o.isCorrect) &&
+                mcq.options.every((o) => o.text)
+              );
+            });
+          } catch (innerErr) {
+            if (innerErr instanceof BadRequestException) throw innerErr;
+            lastError = innerErr as Error;
+            this.logger.warn(
+              `Model ${model} attempt ${attempt + 1} failed: ${lastError.message}`,
+            );
+          }
+        }
+        this.logger.warn(`All retries exhausted for model ${model}, trying next fallback...`);
       }
 
-      const data = (await response.json()) as GeminiResponse;
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!text) {
-        this.logger.error('Empty response from Gemini');
-        throw new BadRequestException('AI service returned empty response');
-      }
-
-      // Clean up the response (remove markdown code fences if present)
-      const cleaned = text.replace(/```json\s*\n?/g, '').replace(/```\s*\n?/g, '').trim();
-
-      const parsed: GeneratedMCQ[] = JSON.parse(cleaned);
-
-      // Validate structure
-      return parsed.filter((mcq) => {
-        return (
-          mcq.question &&
-          Array.isArray(mcq.options) &&
-          mcq.options.length >= 2 &&
-          mcq.options.some((o) => o.isCorrect) &&
-          mcq.options.every((o) => o.text)
-        );
-      });
+      this.logger.error(`All models exhausted. Last error: ${lastError?.message}`);
+      throw new BadRequestException('AI service is temporarily unavailable. Please try again later.');
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
       this.logger.error(`Failed to generate MCQs from Gemini: ${error}`);
@@ -431,5 +468,36 @@ Ensure exactly one option per question has isCorrect: true.`;
     ]);
 
     return { pending, approved, rejected, total };
+  }
+
+  /**
+   * Get approved question counts grouped by subject.
+   */
+  async getSubjectCounts() {
+    const results = await this.prisma.manualQuestion.groupBy({
+      by: ['subjectId'],
+      where: { status: QuestionStatus.APPROVED },
+      _count: { id: true },
+    });
+
+    // Fetch subject details
+    const subjectIds = results.map((r) => r.subjectId);
+    const subjects = await this.prisma.subject.findMany({
+      where: { id: { in: subjectIds } },
+      select: { id: true, name: true, description: true },
+    });
+    const subjectMap = new Map(subjects.map((s) => [s.id, s]));
+
+    return results
+      .map((r) => {
+        const subject = subjectMap.get(r.subjectId);
+        return {
+          subjectId: r.subjectId,
+          subjectName: subject?.name || 'Unknown',
+          subjectDescription: subject?.description || null,
+          questionCount: r._count.id,
+        };
+      })
+      .sort((a, b) => b.questionCount - a.questionCount);
   }
 }

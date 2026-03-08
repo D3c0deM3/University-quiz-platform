@@ -11,13 +11,13 @@ export declare class QuizzesService {
             };
         } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            description: string | null;
             title: string;
-            isPublished: boolean;
+            description: string | null;
             subjectId: string;
             materialId: string | null;
+            isPublished: boolean;
+            createdAt: Date;
+            updatedAt: Date;
         })[];
         meta: {
             total: number;
@@ -31,9 +31,6 @@ export declare class QuizzesService {
             id: string;
             name: string;
         };
-        _count: {
-            questions: number;
-        };
         questions: {
             id: string;
             orderIndex: number;
@@ -41,19 +38,22 @@ export declare class QuizzesService {
             questionType: import("@prisma/client").$Enums.QuestionType;
             options: {
                 id: string;
-                optionText: string;
                 orderIndex: number;
+                optionText: string;
             }[];
         }[];
+        _count: {
+            questions: number;
+        };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        description: string | null;
         title: string;
-        isPublished: boolean;
+        description: string | null;
         subjectId: string;
         materialId: string | null;
+        isPublished: boolean;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     startAttempt(quizId: string, userId: string): Promise<{
         quiz: {
@@ -66,8 +66,8 @@ export declare class QuizzesService {
                 questionType: import("@prisma/client").$Enums.QuestionType;
                 options: {
                     id: string;
-                    optionText: string;
                     orderIndex: number;
+                    optionText: string;
                 }[];
             }[];
         };
@@ -92,43 +92,74 @@ export declare class QuizzesService {
         completedAt: Date | null;
     }>;
     getAttemptResults(attemptId: string, userId: string): Promise<{
-        attemptId: string;
+        id: string;
+        quizId: string;
+        userId: string;
         quiz: {
             id: string;
-            description: string | null;
             title: string;
+            description: string | null;
         };
         score: number | null;
         totalPoints: number | null;
         startedAt: Date;
         completedAt: Date;
+        createdAt: Date;
         answers: {
+            id: string;
+            attemptId: string;
             questionId: string;
-            questionText: string;
-            questionType: import("@prisma/client").$Enums.QuestionType;
-            explanation: string | null;
             selectedOptionId: string | null;
-            selectedOptionText: string | null;
             textAnswer: string | null;
             isCorrect: boolean | null;
-            options: {
+            question: {
                 id: string;
+                quizId: string;
+                questionText: string;
+                questionType: import("@prisma/client").$Enums.QuestionType;
+                explanation: string | null;
+                orderIndex: number;
+                options: {
+                    id: string;
+                    questionId: string;
+                    optionText: string;
+                    isCorrect: boolean;
+                    orderIndex: number;
+                }[];
+            };
+            selectedOption: {
+                id: string;
+                questionId: string;
                 optionText: string;
                 isCorrect: boolean;
-            }[];
+                orderIndex: number;
+            } | null;
         }[];
     }>;
     getMyAttempts(userId: string, page?: number, limit?: number): Promise<{
         data: {
             id: string;
             quizId: string;
-            quizTitle: string;
-            subjectName: string;
+            userId: string;
             score: number | null;
             totalPoints: number | null;
-            totalQuestions: number;
             startedAt: Date;
             completedAt: Date | null;
+            createdAt: Date;
+            quiz: {
+                id: string;
+                title: string;
+                subject: {
+                    id: string;
+                    name: string;
+                };
+                _count: {
+                    questions: number;
+                };
+            };
+            quizTitle: string;
+            subjectName: string;
+            totalQuestions: number;
             status: string;
         }[];
         meta: {
@@ -148,5 +179,8 @@ export declare class QuizzesService {
             averageScore: number;
             bestScore: number;
         }[];
+    }>;
+    deleteQuiz(quizId: string): Promise<{
+        message: string;
     }>;
 }

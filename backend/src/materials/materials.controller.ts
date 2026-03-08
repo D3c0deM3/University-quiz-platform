@@ -145,6 +145,12 @@ export class MaterialsController {
     return this.materialsService.updateQuiz(quizId, dto);
   }
 
+  @Delete('quizzes/:quizId')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  async deleteQuiz(@Param('quizId') quizId: string) {
+    return this.materialsService.deleteQuiz(quizId);
+  }
+
   @Patch(':id/review')
   @Roles(Role.ADMIN)
   async reviewMaterial(

@@ -274,39 +274,66 @@ IMPORTANT: Respond ONLY with a valid JSON array (no markdown code blocks, no ext
 
 Ensure exactly one option per question has isCorrect: true.`;
         try {
-            const model = this.configService.get('AI_MODEL', 'gemini-2.0-flash');
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 8192,
-                    },
-                }),
-            });
-            if (!response.ok) {
-                const errorBody = await response.text();
-                this.logger.error(`Gemini API error: ${response.status} - ${errorBody}`);
-                throw new common_1.BadRequestException('AI service returned an error');
+            const primaryModel = this.configService.get('AI_MODEL', 'gemini-3.1-flash-lite-preview');
+            const fallbackModels = [primaryModel, 'gemini-2.5-flash-lite'].filter((m, i, arr) => arr.indexOf(m) === i);
+            let lastError = null;
+            for (const model of fallbackModels) {
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    try {
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: prompt }] }],
+                                generationConfig: {
+                                    temperature: 0.7,
+                                    maxOutputTokens: 8192,
+                                },
+                            }),
+                        });
+                        if (response.status === 429) {
+                            const errorBody = await response.text();
+                            this.logger.warn(`Rate limited on ${model} (attempt ${attempt + 1}): ${errorBody}`);
+                            await new Promise((r) => setTimeout(r, (attempt + 1) * 5000));
+                            lastError = new Error(`429 rate limited on ${model}`);
+                            continue;
+                        }
+                        if (!response.ok) {
+                            const errorBody = await response.text();
+                            this.logger.error(`Gemini API error: ${response.status} - ${errorBody}`);
+                            throw new common_1.BadRequestException('AI service returned an error');
+                        }
+                        const data = (await response.json());
+                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (!text) {
+                            this.logger.error('Empty response from Gemini');
+                            throw new common_1.BadRequestException('AI service returned empty response');
+                        }
+                        const cleaned = text
+                            .replace(/```json\s*\n?/g, '')
+                            .replace(/```\s*\n?/g, '')
+                            .trim();
+                        const parsed = JSON.parse(cleaned);
+                        return parsed.filter((mcq) => {
+                            return (mcq.question &&
+                                Array.isArray(mcq.options) &&
+                                mcq.options.length >= 2 &&
+                                mcq.options.some((o) => o.isCorrect) &&
+                                mcq.options.every((o) => o.text));
+                        });
+                    }
+                    catch (innerErr) {
+                        if (innerErr instanceof common_1.BadRequestException)
+                            throw innerErr;
+                        lastError = innerErr;
+                        this.logger.warn(`Model ${model} attempt ${attempt + 1} failed: ${lastError.message}`);
+                    }
+                }
+                this.logger.warn(`All retries exhausted for model ${model}, trying next fallback...`);
             }
-            const data = (await response.json());
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!text) {
-                this.logger.error('Empty response from Gemini');
-                throw new common_1.BadRequestException('AI service returned empty response');
-            }
-            const cleaned = text.replace(/```json\s*\n?/g, '').replace(/```\s*\n?/g, '').trim();
-            const parsed = JSON.parse(cleaned);
-            return parsed.filter((mcq) => {
-                return (mcq.question &&
-                    Array.isArray(mcq.options) &&
-                    mcq.options.length >= 2 &&
-                    mcq.options.some((o) => o.isCorrect) &&
-                    mcq.options.every((o) => o.text));
-            });
+            this.logger.error(`All models exhausted. Last error: ${lastError?.message}`);
+            throw new common_1.BadRequestException('AI service is temporarily unavailable. Please try again later.');
         }
         catch (error) {
             if (error instanceof common_1.BadRequestException)
@@ -326,6 +353,30 @@ Ensure exactly one option per question has isCorrect: true.`;
             this.prisma.manualQuestion.count({ where }),
         ]);
         return { pending, approved, rejected, total };
+    }
+    async getSubjectCounts() {
+        const results = await this.prisma.manualQuestion.groupBy({
+            by: ['subjectId'],
+            where: { status: client_1.QuestionStatus.APPROVED },
+            _count: { id: true },
+        });
+        const subjectIds = results.map((r) => r.subjectId);
+        const subjects = await this.prisma.subject.findMany({
+            where: { id: { in: subjectIds } },
+            select: { id: true, name: true, description: true },
+        });
+        const subjectMap = new Map(subjects.map((s) => [s.id, s]));
+        return results
+            .map((r) => {
+            const subject = subjectMap.get(r.subjectId);
+            return {
+                subjectId: r.subjectId,
+                subjectName: subject?.name || 'Unknown',
+                subjectDescription: subject?.description || null,
+                questionCount: r._count.id,
+            };
+        })
+            .sort((a, b) => b.questionCount - a.questionCount);
     }
 };
 exports.QuestionsService = QuestionsService;

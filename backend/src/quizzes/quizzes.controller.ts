@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Param,
   Query,
   Body,
@@ -11,7 +12,8 @@ import {
 } from '@nestjs/common';
 import { QuizzesService } from './quizzes.service.js';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards/index.js';
-import { CurrentUser } from '../auth/decorators/index.js';
+import { CurrentUser, Roles } from '../auth/decorators/index.js';
+import { Role } from '@prisma/client';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
 
 @Controller()
@@ -106,5 +108,14 @@ export class QuizzesController {
   @Get('my/quiz-stats')
   async getMyStats(@CurrentUser('id') userId: string) {
     return this.quizzesService.getMyStats(userId);
+  }
+
+  /**
+   * DELETE /quizzes/:id — delete a quiz (admin/teacher only)
+   */
+  @Delete('quizzes/:id')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  async deleteQuiz(@Param('id') quizId: string) {
+    return this.quizzesService.deleteQuiz(quizId);
   }
 }

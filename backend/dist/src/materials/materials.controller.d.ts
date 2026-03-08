@@ -217,6 +217,9 @@ export declare class MaterialsController {
         subjectId: string;
         materialId: string | null;
     }) | null>;
+    deleteQuiz(quizId: string): Promise<{
+        message: string;
+    }>;
     reviewMaterial(id: string, body: {
         action: 'approve' | 'reject';
         reason?: string;

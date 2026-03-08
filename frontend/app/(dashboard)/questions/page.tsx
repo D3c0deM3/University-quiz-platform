@@ -2,82 +2,61 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { questionsApi, subjectsApi } from '@/lib/api';
-import { useAuthStore } from '@/stores/auth-store';
-import type { ManualQuestion, Subject } from '@/lib/types';
+import { questionsApi } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
-import { HelpCircle, Plus, Search, ChevronLeft, ChevronRight, Image, User } from 'lucide-react';
+import {
+  HelpCircle,
+  Plus,
+  BookOpen,
+  MessageSquare,
+  ArrowRight,
+} from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
+interface SubjectCount {
+  subjectId: string;
+  subjectName: string;
+  subjectDescription: string | null;
+  questionCount: number;
+}
+
+// Color palette for subject cards
+const CARD_COLORS = [
+  { bg: 'bg-blue-50', icon: 'bg-blue-100 text-blue-600', accent: 'text-blue-600', border: 'border-blue-100 hover:border-blue-300' },
+  { bg: 'bg-purple-50', icon: 'bg-purple-100 text-purple-600', accent: 'text-purple-600', border: 'border-purple-100 hover:border-purple-300' },
+  { bg: 'bg-emerald-50', icon: 'bg-emerald-100 text-emerald-600', accent: 'text-emerald-600', border: 'border-emerald-100 hover:border-emerald-300' },
+  { bg: 'bg-orange-50', icon: 'bg-orange-100 text-orange-600', accent: 'text-orange-600', border: 'border-orange-100 hover:border-orange-300' },
+  { bg: 'bg-pink-50', icon: 'bg-pink-100 text-pink-600', accent: 'text-pink-600', border: 'border-pink-100 hover:border-pink-300' },
+  { bg: 'bg-cyan-50', icon: 'bg-cyan-100 text-cyan-600', accent: 'text-cyan-600', border: 'border-cyan-100 hover:border-cyan-300' },
+  { bg: 'bg-amber-50', icon: 'bg-amber-100 text-amber-600', accent: 'text-amber-600', border: 'border-amber-100 hover:border-amber-300' },
+  { bg: 'bg-indigo-50', icon: 'bg-indigo-100 text-indigo-600', accent: 'text-indigo-600', border: 'border-indigo-100 hover:border-indigo-300' },
+];
 
 export default function QuestionsPage() {
-  const { user } = useAuthStore();
-  const [questions, setQuestions] = useState<ManualQuestion[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [subjectId, setSubjectId] = useState('');
-  const [search, setSearch] = useState('');
-  const [showMine, setShowMine] = useState(false);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [subjectCounts, setSubjectCounts] = useState<SubjectCount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
-    subjectsApi.list(1, 100).then((res) => {
-      setSubjects(res.data.data || res.data || []);
-    });
+    questionsApi
+      .subjectCounts()
+      .then((res) => setSubjectCounts(res.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  const load = async (p = 1) => {
-    setLoading(true);
-    try {
-      const params: Record<string, string | number> = { page: p, limit: 20 };
-      if (subjectId) params.subjectId = subjectId;
-      if (search.trim()) params.search = search.trim();
-      if (showMine) params.mine = 'true';
-      const { data } = await questionsApi.list(params);
-      setQuestions(data.data || []);
-      setTotal(data.meta?.total || 0);
-      setTotalPages(data.meta?.totalPages || 1);
-      setPage(p);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subjectId, showMine]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    load(1);
-  };
-
-  const statusBadge = (status: string) => {
-    switch (status) {
-      case 'APPROVED': return <Badge variant="success">Approved</Badge>;
-      case 'PENDING': return <Badge variant="warning">Pending</Badge>;
-      case 'REJECTED': return <Badge variant="destructive">Rejected</Badge>;
-      default: return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+  const totalQuestions = subjectCounts.reduce((sum, sc) => sum + sc.questionCount, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Questions & Answers</h1>
-          <p className="text-gray-500">Browse and contribute Q&A for your subjects</p>
+          <h1 className="text-2xl font-bold text-gray-900">Q&A Bank</h1>
+          <p className="text-gray-500 mt-1">
+            Browse questions and answers organized by subject
+          </p>
         </div>
         <Link href="/questions/create">
           <Button>
@@ -86,49 +65,32 @@ export default function QuestionsPage() {
         </Link>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <form onSubmit={handleSearch} className="relative flex-1 min-w-[200px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <Input
-            placeholder="Search questions…"
-            className="pl-10"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </form>
-        <Select
-          value={subjectId}
-          onChange={(e) => { setSubjectId(e.target.value); setPage(1); }}
-          className="w-48"
-        >
-          <option value="">All Subjects</option>
-          {subjects.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </Select>
-        <Button
-          variant={showMine ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setShowMine(!showMine)}
-        >
-          <User size={14} className="mr-1" /> My Questions
-        </Button>
-        <span className="text-sm text-gray-500">{total} questions</span>
-      </div>
+      {/* Stats summary */}
+      {!loading && subjectCounts.length > 0 && (
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2 text-gray-600">
+            <BookOpen size={16} className="text-blue-500" />
+            <span className="font-medium">{subjectCounts.length}</span> subjects
+          </div>
+          <div className="flex items-center gap-2 text-gray-600">
+            <MessageSquare size={16} className="text-green-500" />
+            <span className="font-medium">{totalQuestions}</span> approved questions
+          </div>
+        </div>
+      )}
 
-      {/* Questions List */}
+      {/* Subject Cards Grid */}
       {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-44 w-full rounded-2xl" />
           ))}
         </div>
-      ) : questions.length === 0 ? (
+      ) : subjectCounts.length === 0 ? (
         <EmptyState
           icon={<HelpCircle size={48} />}
-          title="No questions found"
-          description={showMine ? "You haven't created any questions yet" : 'Be the first to add a question!'}
+          title="No questions yet"
+          description="Be the first to contribute a question to the Q&A Bank!"
           action={
             <Link href="/questions/create">
               <Button>Add Question</Button>
@@ -136,83 +98,56 @@ export default function QuestionsPage() {
           }
         />
       ) : (
-        <div className="space-y-3">
-          {questions.map((q) => (
-            <Card
-              key={q.id}
-              className="cursor-pointer transition-shadow hover:shadow-md"
-              onClick={() => setExpandedId(expandedId === q.id ? null : q.id)}
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start gap-4">
-                  {/* Icon / Image indicator */}
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 shrink-0">
-                    {q.imagePath ? (
-                      <Image size={20} className="text-blue-600" />
-                    ) : (
-                      <HelpCircle size={20} className="text-blue-600" />
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {statusBadge(q.status)}
-                      <Badge variant="outline">{q.subject?.name || 'Unknown'}</Badge>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {subjectCounts.map((sc, idx) => {
+            const colors = CARD_COLORS[idx % CARD_COLORS.length];
+            return (
+              <Link key={sc.subjectId} href={`/questions/${sc.subjectId}`}>
+                <Card
+                  className={`group relative overflow-hidden border-2 ${colors.border} transition-all hover:shadow-lg cursor-pointer h-full`}
+                >
+                  <CardContent className="p-6 flex flex-col h-full">
+                    {/* Icon */}
+                    <div
+                      className={`flex h-12 w-12 items-center justify-center rounded-xl ${colors.icon} mb-4`}
+                    >
+                      <BookOpen size={22} />
                     </div>
-                    <p className="font-medium text-gray-900">{q.questionText}</p>
 
-                    {/* Expanded: show answer + image */}
-                    {expandedId === q.id && (
-                      <div className="mt-4 space-y-3">
-                        <div className="rounded-lg bg-green-50 border border-green-200 p-4">
-                          <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1">Answer</p>
-                          <p className="text-gray-800 whitespace-pre-wrap">{q.answerText}</p>
-                        </div>
-                        {q.imagePath && (
-                          <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Image</p>
-                            <img
-                              src={`${API_BASE}/uploads/question-images/${q.imagePath.split('/').pop()}`}
-                              alt="Question"
-                              className="max-w-full max-h-64 rounded-lg border"
-                            />
-                          </div>
-                        )}
-                        <p className="text-xs text-gray-400">
-                          By {q.createdBy?.firstName} {q.createdBy?.lastName} • {new Date(q.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
+                    {/* Subject Name */}
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-gray-700 transition-colors">
+                      {sc.subjectName}
+                    </h3>
+
+                    {/* Description */}
+                    {sc.subjectDescription && (
+                      <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">
+                        {sc.subjectDescription}
+                      </p>
                     )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                    {!sc.subjectDescription && <div className="flex-1" />}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => load(page - 1)}
-          >
-            <ChevronLeft size={14} />
-          </Button>
-          <span className="text-sm text-gray-600">
-            Page {page} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages}
-            onClick={() => load(page + 1)}
-          >
-            <ChevronRight size={14} />
-          </Button>
+                    {/* Footer */}
+                    <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-1.5">
+                        <MessageSquare size={14} className={colors.accent} />
+                        <span className={`text-sm font-semibold ${colors.accent}`}>
+                          {sc.questionCount}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          question{sc.questionCount !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <ArrowRight
+                        size={16}
+                        className="text-gray-400 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

@@ -288,26 +288,46 @@ export class QuizzesService {
     }
 
     return {
-      attemptId: attempt.id,
+      id: attempt.id,
+      quizId: attempt.quizId,
+      userId: attempt.userId,
       quiz: attempt.quiz,
       score: attempt.score,
       totalPoints: attempt.totalPoints,
       startedAt: attempt.startedAt,
       completedAt: attempt.completedAt,
+      createdAt: attempt.createdAt,
       answers: attempt.answers.map((a) => ({
+        id: a.id,
+        attemptId: a.attemptId,
         questionId: a.questionId,
-        questionText: a.question.questionText,
-        questionType: a.question.questionType,
-        explanation: a.question.explanation,
         selectedOptionId: a.selectedOptionId,
-        selectedOptionText: a.selectedOption?.optionText || null,
         textAnswer: a.textAnswer,
         isCorrect: a.isCorrect,
-        options: a.question.options.map((o) => ({
-          id: o.id,
-          optionText: o.optionText,
-          isCorrect: o.isCorrect,
-        })),
+        question: {
+          id: a.question.id,
+          quizId: a.question.quizId,
+          questionText: a.question.questionText,
+          questionType: a.question.questionType,
+          explanation: a.question.explanation,
+          orderIndex: a.question.orderIndex,
+          options: a.question.options.map((o) => ({
+            id: o.id,
+            questionId: o.questionId,
+            optionText: o.optionText,
+            isCorrect: o.isCorrect,
+            orderIndex: o.orderIndex,
+          })),
+        },
+        selectedOption: a.selectedOption
+          ? {
+              id: a.selectedOption.id,
+              questionId: a.selectedOption.questionId,
+              optionText: a.selectedOption.optionText,
+              isCorrect: a.selectedOption.isCorrect,
+              orderIndex: a.selectedOption.orderIndex,
+            }
+          : null,
       })),
     };
   }
@@ -344,13 +364,23 @@ export class QuizzesService {
       data: attempts.map((a) => ({
         id: a.id,
         quizId: a.quizId,
-        quizTitle: a.quiz.title,
-        subjectName: a.quiz.subject.name,
+        userId: a.userId,
         score: a.score,
         totalPoints: a.totalPoints,
-        totalQuestions: a.quiz._count.questions,
         startedAt: a.startedAt,
         completedAt: a.completedAt,
+        createdAt: a.createdAt,
+        // Nested quiz object (matches frontend Quiz type)
+        quiz: {
+          id: a.quiz.id,
+          title: a.quiz.title,
+          subject: a.quiz.subject,
+          _count: a.quiz._count,
+        },
+        // Flat convenience fields
+        quizTitle: a.quiz.title,
+        subjectName: a.quiz.subject.name,
+        totalQuestions: a.quiz._count.questions,
         status: a.completedAt ? 'completed' : 'in_progress',
       })),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
@@ -409,5 +439,17 @@ export class QuizzesService {
       averageScore,
       subjectStats,
     };
+  }
+
+  /**
+   * Delete a quiz (admin/teacher only).
+   */
+  async deleteQuiz(quizId: string) {
+    const quiz = await this.prisma.quiz.findUnique({ where: { id: quizId } });
+    if (!quiz) {
+      throw new NotFoundException('Quiz not found');
+    }
+    await this.prisma.quiz.delete({ where: { id: quizId } });
+    return { message: 'Quiz deleted successfully' };
   }
 }
