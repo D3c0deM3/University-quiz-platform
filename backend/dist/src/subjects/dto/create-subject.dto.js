@@ -20,16 +20,19 @@ exports.CreateSubjectDto = CreateSubjectDto;
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(200),
     __metadata("design:type", String)
 ], CreateSubjectDto.prototype, "name", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(2000),
     __metadata("design:type", String)
 ], CreateSubjectDto.prototype, "description", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(20),
     __metadata("design:type", String)
 ], CreateSubjectDto.prototype, "code", void 0);
 //# sourceMappingURL=create-subject.dto.js.map

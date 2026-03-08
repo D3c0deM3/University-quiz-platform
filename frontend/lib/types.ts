@@ -23,6 +23,28 @@ export interface Subject {
 export type MaterialStatus = 'PENDING' | 'PROCESSING' | 'PROCESSED' | 'FAILED' | 'REVIEWED' | 'PUBLISHED';
 export type DifficultyLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 export type QuestionType = 'MCQ' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+export type QuestionStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface ManualQuestion {
+  id: string;
+  questionText: string;
+  answerText: string;
+  imagePath: string | null;
+  subjectId: string;
+  createdById: string;
+  status: QuestionStatus;
+  createdAt: string;
+  updatedAt: string;
+  subject?: { id: string; name: string };
+  createdBy?: { id: string; firstName: string; lastName: string; role: Role };
+}
+
+export interface QuestionStatusCounts {
+  pending: number;
+  approved: number;
+  rejected: number;
+  total: number;
+}
 
 export interface Material {
   id: string;

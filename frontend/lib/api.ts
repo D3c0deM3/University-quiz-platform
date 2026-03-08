@@ -127,3 +127,37 @@ export const usersApi = {
   delete: (id: string) => api.delete(`/users/${id}`),
   assignRole: (id: string, role: string) => api.patch(`/users/${id}/role`, { role }),
 };
+
+// ─── Manual Questions (Q&A) ──────────────────────────
+export const questionsApi = {
+  list: (params: { page?: number; limit?: number; subjectId?: string; status?: string; search?: string; mine?: string }) =>
+    api.get('/questions', { params }),
+  get: (id: string) => api.get(`/questions/${id}`),
+  create: (data: { questionText: string; answerText: string; subjectId: string }, image?: File) => {
+    const form = new FormData();
+    form.append('questionText', data.questionText);
+    form.append('answerText', data.answerText);
+    form.append('subjectId', data.subjectId);
+    if (image) form.append('image', image);
+    return api.post('/questions', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  update: (id: string, data: { questionText?: string; answerText?: string; subjectId?: string }, image?: File) => {
+    const form = new FormData();
+    if (data.questionText) form.append('questionText', data.questionText);
+    if (data.answerText) form.append('answerText', data.answerText);
+    if (data.subjectId) form.append('subjectId', data.subjectId);
+    if (image) form.append('image', image);
+    return api.put(`/questions/${id}`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  delete: (id: string) => api.delete(`/questions/${id}`),
+  review: (id: string, status: 'APPROVED' | 'REJECTED') =>
+    api.patch(`/questions/${id}/review`, { status }),
+  counts: (subjectId?: string) =>
+    api.get('/questions/counts', { params: subjectId ? { subjectId } : {} }),
+  generateQuiz: (subjectId: string, title?: string) =>
+    api.post('/questions/generate-quiz', { subjectId, title }),
+};

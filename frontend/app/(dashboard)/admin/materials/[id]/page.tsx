@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { materialsApi } from '@/lib/api';
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { QuizQuestionEditor } from '@/components/quiz-question-editor';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -22,6 +23,8 @@ import {
   Globe,
   GlobeIcon,
   RotateCcw,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
@@ -32,6 +35,7 @@ export default function MaterialReviewPage() {
   const [metadata, setMetadata] = useState<MaterialMetadata | null>(null);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null);
 
   // Editable metadata fields
   const [title, setTitle] = useState('');
@@ -41,6 +45,16 @@ export default function MaterialReviewPage() {
   const [tags, setTags] = useState('');
   const [difficulty, setDifficulty] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const loadQuizzes = useCallback(async () => {
+    if (!id) return;
+    try {
+      const quizRes = await materialsApi.getQuizzes(id);
+      setQuizzes(Array.isArray(quizRes.data) ? quizRes.data : []);
+    } catch {
+      // ignore
+    }
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -251,7 +265,7 @@ export default function MaterialReviewPage() {
         </CardContent>
       </Card>
 
-      {/* Quizzes */}
+      {/* Quizzes with Question Editor */}
       <Card>
         <CardHeader>
           <CardTitle>Generated Quizzes ({quizzes.length})</CardTitle>
@@ -260,10 +274,16 @@ export default function MaterialReviewPage() {
           {quizzes.length === 0 ? (
             <p className="text-sm text-gray-400">No quizzes generated for this material</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {quizzes.map((q) => (
-                <div key={q.id} className="rounded-lg border border-gray-200 p-4">
-                  <div className="flex items-center justify-between">
+                <div key={q.id} className="rounded-xl border border-gray-200 overflow-hidden">
+                  {/* Quiz Header */}
+                  <button
+                    onClick={() =>
+                      setExpandedQuiz(expandedQuiz === q.id ? null : q.id)
+                    }
+                    className="flex items-center justify-between w-full p-4 hover:bg-gray-50 transition-colors text-left cursor-pointer"
+                  >
                     <div>
                       <p className="font-medium text-gray-900">{q.title}</p>
                       <p className="text-sm text-gray-500">
@@ -271,10 +291,27 @@ export default function MaterialReviewPage() {
                         {q.isPublished ? ' • Published' : ' • Draft'}
                       </p>
                     </div>
-                    <Badge variant={q.isPublished ? 'success' : 'secondary'}>
-                      {q.isPublished ? 'Published' : 'Draft'}
-                    </Badge>
-                  </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={q.isPublished ? 'success' : 'secondary'}>
+                        {q.isPublished ? 'Published' : 'Draft'}
+                      </Badge>
+                      {expandedQuiz === q.id ? (
+                        <ChevronDown size={18} className="text-gray-400" />
+                      ) : (
+                        <ChevronRight size={18} className="text-gray-400" />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Quiz Question Editor */}
+                  {expandedQuiz === q.id && (
+                    <div className="border-t border-gray-100 p-4 bg-gray-50/50">
+                      <QuizQuestionEditor
+                        quiz={q}
+                        onRefresh={loadQuizzes}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

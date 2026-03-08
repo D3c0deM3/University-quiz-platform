@@ -1,18 +1,32 @@
 'use client';
 
 import { useAuthStore } from '@/stores/auth-store';
-import { Bell, User } from 'lucide-react';
+import { Bell, User, Menu } from 'lucide-react';
 
-export function Topbar() {
+interface TopbarProps {
+  onMenuClick?: () => void;
+}
+
+export function Topbar({ onMenuClick }: TopbarProps) {
   const { user } = useAuthStore();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">
-          Welcome back, {user?.firstName || 'User'}
-        </h2>
-        <p className="text-sm text-gray-500 capitalize">{user?.role?.toLowerCase() || ''}</p>
+    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6">
+      <div className="flex items-center gap-3">
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 lg:hidden cursor-pointer"
+          >
+            <Menu size={20} />
+          </button>
+        )}
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Welcome back, {user?.firstName || 'User'}
+          </h2>
+          <p className="text-sm text-gray-500 capitalize">{user?.role?.toLowerCase() || ''}</p>
+        </div>
       </div>
       <div className="flex items-center gap-4">
         <button className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer">

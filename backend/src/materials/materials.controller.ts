@@ -32,13 +32,25 @@ import type { MaterialProcessingJobData } from './processors/material-processing
 
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
 
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt'];
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
 const storage = diskStorage({
   destination: join(process.cwd(), uploadDir),
   filename: (_req, file, callback) => {
-    const uniqueName = `${uuidv4()}${extname(file.originalname)}`;
+    const ext = extname(file.originalname).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return callback(new Error(`File type ${ext} is not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`), '');
+    }
+    const uniqueName = `${uuidv4()}${ext}`;
     callback(null, uniqueName);
   },
 });
+
+const multerOptions = {
+  storage,
+  limits: { fileSize: MAX_FILE_SIZE },
+};
 
 @Controller('materials')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -50,7 +62,7 @@ export class MaterialsController {
 
   @Post('upload')
   @Roles(Role.ADMIN, Role.TEACHER)
-  @UseInterceptors(FileInterceptor('file', { storage }))
+  @UseInterceptors(FileInterceptor('file', multerOptions))
   async upload(
     @UploadedFile() file: Express.Multer.File,
     @Body('subjectId') subjectId: string,

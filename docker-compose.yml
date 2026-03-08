@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  # ─── PostgreSQL ──────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: unitest-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: '0000'
+      POSTGRES_DB: crm_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ───────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: unitest-redis
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── NestJS Backend ─────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: unitest-backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: '0000'
+      DB_NAME: crm_db
+      DATABASE_URL: postgresql://postgres:0000@postgres:5432/crm_db?schema=public
+      JWT_SECRET: university-platform-jwt-secret-change-in-production
+      JWT_EXPIRATION: 1d
+      JWT_REFRESH_SECRET: university-platform-refresh-secret-change-in-production
+      JWT_REFRESH_EXPIRATION: 7d
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PYTHON_SERVICE_URL: http://python-service:8000
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: 52428800
+      FRONTEND_URL: http://localhost:3001
+      AI_API_KEY: ${AI_API_KEY:-}
+    ports:
+      - '3000:3000'
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Python Processing Service ──────────────────────
+  python-service:
+    build:
+      context: ./python-service
+      dockerfile: Dockerfile
+    container_name: unitest-python
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      NESTJS_BACKEND_URL: http://backend:3000/api
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: gemini-3.1-flash-lite-preview
+      DATABASE_URL: postgresql://postgres:0000@postgres:5432/crm_db
+    ports:
+      - '8000:8000'
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Next.js Frontend ───────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: unitest-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+    ports:
+      - '3001:3001'
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  uploads_data:

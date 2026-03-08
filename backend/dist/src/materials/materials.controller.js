@@ -28,13 +28,23 @@ const update_metadata_dto_js_1 = require("./dto/update-metadata.dto.js");
 const update_quiz_dto_js_1 = require("./dto/update-quiz.dto.js");
 const quiz_question_dto_js_1 = require("./dto/quiz-question.dto.js");
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt'];
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const storage = (0, multer_1.diskStorage)({
     destination: (0, path_1.join)(process.cwd(), uploadDir),
     filename: (_req, file, callback) => {
-        const uniqueName = `${(0, uuid_1.v4)()}${(0, path_1.extname)(file.originalname)}`;
+        const ext = (0, path_1.extname)(file.originalname).toLowerCase();
+        if (!ALLOWED_EXTENSIONS.includes(ext)) {
+            return callback(new Error(`File type ${ext} is not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`), '');
+        }
+        const uniqueName = `${(0, uuid_1.v4)()}${ext}`;
         callback(null, uniqueName);
     },
 });
+const multerOptions = {
+    storage,
+    limits: { fileSize: MAX_FILE_SIZE },
+};
 let MaterialsController = class MaterialsController {
     materialsService;
     processingQueue;
@@ -137,7 +147,7 @@ exports.MaterialsController = MaterialsController;
 __decorate([
     (0, common_1.Post)('upload'),
     (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', { storage })),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', multerOptions)),
     __param(0, (0, common_1.UploadedFile)()),
     __param(1, (0, common_1.Body)('subjectId')),
     __param(2, (0, index_js_2.CurrentUser)('id')),

@@ -35,6 +35,12 @@ enum DifficultyLevel {
   ADVANCED
 }
 
+enum QuestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ─── Users ───────────────────────────────────────────────
 
 model User {
@@ -49,8 +55,9 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  uploadedMaterials Material[]    @relation("UploadedBy")
-  quizAttempts      QuizAttempt[]
+  uploadedMaterials  Material[]       @relation("UploadedBy")
+  quizAttempts       QuizAttempt[]
+  manualQuestions    ManualQuestion[] @relation("CreatedQuestions")
 
   @@map("users")
 }
@@ -66,8 +73,9 @@ model Subject {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relations
-  materials Material[]
-  quizzes   Quiz[]
+  materials       Material[]
+  quizzes         Quiz[]
+  manualQuestions ManualQuestion[]
 
   @@map("subjects")
 }
@@ -240,4 +248,27 @@ model QuizAttemptAnswer {
   @@index([attemptId])
   @@index([questionId])
   @@map("quiz_attempt_answers")
+}
+
+// ─── Manual Questions (Q&A) ─────────────────────────────
+
+model ManualQuestion {
+  id           String         @id @default(uuid())
+  questionText String         @map("question_text")
+  answerText   String         @map("answer_text")
+  imagePath    String?        @map("image_path")
+  subjectId    String         @map("subject_id")
+  createdById  String         @map("created_by_id")
+  status       QuestionStatus @default(PENDING)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdBy User    @relation("CreatedQuestions", fields: [createdById], references: [id])
+
+  @@index([subjectId])
+  @@index([status])
+  @@index([createdById])
+  @@map("manual_questions")
 }

@@ -13,8 +13,8 @@ export declare class QuizzesService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            title: string;
             description: string | null;
+            title: string;
             isPublished: boolean;
             subjectId: string;
             materialId: string | null;
@@ -49,8 +49,8 @@ export declare class QuizzesService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
         description: string | null;
+        title: string;
         isPublished: boolean;
         subjectId: string;
         materialId: string | null;
@@ -95,8 +95,8 @@ export declare class QuizzesService {
         attemptId: string;
         quiz: {
             id: string;
-            title: string;
             description: string | null;
+            title: string;
         };
         score: number | null;
         totalPoints: number | null;
