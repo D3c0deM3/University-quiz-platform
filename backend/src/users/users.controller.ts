@@ -1,0 +1,66 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  DefaultValuePipe,
+} from '@nestjs/common';
+import { UsersService } from './users.service.js';
+import { CreateUserDto, UpdateUserDto, AssignRoleDto } from './dto/index.js';
+import { JwtAuthGuard, RolesGuard } from '../auth/guards/index.js';
+import { Roles } from '../auth/decorators/index.js';
+import { Role } from '@prisma/client';
+
+@Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class UsersController {
+  constructor(private usersService: UsersService) {}
+
+  @Post()
+  @Roles(Role.ADMIN)
+  async create(@Body() dto: CreateUserDto) {
+    return this.usersService.create(dto);
+  }
+
+  @Get()
+  @Roles(Role.ADMIN)
+  async findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('role') role?: Role,
+    @Query('search') search?: string,
+  ) {
+    return this.usersService.findAll(page, limit, role, search);
+  }
+
+  @Get(':id')
+  @Roles(Role.ADMIN)
+  async findOne(@Param('id') id: string) {
+    return this.usersService.findOne(id);
+  }
+
+  @Put(':id')
+  @Roles(Role.ADMIN)
+  async update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+    return this.usersService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  async remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
+  }
+
+  @Patch(':id/role')
+  @Roles(Role.ADMIN)
+  async assignRole(@Param('id') id: string, @Body() dto: AssignRoleDto) {
+    return this.usersService.assignRole(id, dto);
+  }
+}
