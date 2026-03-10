@@ -23,7 +23,7 @@ let MaterialProcessingProcessor = MaterialProcessingProcessor_1 = class Material
         this.prisma = prisma;
     }
     async process(job) {
-        const { materialId, filePath, fileType, originalName } = job.data;
+        const { materialId, filePath, fileType, originalName, numQuestions, uploadedById } = job.data;
         this.logger.log(`Processing material ${materialId} (${originalName})`);
         try {
             await this.prisma.material.update({
@@ -38,6 +38,7 @@ let MaterialProcessingProcessor = MaterialProcessingProcessor_1 = class Material
                     material_id: materialId,
                     file_path: filePath,
                     file_type: fileType,
+                    num_questions: numQuestions || 10,
                 }),
             });
             if (!response.ok) {
@@ -118,6 +119,23 @@ let MaterialProcessingProcessor = MaterialProcessingProcessor_1 = class Material
                                         orderIndex: optIndex,
                                     })),
                                 });
+                            }
+                        }
+                        if (uploadedById) {
+                            for (const q of result.quiz_questions) {
+                                const correctOption = q.options?.find((opt) => opt.is_correct);
+                                const answerText = correctOption?.text || q.explanation || '';
+                                if (q.question_text && answerText) {
+                                    await tx.manualQuestion.create({
+                                        data: {
+                                            questionText: q.question_text,
+                                            answerText,
+                                            subjectId: material.subjectId,
+                                            createdById: uploadedById,
+                                            status: client_1.QuestionStatus.APPROVED,
+                                        },
+                                    });
+                                }
                             }
                         }
                     }

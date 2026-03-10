@@ -8,6 +8,7 @@ import { useTranslation } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Upload, FileText, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [numQuestions, setNumQuestions] = useState(10);
 
   useEffect(() => {
     subjectsApi.list(1, 100).then((res) => {
@@ -42,7 +44,7 @@ export default function UploadPage() {
     }
     setUploading(true);
     try {
-      await materialsApi.upload(file, subjectId);
+      await materialsApi.upload(file, subjectId, numQuestions);
       toast.success(t('adminUpload.success'));
       router.push('/admin/materials');
     } catch (err: unknown) {
@@ -133,6 +135,24 @@ export default function UploadPage() {
               </button>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('adminUpload.numQuestions') || 'Number of Questions'}</CardTitle>
+          <CardDescription>{t('adminUpload.numQuestionsDesc') || 'How many quiz questions should the AI generate from this material?'}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Input
+            type="number"
+            min={1}
+            max={50}
+            value={numQuestions}
+            onChange={(e) => setNumQuestions(Math.min(50, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+            placeholder="10"
+          />
+          <p className="text-xs text-gray-400 mt-2">{t('adminUpload.numQuestionsHint') || 'Min: 1, Max: 50. Default: 10'}</p>
         </CardContent>
       </Card>
 

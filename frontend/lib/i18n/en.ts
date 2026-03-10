@@ -507,6 +507,9 @@ const en = {
   'adminUpload.submit': 'Upload Material',
   'adminUpload.selectedFile': 'Selected file',
   'adminUpload.changeFile': 'Change',
+  'adminUpload.numQuestions': 'Number of Questions',
+  'adminUpload.numQuestionsDesc': 'How many quiz questions should the AI generate from this material?',
+  'adminUpload.numQuestionsHint': 'Min: 1, Max: 50. Default: 10',
 
   // ───── Admin Subscriptions ─────
   'adminSubs.title': 'Subscriptions',

@@ -76,10 +76,11 @@ export const materialsApi = {
   list: (params: { page?: number; limit?: number; status?: string; subjectId?: string }) =>
     api.get('/materials', { params }),
   get: (id: string) => api.get(`/materials/${id}`),
-  upload: (file: File, subjectId: string) => {
+  upload: (file: File, subjectId: string, numQuestions: number = 10) => {
     const form = new FormData();
     form.append('file', file);
     form.append('subjectId', subjectId);
+    form.append('numQuestions', String(numQuestions));
     return api.post('/materials/upload', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });

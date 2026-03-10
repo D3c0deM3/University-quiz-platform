@@ -2,13 +2,15 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { MaterialStatus, QuestionType, DifficultyLevel } from '@prisma/client';
+import { MaterialStatus, QuestionType, DifficultyLevel, QuestionStatus } from '@prisma/client';
 
 export interface MaterialProcessingJobData {
   materialId: string;
   filePath: string;
   fileType: string;
   originalName: string;
+  numQuestions?: number;
+  uploadedById?: string;
 }
 
 @Processor('material-processing')
@@ -20,7 +22,7 @@ export class MaterialProcessingProcessor extends WorkerHost {
   }
 
   async process(job: Job<MaterialProcessingJobData>): Promise<void> {
-    const { materialId, filePath, fileType, originalName } = job.data;
+    const { materialId, filePath, fileType, originalName, numQuestions, uploadedById } = job.data;
 
     this.logger.log(`Processing material ${materialId} (${originalName})`);
 
@@ -40,6 +42,7 @@ export class MaterialProcessingProcessor extends WorkerHost {
           material_id: materialId,
           file_path: filePath,
           file_type: fileType,
+          num_questions: numQuestions || 10,
         }),
       });
 
@@ -138,6 +141,25 @@ export class MaterialProcessingProcessor extends WorkerHost {
                     orderIndex: optIndex,
                   })),
                 });
+              }
+            }
+
+            // Also save quiz questions to the Q&A bank (ManualQuestion)
+            if (uploadedById) {
+              for (const q of result.quiz_questions) {
+                const correctOption = q.options?.find((opt: any) => opt.is_correct);
+                const answerText = correctOption?.text || q.explanation || '';
+                if (q.question_text && answerText) {
+                  await tx.manualQuestion.create({
+                    data: {
+                      questionText: q.question_text,
+                      answerText,
+                      subjectId: material.subjectId,
+                      createdById: uploadedById,
+                      status: QuestionStatus.APPROVED,
+                    },
+                  });
+                }
               }
             }
           }

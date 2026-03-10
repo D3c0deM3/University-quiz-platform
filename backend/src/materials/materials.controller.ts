@@ -70,6 +70,7 @@ export class MaterialsController {
   async upload(
     @UploadedFile() file: Express.Multer.File,
     @Body('subjectId') subjectId: string,
+    @Body('numQuestions') numQuestionsRaw: string,
     @CurrentUser('id') userId: string,
   ) {
     if (!file) {
@@ -78,6 +79,8 @@ export class MaterialsController {
     if (!subjectId) {
       throw new BadRequestException('subjectId is required');
     }
+
+    const numQuestions = Math.min(Math.max(parseInt(numQuestionsRaw, 10) || 10, 1), 50);
 
     const material = await this.materialsService.upload(file, subjectId, userId);
 
@@ -89,6 +92,8 @@ export class MaterialsController {
         filePath: material.filePath,
         fileType: material.fileType,
         originalName: material.originalName,
+        numQuestions,
+        uploadedById: userId,
       } satisfies MaterialProcessingJobData,
       {
         attempts: 3,
