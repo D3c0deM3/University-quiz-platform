@@ -122,34 +122,34 @@ export default function QuizTakePage() {
   // ── Not started ──
   if (!attempt) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
         <Link
           href={`/subjects/${quiz.subjectId}`}
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+          className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 hover:text-gray-700"
         >
-          <ArrowLeft size={14} /> {t('quiz.backToSubject')}
+          <ArrowLeft size={12} /> {t('quiz.backToSubject')}
         </Link>
 
         <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-blue-100">
-              <ClipboardList size={28} className="text-blue-600" />
+          <CardHeader className="text-center p-4 sm:p-6">
+            <div className="mx-auto mb-2 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-blue-100">
+              <ClipboardList size={24} className="text-blue-600" />
             </div>
-            <CardTitle className="text-2xl">{quiz.title}</CardTitle>
-            {quiz.description && <CardDescription>{quiz.description}</CardDescription>}
+            <CardTitle className="text-lg sm:text-2xl">{quiz.title}</CardTitle>
+            {quiz.description && <CardDescription className="text-xs sm:text-sm">{quiz.description}</CardDescription>}
           </CardHeader>
-          <CardContent className="space-y-4 text-center">
-            <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
+          <CardContent className="space-y-4 text-center px-4 sm:px-6 pb-4 sm:pb-6">
+            <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-500">
               <span className="flex items-center gap-1">
-                <ClipboardList size={14} />
+                <ClipboardList size={13} />
                 {questions.length} {t('quiz.questions').toLowerCase()}
               </span>
               <span className="flex items-center gap-1">
-                <Clock size={14} />
+                <Clock size={13} />
                 {t('quiz.minutes')}
               </span>
             </div>
-            <Button size="lg" onClick={startQuiz} loading={starting} className="px-8">
+            <Button size="lg" onClick={startQuiz} loading={starting} className="px-6 sm:px-8">
               {t('quiz.startQuiz')}
             </Button>
           </CardContent>
@@ -165,49 +165,42 @@ export default function QuizTakePage() {
   ).length;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto flex flex-col min-h-[calc(100dvh-8rem)] sm:min-h-0 sm:block space-y-3 sm:space-y-6">
       {/* Progress header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-gray-900">{quiz.title}</h1>
-          <p className="text-sm text-gray-500">
-            {t('quiz.question')} {currentIndex + 1} {t('quiz.of')} {questions.length} • {answeredCount} {t('quiz.answered')}
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-lg font-bold text-gray-900 truncate">{quiz.title}</h1>
+          <p className="text-[11px] sm:text-sm text-gray-500">
+            {currentIndex + 1}/{questions.length} • {answeredCount} {t('quiz.answered')}
           </p>
         </div>
-        <Badge variant="default">
+        <Badge variant="default" className="shrink-0 text-xs">
           {Math.round((answeredCount / questions.length) * 100)}%
         </Badge>
       </div>
 
       {/* Progress bar */}
-      <div className="h-2 rounded-full bg-gray-200">
+      <div className="h-1.5 sm:h-2 rounded-full bg-gray-200 mt-3 sm:mt-0">
         <div
           className="h-full rounded-full bg-blue-600 transition-all"
           style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
         />
       </div>
 
-      {/* Current question */}
+      {/* Current question — grows to fill available space on mobile */}
       {currentQ && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-start gap-3">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-600 shrink-0">
+        <Card className="mt-3 sm:mt-0 flex-1 sm:flex-none flex flex-col">
+          <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-4">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <span className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-blue-100 text-xs sm:text-sm font-bold text-blue-600 shrink-0">
                 {currentIndex + 1}
               </span>
-              <div>
-                <CardTitle className="text-lg">{currentQ.questionText}</CardTitle>
-                <Badge variant="secondary" className="mt-2">
-                  {currentQ.questionType === 'MCQ'
-                    ? t('createQuestion.multipleChoice')
-                    : currentQ.questionType === 'TRUE_FALSE'
-                    ? t('createQuestion.trueFalse')
-                    : t('createQuestion.shortAnswer')}
-                </Badge>
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-sm sm:text-lg leading-snug break-words">{currentQ.questionText}</CardTitle>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-6 pb-3 sm:pb-6 flex-1">
             {currentQ.questionType === 'SHORT_ANSWER' ? (
               <Input
                 placeholder={t('quiz.selectAnswer')}
@@ -221,18 +214,18 @@ export default function QuizTakePage() {
                   <button
                     key={opt.id}
                     onClick={() => setAnswer(currentQ.id, { selectedOptionId: opt.id })}
-                    className={`flex w-full items-center gap-3 rounded-lg border p-4 text-left transition-colors cursor-pointer ${
+                    className={`flex w-full items-center gap-2.5 sm:gap-3 rounded-lg border p-2.5 sm:p-4 text-left transition-colors cursor-pointer ${
                       isSelected
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     {isSelected ? (
-                      <CheckCircle2 size={20} className="text-blue-600 shrink-0" />
+                      <CheckCircle2 size={18} className="text-blue-600 shrink-0" />
                     ) : (
-                      <Circle size={20} className="text-gray-300 shrink-0" />
+                      <Circle size={18} className="text-gray-300 shrink-0" />
                     )}
-                    <span className={isSelected ? 'text-blue-900 font-medium' : 'text-gray-700'}>
+                    <span className={`text-xs sm:text-sm break-words min-w-0 leading-snug ${isSelected ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
                       {opt.optionText}
                     </span>
                   </button>
@@ -243,16 +236,11 @@ export default function QuizTakePage() {
         </Card>
       )}
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <Button
-          variant="outline"
-          disabled={currentIndex === 0}
-          onClick={() => setCurrentIndex((i) => i - 1)}
-        >
-          {t('common.previous')}
-        </Button>
-        <div className="flex gap-2">
+      {/* Bottom section — pushed to bottom on mobile */}
+      <div className="mt-auto sm:mt-0 space-y-3 sm:space-y-6 pt-2 sm:pt-0">
+        {/* Question dots — scrollable on mobile */}
+        <div className="overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex gap-1 sm:gap-2 justify-center min-w-max">
           {questions.map((_, i) => {
             const q = questions[i];
             const answered = answers[q.id]?.selectedOptionId || answers[q.id]?.textAnswer;
@@ -260,7 +248,7 @@ export default function QuizTakePage() {
               <button
                 key={q.id}
                 onClick={() => setCurrentIndex(i)}
-                className={`h-8 w-8 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                className={`h-6 w-6 sm:h-8 sm:w-8 rounded-full text-[10px] sm:text-xs font-medium transition-colors cursor-pointer shrink-0 ${
                   i === currentIndex
                     ? 'bg-blue-600 text-white'
                     : answered
@@ -273,13 +261,30 @@ export default function QuizTakePage() {
             );
           })}
         </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={currentIndex === 0}
+          onClick={() => setCurrentIndex((i) => i - 1)}
+          className="shrink-0 text-xs sm:text-sm h-8 sm:h-9"
+        >
+          {t('common.previous')}
+        </Button>
+        <span className="text-[10px] text-gray-400 sm:hidden">
+          {currentIndex + 1}/{questions.length}
+        </span>
         {currentIndex < questions.length - 1 ? (
-          <Button onClick={() => setCurrentIndex((i) => i + 1)}>{t('common.next')}</Button>
+          <Button size="sm" onClick={() => setCurrentIndex((i) => i + 1)} className="shrink-0 text-xs sm:text-sm h-8 sm:h-9">{t('common.next')}</Button>
         ) : (
-          <Button onClick={submitQuiz} loading={submitting} className="gap-2">
-            <Send size={16} /> {t('quiz.submit')}
+          <Button size="sm" onClick={submitQuiz} loading={submitting} className="gap-1.5 shrink-0 text-xs sm:text-sm h-8 sm:h-9">
+            <Send size={14} /> {t('quiz.submit')}
           </Button>
         )}
+      </div>
       </div>
     </div>
   );

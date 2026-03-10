@@ -53,50 +53,44 @@ export default function QuizHistoryPage() {
   const totalPages = Math.ceil(total / 10);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('quizHistory.title')}</h1>
-        <p className="text-gray-500">{t('quizHistory.subtitle')}</p>
+        <h1 className="text-lg sm:text-2xl font-bold text-gray-900">{t('quizHistory.title')}</h1>
+        <p className="text-xs sm:text-base text-gray-500">{t('quizHistory.subtitle')}</p>
       </div>
 
       {/* Stats */}
       {stats && (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <Card>
-            <CardContent className="flex items-center gap-4 py-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                <ClipboardList size={20} className="text-blue-600" />
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-blue-100 mb-1.5 sm:mb-2">
+                <ClipboardList size={16} className="text-blue-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalAttempts}</p>
-                <p className="text-sm text-gray-500">{t('quizHistory.totalAttempts')}</p>
-              </div>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalAttempts}</p>
+              <p className="text-[10px] sm:text-sm text-gray-500 leading-tight">{t('quizHistory.totalAttempts')}</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="flex items-center gap-4 py-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
-                <TrendingUp size={20} className="text-green-600" />
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-green-100 mb-1.5 sm:mb-2">
+                <TrendingUp size={16} className="text-green-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {Math.round(stats.averageScore)}%
-                </p>
-                <p className="text-sm text-gray-500">{t('quizHistory.averageScore')}</p>
-              </div>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900">
+                {Math.round(stats.averageScore)}%
+              </p>
+              <p className="text-[10px] sm:text-sm text-gray-500 leading-tight">{t('quizHistory.averageScore')}</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="flex items-center gap-4 py-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
-                <Trophy size={20} className="text-purple-600" />
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-purple-100 mb-1.5 sm:mb-2">
+                <Trophy size={16} className="text-purple-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats.subjectStats.length}
-                </p>
-                <p className="text-sm text-gray-500">{t('quizHistory.subjectsTested')}</p>
-              </div>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900">
+                {stats.subjectStats.length}
+              </p>
+              <p className="text-[10px] sm:text-sm text-gray-500 leading-tight">{t('quizHistory.subjectsTested')}</p>
             </CardContent>
           </Card>
         </div>
@@ -104,17 +98,17 @@ export default function QuizHistoryPage() {
 
       {/* Subject breakdown */}
       {stats && stats.subjectStats.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t('quizHistory.performanceBySubject')}</CardTitle>
+        <Card className="overflow-hidden">
+          <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
+            <CardTitle className="text-sm sm:text-base">{t('quizHistory.performanceBySubject')}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+            <div className="space-y-2.5 sm:space-y-3">
               {stats.subjectStats.map((ss) => (
-                <div key={ss.subjectId} className="flex items-center gap-4">
+                <div key={ss.subjectId} className="flex items-center gap-2.5 sm:gap-4">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{ss.subjectName}</p>
-                    <div className="mt-1 h-2 rounded-full bg-gray-200">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{ss.subjectName}</p>
+                    <div className="mt-1 h-1.5 sm:h-2 rounded-full bg-gray-200">
                       <div
                         className="h-full rounded-full bg-blue-600 transition-all"
                         style={{ width: `${Math.min(ss.averageScore, 100)}%` }}
@@ -122,8 +116,8 @@ export default function QuizHistoryPage() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-gray-900">{Math.round(ss.averageScore)}%</p>
-                    <p className="text-xs text-gray-400">{ss.totalAttempts} {t('quizHistory.attempts')}</p>
+                    <p className="text-xs sm:text-sm font-bold text-gray-900">{Math.round(ss.averageScore)}%</p>
+                    <p className="text-[10px] sm:text-xs text-gray-400">{ss.totalAttempts} {t('quizHistory.attempts')}</p>
                   </div>
                 </div>
               ))}
@@ -133,34 +127,34 @@ export default function QuizHistoryPage() {
       )}
 
       {/* Attempts list */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History size={18} />
+      <Card className="overflow-hidden">
+        <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
+          <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-lg">
+            <History size={15} />
             {t('quizHistory.recentAttempts')}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
           {loading ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-16 w-full" />
+                <Skeleton key={i} className="h-14 sm:h-16 w-full" />
               ))}
             </div>
           ) : attempts.length === 0 ? (
             <EmptyState
-              icon={<ClipboardList size={40} />}
+              icon={<ClipboardList size={36} />}
               title={t('quizHistory.noAttemptsYet')}
               description={t('quizHistory.noAttemptsDesc')}
               action={
                 <Link href="/subjects">
-                  <Button>{t('quizHistory.browseSubjects')}</Button>
+                  <Button size="sm">{t('quizHistory.browseSubjects')}</Button>
                 </Link>
               }
-              className="py-8"
+              className="py-6"
             />
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               {attempts.map((att) => {
                 const scoreVal = att.score ?? 0;
                 const scoreColor =
@@ -174,26 +168,26 @@ export default function QuizHistoryPage() {
                   <Link
                     key={att.id}
                     href={`/quizzes/${att.quizId}/results/${att.id}`}
-                    className="flex items-center gap-4 rounded-lg border border-gray-100 p-4 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2.5 sm:gap-4 rounded-lg border border-gray-100 p-2.5 sm:p-4 hover:bg-gray-50 transition-colors"
                   >
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${scoreColor} shrink-0`}>
-                      <CheckCircle2 size={18} />
+                    <div className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full ${scoreColor} shrink-0`}>
+                      <CheckCircle2 size={14} className="sm:hidden" />
+                      <CheckCircle2 size={18} className="hidden sm:block" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900">
+                      <p className="text-xs sm:text-base font-medium text-gray-900 line-clamp-1">
                         {att.quiz?.title || att.quizTitle || t('quizHistory.quiz')}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-[10px] sm:text-sm text-gray-500 line-clamp-1">
                         {att.subjectName || att.quiz?.subject?.name
                           ? <span className="text-blue-600">{att.subjectName || att.quiz?.subject?.name}</span>
                           : null}
-                        {(att.subjectName || att.quiz?.subject?.name) ? ' • ' : ''}
+                        {(att.subjectName || att.quiz?.subject?.name) ? ' · ' : ''}
                         {formatDate(att.startedAt)}
-                        {att.completedAt ? ` • ${t('quizHistory.completed')}` : ` • ${t('quizHistory.inProgress')}`}
-                        {att.totalQuestions ? ` • ${att.totalQuestions} ${t('quizHistory.questions')}` : ''}
+                        {att.totalQuestions ? ` · ${att.totalQuestions}q` : ''}
                       </p>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                       <Badge
                         variant={
                           scoreVal >= 80
@@ -202,10 +196,11 @@ export default function QuizHistoryPage() {
                             ? 'warning'
                             : 'destructive'
                         }
+                        className="text-[10px] sm:text-xs px-1.5 sm:px-2"
                       >
                         {formatScore(att.score)}
                       </Badge>
-                      <ArrowRight size={16} className="text-gray-400" />
+                      <ArrowRight size={14} className="text-gray-400 hidden sm:block" />
                     </div>
                   </Link>
                 );
@@ -215,23 +210,25 @@ export default function QuizHistoryPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-center gap-2">
+            <div className="mt-3 sm:mt-4 flex items-center justify-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 disabled={page <= 1}
                 onClick={() => loadData(page - 1)}
+                className="text-xs sm:text-sm"
               >
                 {t('common.previous')}
               </Button>
-              <span className="text-sm text-gray-500">
-                {t('quizHistory.pageOf', { page: String(page), totalPages: String(totalPages) })}
+              <span className="text-xs sm:text-sm text-gray-500">
+                {page}/{totalPages}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 disabled={page >= totalPages}
                 onClick={() => loadData(page + 1)}
+                className="text-xs sm:text-sm"
               >
                 {t('common.next')}
               </Button>

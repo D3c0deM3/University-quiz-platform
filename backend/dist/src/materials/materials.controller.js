@@ -57,19 +57,22 @@ let MaterialsController = class MaterialsController {
         this.processingQueue = processingQueue;
         this.subscriptionsService = subscriptionsService;
     }
-    async upload(file, subjectId, userId) {
+    async upload(file, subjectId, numQuestionsRaw, userId) {
         if (!file) {
             throw new common_1.BadRequestException('File is required');
         }
         if (!subjectId) {
             throw new common_1.BadRequestException('subjectId is required');
         }
+        const numQuestions = Math.max(parseInt(numQuestionsRaw, 10) || 10, 1);
         const material = await this.materialsService.upload(file, subjectId, userId);
         await this.processingQueue.add('process', {
             materialId: material.id,
             filePath: material.filePath,
             fileType: material.fileType,
             originalName: material.originalName,
+            numQuestions,
+            uploadedById: userId,
         }, {
             attempts: 3,
             backoff: { type: 'exponential', delay: 5000 },
@@ -169,9 +172,10 @@ __decorate([
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', multerOptions)),
     __param(0, (0, common_1.UploadedFile)()),
     __param(1, (0, common_1.Body)('subjectId')),
-    __param(2, (0, index_js_2.CurrentUser)('id')),
+    __param(2, (0, common_1.Body)('numQuestions')),
+    __param(3, (0, index_js_2.CurrentUser)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", Promise)
 ], MaterialsController.prototype, "upload", null);
 __decorate([

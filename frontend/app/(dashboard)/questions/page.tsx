@@ -74,31 +74,33 @@ export default function QuestionsPage() {
   const totalQuestions = subjectCounts.reduce((sum, sc) => sum + sc.questionCount, 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('questions.title')}</h1>
-          <p className="text-gray-500 mt-1">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900">{t('questions.title')}</h1>
+          <p className="text-xs sm:text-base text-gray-500 mt-1">
             {t('questions.subtitle')}
           </p>
         </div>
-        <Link href="/questions/create">
-          <Button>
-            <Plus size={16} className="mr-2" /> {t('questions.addQuestion')}
+        <Link href="/questions/create" className="shrink-0">
+          <Button size="sm" className="sm:size-default">
+            <Plus size={14} className="mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">{t('questions.addQuestion')}</span>
+            <span className="sm:hidden">{t('questions.addQuestion').split(' ')[0]}</span>
           </Button>
         </Link>
       </div>
 
       {/* Stats summary */}
       {!loading && subjectCounts.length > 0 && (
-        <div className="flex items-center gap-6 text-sm">
-          <div className="flex items-center gap-2 text-gray-600">
-            <BookOpen size={16} className="text-blue-500" />
+        <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600">
+            <BookOpen size={14} className="text-blue-500" />
             <span className="font-medium">{subjectCounts.length}</span> {t('questions.subjects')}
           </div>
-          <div className="flex items-center gap-2 text-gray-600">
-            <MessageSquare size={16} className="text-green-500" />
+          <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600">
+            <MessageSquare size={14} className="text-green-500" />
             <span className="font-medium">{totalQuestions}</span> {t('questions.approvedQuestions')}
           </div>
         </div>
@@ -123,7 +125,7 @@ export default function QuestionsPage() {
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {subjectCounts.map((sc, idx) => {
             const colors = CARD_COLORS[idx % CARD_COLORS.length];
             const hasAccess = subscribedIds.has(sc.subjectId);
@@ -133,18 +135,18 @@ export default function QuestionsPage() {
               return (
                 <div key={sc.subjectId}>
                   <Card className="relative overflow-hidden border-2 border-gray-200 opacity-70 h-full">
-                    <CardContent className="p-6 flex flex-col h-full">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-400 mb-4">
-                        <Lock size={22} />
+                    <CardContent className="p-4 sm:p-6 flex flex-col h-full">
+                      <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-400 mb-3 sm:mb-4">
+                        <Lock size={18} />
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">{sc.subjectName}</h3>
+                      <h3 className="text-sm sm:text-lg font-bold text-gray-900 mb-1">{sc.subjectName}</h3>
                       {sc.subjectDescription && (
-                        <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">{sc.subjectDescription}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2 mb-3 sm:mb-4 flex-1">{sc.subjectDescription}</p>
                       )}
                       {!sc.subjectDescription && <div className="flex-1" />}
-                      <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
-                        <span className="text-sm text-gray-400 flex items-center gap-1">
-                          <Lock size={12} /> {t('questions.subscribeToAccess')}
+                      <div className="flex items-center justify-between mt-auto pt-2 sm:pt-3 border-t border-gray-100">
+                        <span className="text-[10px] sm:text-sm text-gray-400 flex items-center gap-1">
+                          <Lock size={10} /> {t('questions.subscribeToAccess')}
                         </span>
                       </div>
                     </CardContent>
@@ -158,40 +160,40 @@ export default function QuestionsPage() {
                 <Card
                   className={`group relative overflow-hidden border-2 ${colors.border} transition-all hover:shadow-lg cursor-pointer h-full`}
                 >
-                  <CardContent className="p-6 flex flex-col h-full">
+                  <CardContent className="p-4 sm:p-6 flex flex-col h-full">
                     {/* Icon */}
                     <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-xl ${colors.icon} mb-4`}
+                      className={`flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl ${colors.icon} mb-3 sm:mb-4`}
                     >
-                      <BookOpen size={22} />
+                      <BookOpen size={18} />
                     </div>
 
                     {/* Subject Name */}
-                    <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-gray-700 transition-colors">
+                    <h3 className="text-sm sm:text-lg font-bold text-gray-900 mb-1 group-hover:text-gray-700 transition-colors">
                       {sc.subjectName}
                     </h3>
 
                     {/* Description */}
                     {sc.subjectDescription && (
-                      <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">
+                      <p className="text-xs sm:text-sm text-gray-500 line-clamp-2 mb-3 sm:mb-4 flex-1">
                         {sc.subjectDescription}
                       </p>
                     )}
                     {!sc.subjectDescription && <div className="flex-1" />}
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between mt-auto pt-2 sm:pt-3 border-t border-gray-100">
                       <div className="flex items-center gap-1.5">
-                        <MessageSquare size={14} className={colors.accent} />
-                        <span className={`text-sm font-semibold ${colors.accent}`}>
+                        <MessageSquare size={12} className={colors.accent} />
+                        <span className={`text-xs sm:text-sm font-semibold ${colors.accent}`}>
                           {sc.questionCount}
                         </span>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-xs sm:text-sm text-gray-500">
                           {t('questions.count')}
                         </span>
                       </div>
                       <ArrowRight
-                        size={16}
+                        size={14}
                         className="text-gray-400 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all"
                       />
                     </div>

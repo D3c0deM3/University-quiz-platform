@@ -58,134 +58,130 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
-        <p className="text-gray-500">
+        <h1 className="text-lg sm:text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+        <p className="text-xs sm:text-base text-gray-500 truncate">
           {t('dashboard.greeting', { name: user?.firstName || '' })}
         </p>
       </div>
 
       {/* Quick Search */}
       <Card>
-        <CardContent className="py-6">
-          <form onSubmit={handleSearch} className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+        <CardContent className="p-3 sm:py-6 sm:p-6">
+          <form onSubmit={handleSearch} className="flex gap-2 sm:gap-3">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <Input
                 placeholder={t('dashboard.searchPlaceholder')}
-                className="pl-10"
+                className="pl-9 sm:pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button type="submit">{t('common.search')}</Button>
+            <Button type="submit" size="sm" className="shrink-0 sm:size-default">{t('common.search')}</Button>
           </form>
         </CardContent>
       </Card>
 
       {/* Stats cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-              <ClipboardList size={20} className="text-blue-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-blue-100 shrink-0 mb-2">
+              <ClipboardList size={16} className="text-blue-600 sm:hidden" />
+              <ClipboardList size={20} className="text-blue-600 hidden sm:block" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">
-                {loading ? '—' : stats?.totalAttempts ?? 0}
-              </p>
-              <p className="text-sm text-gray-500">{t('dashboard.quizzesTaken')}</p>
-            </div>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">
+              {loading ? '—' : stats?.totalAttempts ?? 0}
+            </p>
+            <p className="text-[11px] sm:text-sm text-gray-500 leading-tight">{t('dashboard.quizzesTaken')}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
-              <TrendingUp size={20} className="text-green-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-green-100 shrink-0 mb-2">
+              <TrendingUp size={16} className="text-green-600 sm:hidden" />
+              <TrendingUp size={20} className="text-green-600 hidden sm:block" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">
-                {loading ? '—' : stats?.averageScore != null ? `${Math.round(stats.averageScore)}%` : '0%'}
-              </p>
-              <p className="text-sm text-gray-500">{t('dashboard.avgScore')}</p>
-            </div>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">
+              {loading ? '—' : stats?.averageScore != null ? `${Math.round(stats.averageScore)}%` : '0%'}
+            </p>
+            <p className="text-[11px] sm:text-sm text-gray-500 leading-tight">{t('dashboard.avgScore')}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
-              <BookOpen size={20} className="text-purple-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-purple-100 shrink-0 mb-2">
+              <BookOpen size={16} className="text-purple-600 sm:hidden" />
+              <BookOpen size={20} className="text-purple-600 hidden sm:block" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">
-                {loading ? '—' : Array.isArray(subjects) ? subjects.length : 0}
-              </p>
-              <p className="text-sm text-gray-500">{t('dashboard.subjects')}</p>
-            </div>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">
+              {loading ? '—' : Array.isArray(subjects) ? subjects.length : 0}
+            </p>
+            <p className="text-[11px] sm:text-sm text-gray-500 leading-tight">{t('dashboard.subjects')}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
-              <FileText size={20} className="text-orange-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-orange-100 shrink-0 mb-2">
+              <FileText size={16} className="text-orange-600 sm:hidden" />
+              <FileText size={20} className="text-orange-600 hidden sm:block" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">
-                {loading ? '—' : recentMaterials.length}
-              </p>
-              <p className="text-sm text-gray-500">{t('dashboard.recentMaterials')}</p>
-            </div>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">
+              {loading ? '—' : recentMaterials.length}
+            </p>
+            <p className="text-[11px] sm:text-sm text-gray-500 leading-tight">{t('dashboard.recentMaterials')}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Two-column: Recent Materials + Subjects */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Recent Materials */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{t('dashboard.recentMaterials')}</CardTitle>
-            <Link href="/search">
-              <Button variant="ghost" size="sm">
-                {t('common.viewAll')} <ArrowRight size={14} />
+        <Card className="overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 p-4 sm:p-6 pb-2 sm:pb-3">
+            <CardTitle className="text-sm sm:text-lg truncate">{t('dashboard.recentMaterials')}</CardTitle>
+            <Link href="/search" className="shrink-0">
+              <Button variant="ghost" size="sm" className="text-xs sm:text-sm h-8 px-2 sm:px-3">
+                {t('common.viewAll')} <ArrowRight size={12} />
               </Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
             {loading ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-14 w-full" />
+                  <Skeleton key={i} className="h-12 sm:h-14 w-full" />
                 ))}
               </div>
             ) : recentMaterials.length === 0 ? (
               <EmptyState
                 title={t('dashboard.noMaterials')}
                 description={t('dashboard.noMaterialsDesc')}
-                className="py-8"
+                className="py-6"
               />
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-1 sm:space-y-3">
                 {recentMaterials.map((m) => (
                   <Link
                     key={m.id}
                     href={`/materials/${m.id}`}
-                    className="flex items-center gap-3 rounded-lg p-3 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 sm:gap-3 rounded-lg p-2 sm:p-3 hover:bg-gray-50 transition-colors"
                   >
-                    <div className="flex h-9 w-9 items-center justify-center rounded bg-gray-100">
-                      <FileText size={16} className="text-gray-500" />
+                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded bg-gray-100 shrink-0">
+                      <FileText size={14} className="text-gray-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                         {m.metadata?.title || m.originalName}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-[10px] sm:text-xs text-gray-500 truncate">
                         {m.fileType.toUpperCase()} • {m.subject?.name || ''}
                       </p>
                     </div>
                     {m.metadata?.difficultyLevel && (
-                      <Badge variant="secondary" className="shrink-0">
+                      <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs px-1.5 sm:px-2 hidden xs:inline-flex">
                         {m.metadata.difficultyLevel}
                       </Badge>
                     )}
@@ -197,47 +193,47 @@ export default function DashboardPage() {
         </Card>
 
         {/* Subjects */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{t('dashboard.subjects')}</CardTitle>
-            <Link href="/subjects">
-              <Button variant="ghost" size="sm">
-                {t('common.viewAll')} <ArrowRight size={14} />
+        <Card className="overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 p-4 sm:p-6 pb-2 sm:pb-3">
+            <CardTitle className="text-sm sm:text-lg truncate">{t('dashboard.subjects')}</CardTitle>
+            <Link href="/subjects" className="shrink-0">
+              <Button variant="ghost" size="sm" className="text-xs sm:text-sm h-8 px-2 sm:px-3">
+                {t('common.viewAll')} <ArrowRight size={12} />
               </Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
             {loading ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-14 w-full" />
+                  <Skeleton key={i} className="h-12 sm:h-14 w-full" />
                 ))}
               </div>
             ) : !Array.isArray(subjects) || subjects.length === 0 ? (
               <EmptyState
                 title={t('dashboard.noSubjects')}
                 description={t('dashboard.noSubjectsDesc')}
-                className="py-8"
+                className="py-6"
               />
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-2">
                 {subjects.map((s) => (
                   <Link
                     key={s.id}
                     href={`/subjects/${s.id}`}
-                    className="flex items-center gap-3 rounded-lg p-3 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 sm:gap-3 rounded-lg p-2 sm:p-3 hover:bg-gray-50 transition-colors"
                   >
-                    <div className="flex h-9 w-9 items-center justify-center rounded bg-blue-50">
-                      <BookOpen size={16} className="text-blue-600" />
+                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded bg-blue-50 shrink-0">
+                      <BookOpen size={14} className="text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{s.name}</p>
+                      <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{s.name}</p>
                       {s.description && (
-                        <p className="text-xs text-gray-500 truncate">{s.description}</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500 truncate">{s.description}</p>
                       )}
                     </div>
                     {s.code && (
-                      <Badge variant="outline" className="shrink-0">
+                      <Badge variant="outline" className="shrink-0 text-[10px] sm:text-xs px-1.5 sm:px-2 hidden xs:inline-flex">
                         {s.code}
                       </Badge>
                     )}
@@ -251,34 +247,34 @@ export default function DashboardPage() {
 
       {/* Subject Stats */}
       {stats && stats.subjectStats.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('dashboard.title')}</CardTitle>
+        <Card className="overflow-hidden">
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
+            <CardTitle className="text-sm sm:text-lg">{t('dashboard.title')}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+            <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {stats.subjectStats.map((ss) => (
                 <div
                   key={ss.subjectId}
-                  className="rounded-lg border border-gray-200 p-4"
+                  className="rounded-lg border border-gray-200 p-3 sm:p-4"
                 >
-                  <p className="font-medium text-gray-900">{ss.subjectName}</p>
-                  <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                  <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{ss.subjectName}</p>
+                  <div className="mt-2 grid grid-cols-3 gap-1 sm:gap-2 text-center">
                     <div>
-                      <p className="text-lg font-bold text-blue-600">{ss.totalAttempts}</p>
-                      <p className="text-xs text-gray-500">{t('dashboard.quizzesTaken')}</p>
+                      <p className="text-sm sm:text-lg font-bold text-blue-600">{ss.totalAttempts}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500">{t('dashboard.quizzesTaken')}</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-green-600">
+                      <p className="text-sm sm:text-lg font-bold text-green-600">
                         {Math.round(ss.averageScore)}%
                       </p>
-                      <p className="text-xs text-gray-500">{t('dashboard.avgScore')}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500">{t('dashboard.avgScore')}</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-purple-600">
+                      <p className="text-sm sm:text-lg font-bold text-purple-600">
                         {Math.round(ss.bestScore)}%
                       </p>
-                      <p className="text-xs text-gray-500">{t('common.explore')}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500">{t('common.explore')}</p>
                     </div>
                   </div>
                 </div>

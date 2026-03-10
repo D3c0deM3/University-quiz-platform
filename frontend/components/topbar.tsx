@@ -53,16 +53,15 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           <p className="text-sm text-gray-500 capitalize">{user?.role?.toLowerCase() || ''}</p>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        {/* Language Switcher */}
-        <div className="relative" ref={langRef}>
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Language Switcher — hidden on mobile */}
+        <div className="relative hidden sm:block" ref={langRef}>
           <button
             onClick={() => setLangOpen(!langOpen)}
             className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
           >
             <Globe size={16} />
-            <span className="hidden sm:inline">{currentLang.flag} {currentLang.label}</span>
-            <span className="sm:hidden">{currentLang.flag}</span>
+            <span>{currentLang.flag} {currentLang.label}</span>
           </button>
           {langOpen && (
             <div className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg z-50">
@@ -86,11 +85,13 @@ export function Topbar({ onMenuClick }: TopbarProps) {
             </div>
           )}
         </div>
-        <button className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer">
+        {/* Bell — hidden on mobile */}
+        <button className="hidden sm:block rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer">
           <Bell size={20} />
         </button>
-        <div className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+        {/* User avatar — always show icon, name only on sm+ */}
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 px-2 py-1.5 sm:px-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 shrink-0">
             <User size={16} />
           </div>
           <div className="hidden sm:block">

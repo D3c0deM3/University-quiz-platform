@@ -151,50 +151,54 @@ export default function SubjectQuestionsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
       {/* Back + Header */}
       <Link
         href="/questions"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+        className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 hover:text-gray-700"
       >
-        <ArrowLeft size={14} /> {t('questions.backToQABank')}
+        <ArrowLeft size={12} /> {t('questions.backToQABank')}
       </Link>
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-base sm:text-2xl font-bold text-gray-900 leading-tight">
             {subject?.name || t('subjects.title')} — {t('questions.qa')}
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-xs sm:text-base text-gray-500 mt-1 line-clamp-2">
             {subject?.description || t('questions.browseQA')}
           </p>
         </div>
-        <Link href="/questions/create">
-          <Button>
-            <Plus size={16} className="mr-2" /> {t('questions.addQuestion')}
+        <Link href="/questions/create" className="shrink-0">
+          <Button size="sm" className="sm:size-default">
+            <Plus size={14} className="mr-1" />
+            <span className="hidden sm:inline">{t('questions.addQuestion')}</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </Link>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <form onSubmit={handleSearch} className="relative flex-1 min-w-[200px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
+        <form onSubmit={handleSearch} className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <Input
             placeholder={t('questions.searchPlaceholder')}
-            className="pl-10"
+            className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </form>
-        <Button
-          variant={showMine ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setShowMine(!showMine)}
-        >
-          <User size={14} className="mr-1" /> {t('questions.myQuestions')}
-        </Button>
-        <span className="text-sm text-gray-500">{total} {t('questions.count')}</span>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={showMine ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowMine(!showMine)}
+          >
+            <User size={12} className="mr-1" /> {t('questions.myQuestions')}
+          </Button>
+          <span className="text-xs sm:text-sm text-gray-500">{total} {t('questions.count')}</span>
+        </div>
       </div>
 
       {/* Questions */}
@@ -220,7 +224,7 @@ export default function SubjectQuestionsPage() {
           }
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {questions.map((q, idx) => {
             const isExpanded = expandedId === q.id;
             const isEditing = editingId === q.id;
@@ -233,7 +237,7 @@ export default function SubjectQuestionsPage() {
                 <CardContent className="p-0">
                   {/* Question header row */}
                   <div
-                    className={`flex items-start gap-4 p-5 cursor-pointer ${
+                    className={`flex items-start gap-2.5 sm:gap-4 p-3 sm:p-5 cursor-pointer ${
                       isExpanded && !isEditing ? 'border-b border-gray-100' : ''
                     }`}
                     onClick={() => {
@@ -241,17 +245,17 @@ export default function SubjectQuestionsPage() {
                     }}
                   >
                     {/* Number badge */}
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold shrink-0">
+                    <div className="flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-blue-600 text-white text-xs sm:text-sm font-bold shrink-0">
                       {(page - 1) * 20 + idx + 1}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 text-[15px] leading-snug">
+                      <p className="font-medium sm:font-semibold text-gray-900 text-[13px] sm:text-[15px] leading-snug break-words">
                         {q.questionText}
                       </p>
-                      <div className="mt-2 flex items-center gap-3 text-xs text-gray-400">
+                      <div className="mt-1.5 sm:mt-2 flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-400">
                         <span className="flex items-center gap-1">
-                          <User size={12} />
+                          <User size={10} />
                           {q.createdBy?.firstName} {q.createdBy?.lastName}
                         </span>
                         <span>
@@ -259,74 +263,74 @@ export default function SubjectQuestionsPage() {
                         </span>
                         {q.imagePath && (
                           <span className="flex items-center gap-1 text-blue-500">
-                            <Image size={12} /> {t('questions.hasImage')}
+                            <Image size={10} /> {t('questions.hasImage')}
                           </span>
                         )}
                       </div>
                     </div>
 
                     {/* Actions + expand indicator */}
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                       {canEditOrDelete(q) && !isEditing && (
                         <>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-gray-400 hover:bg-blue-50 hover:text-blue-600"
+                            className="text-gray-400 hover:bg-blue-50 hover:text-blue-600 h-7 w-7 sm:h-8 sm:w-8 p-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               startEdit(q);
                             }}
                             title={t('common.edit')}
                           >
-                            <Pencil size={14} />
+                            <Pencil size={12} />
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-gray-400 hover:bg-red-50 hover:text-red-600"
+                            className="text-gray-400 hover:bg-red-50 hover:text-red-600 h-7 w-7 sm:h-8 sm:w-8 p-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(q.id);
                             }}
                             title={t('common.delete')}
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={12} />
                           </Button>
                         </>
                       )}
                       {!isEditing &&
                         (isExpanded ? (
-                          <ChevronUp size={18} className="text-gray-400 ml-1" />
+                          <ChevronUp size={16} className="text-gray-400 ml-0.5" />
                         ) : (
-                          <ChevronDown size={18} className="text-gray-400 ml-1" />
+                          <ChevronDown size={16} className="text-gray-400 ml-0.5" />
                         ))}
                     </div>
                   </div>
 
                   {/* Expanded: Answer + Image */}
                   {isExpanded && !isEditing && (
-                    <div className="p-5 pt-4 bg-gradient-to-b from-gray-50/80 to-white space-y-4">
-                      <div className="rounded-xl bg-green-50 border border-green-200 p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <MessageSquare size={14} className="text-green-600" />
-                          <p className="text-xs font-semibold text-green-700 uppercase tracking-wider">
+                    <div className="p-3 sm:p-5 pt-2 sm:pt-4 bg-gradient-to-b from-gray-50/80 to-white space-y-3 sm:space-y-4">
+                      <div className="rounded-lg sm:rounded-xl bg-green-50 border border-green-200 p-3 sm:p-4">
+                        <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                          <MessageSquare size={12} className="text-green-600" />
+                          <p className="text-[10px] sm:text-xs font-semibold text-green-700 uppercase tracking-wider">
                             {t('questions.answer')}
                           </p>
                         </div>
-                        <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">
+                        <p className="text-xs sm:text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                           {q.answerText}
                         </p>
                       </div>
                       {q.imagePath && (
                         <div>
-                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                          <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                             {t('questions.attachedImage')}
                           </p>
                           <img
                             src={`${API_BASE}/uploads/question-images/${q.imagePath.split('/').pop()}`}
                             alt="Question"
-                            className="max-w-full max-h-72 rounded-xl border shadow-sm"
+                            className="max-w-full max-h-48 sm:max-h-72 rounded-lg sm:rounded-xl border shadow-sm"
                           />
                         </div>
                       )}
@@ -336,36 +340,38 @@ export default function SubjectQuestionsPage() {
                   {/* Edit mode */}
                   {isEditing && (
                     <div
-                      className="p-5 pt-0 space-y-3"
+                      className="p-3 sm:p-5 pt-0 space-y-2 sm:space-y-3"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                        <label className="block text-[10px] sm:text-xs font-medium text-gray-500 mb-1">
                           {t('questions.question')}
                         </label>
                         <Textarea
                           value={editQuestion}
                           onChange={(e) => setEditQuestion(e.target.value)}
                           rows={2}
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                        <label className="block text-[10px] sm:text-xs font-medium text-gray-500 mb-1">
                           {t('questions.answer')}
                         </label>
                         <Textarea
                           value={editAnswer}
                           onChange={(e) => setEditAnswer(e.target.value)}
-                          rows={4}
+                          rows={3}
+                          className="text-sm"
                         />
                       </div>
                       <div className="flex items-center gap-2">
                         <Button size="sm" onClick={handleSaveEdit} disabled={editSaving}>
-                          <Save size={14} className="mr-1" />{' '}
+                          <Save size={12} className="mr-1" />{' '}
                           {editSaving ? t('questions.saving') : t('common.save')}
                         </Button>
                         <Button size="sm" variant="outline" onClick={cancelEdit}>
-                          <X size={14} className="mr-1" /> {t('common.cancel')}
+                          <X size={12} className="mr-1" /> {t('common.cancel')}
                         </Button>
                       </div>
                     </div>
@@ -385,19 +391,21 @@ export default function SubjectQuestionsPage() {
             size="sm"
             disabled={page <= 1}
             onClick={() => load(page - 1)}
+            className="text-xs sm:text-sm"
           >
-            <ChevronLeft size={14} className="mr-1" /> {t('common.previous')}
+            <ChevronLeft size={12} className="mr-0.5" /> {t('common.previous')}
           </Button>
-          <span className="text-sm text-gray-600">
-            {t('common.page')} {page} {t('common.of')} {totalPages}
+          <span className="text-xs sm:text-sm text-gray-600">
+            {page}/{totalPages}
           </span>
           <Button
             variant="outline"
             size="sm"
             disabled={page >= totalPages}
             onClick={() => load(page + 1)}
+            className="text-xs sm:text-sm"
           >
-            {t('common.next')} <ChevronRight size={14} className="ml-1" />
+            {t('common.next')} <ChevronRight size={12} className="ml-0.5" />
           </Button>
         </div>
       )}

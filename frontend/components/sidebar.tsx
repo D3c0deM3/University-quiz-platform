@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { useLanguageStore, type Language } from '@/stores/language-store';
 import {
   LayoutDashboard,
   BookOpen,
@@ -21,8 +22,15 @@ import {
   ChevronRight,
   HelpCircle,
   CreditCard,
+  Globe,
 } from 'lucide-react';
 import { useState } from 'react';
+
+const languageOptions: { code: Language; label: string; flag: string }[] = [
+  { code: 'en', label: 'English', flag: '🇬🇧' },
+  { code: 'uz', label: "O'zbekcha", flag: '🇺🇿' },
+  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
+];
 
 interface NavItem {
   href: string;
@@ -52,6 +60,7 @@ export function Sidebar({ onNavClick }: { onNavClick?: () => void } = {}) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const { t } = useTranslation();
+  const { language, setLanguage } = useLanguageStore();
   const [collapsed, setCollapsed] = useState(false);
 
   const filteredItems = navItems.filter(
@@ -114,6 +123,28 @@ export function Sidebar({ onNavClick }: { onNavClick?: () => void } = {}) {
 
       {/* Footer */}
       <div className="border-t border-gray-200 p-2 space-y-1">
+        {/* Language switcher — mobile only */}
+        {!collapsed && (
+          <div className="lg:hidden px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">{t('topbar.language') || 'Language'}</p>
+            <div className="flex gap-1">
+              {languageOptions.map((opt) => (
+                <button
+                  key={opt.code}
+                  onClick={() => setLanguage(opt.code)}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors cursor-pointer',
+                    language === opt.code
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-600 hover:bg-gray-50 border border-gray-200',
+                  )}
+                >
+                  <span>{opt.flag}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 cursor-pointer"

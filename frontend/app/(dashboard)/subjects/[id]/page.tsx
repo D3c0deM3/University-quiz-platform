@@ -105,37 +105,37 @@ export default function SubjectDetailPage() {
         <div>
           <Link
             href="/subjects"
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2"
+            className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 hover:text-gray-700 mb-2"
           >
-            <ArrowLeft size={14} /> {t('subjectDetail.back')}
+            <ArrowLeft size={12} /> {t('subjectDetail.back')}
           </Link>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">{subject.name}</h1>
-            {subject.code && <Badge variant="outline">{subject.code}</Badge>}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900">{subject.name}</h1>
+            {subject.code && <Badge variant="outline" className="text-[10px] sm:text-xs shrink-0">{subject.code}</Badge>}
           </div>
           {subject.description && (
-            <p className="mt-1 text-gray-500">{subject.description}</p>
+            <p className="mt-1 text-xs sm:text-base text-gray-500">{subject.description}</p>
           )}
         </div>
 
         <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50">
-          <CardContent className="py-12 text-center space-y-6">
+          <CardContent className="py-8 sm:py-12 text-center space-y-4 sm:space-y-6 px-4 sm:px-6">
             <div className="flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-                <Lock size={28} className="text-amber-600" />
+              <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-amber-100">
+                <Lock size={22} className="text-amber-600" />
               </div>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">{t('subjectDetail.subscriptionRequired')}</h2>
-              <p className="mt-2 text-gray-600 max-w-md mx-auto">
+              <h2 className="text-base sm:text-xl font-bold text-gray-900">{t('subjectDetail.subscriptionRequired')}</h2>
+              <p className="mt-1.5 sm:mt-2 text-xs sm:text-base text-gray-600 max-w-md mx-auto">
                 {t('subjectDetail.subscriptionDesc', { name: subject.name })}
               </p>
             </div>
 
-            <div className="rounded-xl bg-white border border-amber-200 p-6 max-w-sm mx-auto space-y-4">
+            <div className="rounded-xl bg-white border border-amber-200 p-4 sm:p-6 max-w-sm mx-auto space-y-3 sm:space-y-4">
               <div className="text-center">
-                <p className="text-3xl font-bold text-gray-900">{t('subjectDetail.price')}</p>
-                <p className="text-sm text-gray-500">{t('subjectDetail.priceDesc')}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{t('subjectDetail.price')}</p>
+                <p className="text-[10px] sm:text-sm text-gray-500">{t('subjectDetail.priceDesc')}</p>
               </div>
               <ul className="text-sm text-gray-600 space-y-2 text-left">
                 <li className="flex items-center gap-2">
@@ -187,73 +187,58 @@ export default function SubjectDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <Link
           href="/subjects"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2"
+          className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 hover:text-gray-700 mb-2"
         >
-          <ArrowLeft size={14} /> {t('subjectDetail.back')}
+          <ArrowLeft size={12} /> {t('subjectDetail.back')}
         </Link>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">{subject.name}</h1>
-          {subject.code && <Badge variant="outline">{subject.code}</Badge>}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900">{subject.name}</h1>
+          {subject.code && <Badge variant="outline" className="text-[10px] sm:text-xs shrink-0">{subject.code}</Badge>}
         </div>
         {subject.description && (
-          <p className="mt-1 text-gray-500">{subject.description}</p>
+          <p className="mt-1 text-xs sm:text-base text-gray-500">{subject.description}</p>
         )}
       </div>
 
       {/* Materials */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText size={18} />
+      <Card className="overflow-hidden">
+        <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
+          <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-lg">
+            <FileText size={15} />
             {t('subjectDetail.materials')} ({materials.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
           {materials.length === 0 ? (
             <EmptyState
               title={t('subjectDetail.noMaterialsTitle')}
               description={t('subjectDetail.noMaterialsDesc')}
-              className="py-8"
+              className="py-6"
             />
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               {materials.map((m) => (
                 <Link
                   key={m.id}
                   href={`/materials/${m.id}`}
-                  className="flex items-center gap-3 rounded-lg border border-gray-100 p-4 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 sm:gap-3 rounded-lg border border-gray-100 p-2.5 sm:p-4 hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded bg-gray-100">
-                    <FileText size={18} className="text-gray-500" />
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded bg-gray-100 shrink-0">
+                    <FileText size={14} className="text-gray-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900">
+                    <p className="text-xs sm:text-base font-medium text-gray-900 line-clamp-2 sm:line-clamp-1 leading-snug">
                       {m.metadata?.title || m.originalName}
                     </p>
                     {m.metadata?.summary && (
-                      <p className="text-sm text-gray-500 line-clamp-1">{m.metadata.summary}</p>
+                      <p className="text-[10px] sm:text-sm text-gray-500 line-clamp-1 mt-0.5">{m.metadata.summary}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="secondary">{m.fileType.toUpperCase()}</Badge>
-                    {m.metadata?.difficultyLevel && (
-                      <Badge
-                        variant={
-                          m.metadata.difficultyLevel === 'BEGINNER'
-                            ? 'success'
-                            : m.metadata.difficultyLevel === 'INTERMEDIATE'
-                            ? 'warning'
-                            : 'destructive'
-                        }
-                      >
-                        {m.metadata.difficultyLevel}
-                      </Badge>
-                    )}
-                  </div>
+                  <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs">{m.fileType.toUpperCase()}</Badge>
                 </Link>
               ))}
             </div>
@@ -262,38 +247,38 @@ export default function SubjectDetailPage() {
       </Card>
 
       {/* Quizzes */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ClipboardList size={18} />
+      <Card className="overflow-hidden">
+        <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
+          <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-lg">
+            <ClipboardList size={15} />
             {t('subjectDetail.quizzes')} ({quizzes.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
           {quizzes.length === 0 ? (
             <EmptyState
               title={t('subjectDetail.noQuizzes')}
               description={t('subjectDetail.noQuizzesDesc')}
-              className="py-8"
+              className="py-6"
             />
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               {quizzes.map((q) => (
                 <div
                   key={q.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-100 p-4"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5 sm:p-4"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900">{q.title}</p>
+                    <p className="text-xs sm:text-base font-medium text-gray-900 line-clamp-2 leading-snug">{q.title}</p>
                     {q.description && (
-                      <p className="text-sm text-gray-500 line-clamp-1">{q.description}</p>
+                      <p className="text-[10px] sm:text-sm text-gray-500 line-clamp-1 mt-0.5">{q.description}</p>
                     )}
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">
                       {q._count?.questions ?? 0} {t('subjectDetail.questionCount')}
                     </p>
                   </div>
-                  <Link href={`/quizzes/${q.id}`}>
-                    <Button size="sm">{t('subjectDetail.takeQuiz')}</Button>
+                  <Link href={`/quizzes/${q.id}`} className="shrink-0">
+                    <Button size="sm" className="text-xs sm:text-sm h-7 sm:h-9 px-2.5 sm:px-4">{t('subjectDetail.takeQuiz')}</Button>
                   </Link>
                 </div>
               ))}

@@ -12,18 +12,18 @@ export declare class QuestionsController {
             name: string;
         };
         createdBy: {
+            id: string;
             firstName: string;
             lastName: string;
-            id: string;
             role: import("@prisma/client").$Enums.Role;
         };
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
-        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -35,18 +35,18 @@ export declare class QuestionsController {
                 name: string;
             };
             createdBy: {
+                id: string;
                 firstName: string;
                 lastName: string;
-                id: string;
                 role: import("@prisma/client").$Enums.Role;
             };
         } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            questionText: string;
             status: import("@prisma/client").$Enums.QuestionStatus;
             subjectId: string;
-            questionText: string;
             answerText: string;
             imagePath: string | null;
             createdById: string;
@@ -76,18 +76,18 @@ export declare class QuestionsController {
             name: string;
         };
         createdBy: {
+            id: string;
             firstName: string;
             lastName: string;
-            id: string;
             role: import("@prisma/client").$Enums.Role;
         };
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
-        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -98,18 +98,18 @@ export declare class QuestionsController {
             name: string;
         };
         createdBy: {
+            id: string;
             firstName: string;
             lastName: string;
-            id: string;
             role: import("@prisma/client").$Enums.Role;
         };
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
-        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -123,18 +123,18 @@ export declare class QuestionsController {
             name: string;
         };
         createdBy: {
+            id: string;
             firstName: string;
             lastName: string;
-            id: string;
             role: import("@prisma/client").$Enums.Role;
         };
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
-        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -153,11 +153,11 @@ export declare class QuestionsController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            subjectId: string;
-            description: string | null;
-            materialId: string | null;
             title: string;
+            description: string | null;
             isPublished: boolean;
+            subjectId: string;
+            materialId: string | null;
         }) | null;
     }>;
 }
