@@ -50,13 +50,13 @@ export declare class AuthController {
     }>;
     getProfile(userId: string): Promise<{
         id: string;
-        email: string;
         phone: string | null;
+        createdAt: Date;
+        email: string;
         firstName: string;
         lastName: string;
         role: import("@prisma/client").$Enums.Role;
         isActive: boolean;
-        createdAt: Date;
     }>;
     refresh(userId: string): Promise<{
         accessToken: string;

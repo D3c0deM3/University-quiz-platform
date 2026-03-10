@@ -8,8 +8,8 @@ export declare class QuestionsController {
     constructor(questionsService: QuestionsService, subscriptionsService: SubscriptionsService);
     create(dto: CreateQuestionDto, userId: string, userRole: Role, image?: Express.Multer.File): Promise<{
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
         createdBy: {
             id: string;
@@ -21,9 +21,9 @@ export declare class QuestionsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -31,8 +31,8 @@ export declare class QuestionsController {
     findAll(userId: string, userRole: Role, page: number, limit: number, subjectId?: string, status?: QuestionStatus, search?: string, mine?: string): Promise<{
         data: ({
             subject: {
-                id: string;
                 name: string;
+                id: string;
             };
             createdBy: {
                 id: string;
@@ -44,9 +44,9 @@ export declare class QuestionsController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            questionText: string;
             status: import("@prisma/client").$Enums.QuestionStatus;
             subjectId: string;
+            questionText: string;
             answerText: string;
             imagePath: string | null;
             createdById: string;
@@ -72,8 +72,8 @@ export declare class QuestionsController {
     }[]>;
     findOne(id: string, userId: string, role: Role): Promise<{
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
         createdBy: {
             id: string;
@@ -85,17 +85,17 @@ export declare class QuestionsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
     }>;
     update(id: string, dto: UpdateQuestionDto, userId: string, userRole: Role, image?: Express.Multer.File): Promise<{
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
         createdBy: {
             id: string;
@@ -107,9 +107,9 @@ export declare class QuestionsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -119,8 +119,8 @@ export declare class QuestionsController {
     }>;
     review(id: string, dto: ReviewQuestionDto): Promise<{
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
         createdBy: {
             id: string;
@@ -132,9 +132,9 @@ export declare class QuestionsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -143,21 +143,21 @@ export declare class QuestionsController {
         message: string;
         quiz: ({
             subject: {
-                id: string;
                 name: string;
+                id: string;
             };
             _count: {
                 questions: number;
             };
         } & {
+            title: string;
+            description: string | null;
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            title: string;
-            description: string | null;
-            isPublished: boolean;
             subjectId: string;
             materialId: string | null;
+            isPublished: boolean;
         }) | null;
     }>;
 }

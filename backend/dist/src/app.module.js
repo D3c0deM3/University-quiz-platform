@@ -43,12 +43,24 @@ exports.AppModule = AppModule = __decorate([
             bullmq_1.BullModule.forRootAsync({
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
-                useFactory: (config) => ({
-                    connection: {
-                        host: config.get('REDIS_HOST', 'localhost'),
-                        port: config.get('REDIS_PORT', 6379),
-                    },
-                }),
+                useFactory: (config) => {
+                    const redisUrl = config.get('REDIS_URL');
+                    if (redisUrl) {
+                        return {
+                            connection: {
+                                url: redisUrl,
+                                tls: redisUrl.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
+                                maxRetriesPerRequest: null,
+                            },
+                        };
+                    }
+                    return {
+                        connection: {
+                            host: config.get('REDIS_HOST', 'localhost'),
+                            port: config.get('REDIS_PORT', 6379),
+                        },
+                    };
+                },
             }),
             prisma_module_js_1.PrismaModule,
             auth_module_js_1.AuthModule,

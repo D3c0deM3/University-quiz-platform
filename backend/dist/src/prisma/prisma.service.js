@@ -19,7 +19,12 @@ const adapter_pg_1 = require("@prisma/adapter-pg");
 const pg_1 = __importDefault(require("pg"));
 let PrismaService = class PrismaService extends client_1.PrismaClient {
     constructor() {
-        const pool = new pg_1.default.Pool({ connectionString: process.env.DATABASE_URL });
+        const connectionString = process.env.DATABASE_URL;
+        const isHeroku = connectionString?.includes('.amazonaws.com');
+        const pool = new pg_1.default.Pool({
+            connectionString,
+            ...(isHeroku && { ssl: { rejectUnauthorized: false } }),
+        });
         const adapter = new adapter_pg_1.PrismaPg(pool);
         super({ adapter });
     }

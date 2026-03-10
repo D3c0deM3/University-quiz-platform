@@ -9,8 +9,8 @@ export declare class QuestionsService {
     constructor(prisma: PrismaService, configService: ConfigService);
     create(dto: CreateQuestionDto, userId: string, userRole: Role, imagePath?: string): Promise<{
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
         createdBy: {
             id: string;
@@ -22,9 +22,9 @@ export declare class QuestionsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -37,8 +37,8 @@ export declare class QuestionsService {
     }): Promise<{
         data: ({
             subject: {
-                id: string;
                 name: string;
+                id: string;
             };
             createdBy: {
                 id: string;
@@ -50,9 +50,9 @@ export declare class QuestionsService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            questionText: string;
             status: import("@prisma/client").$Enums.QuestionStatus;
             subjectId: string;
+            questionText: string;
             answerText: string;
             imagePath: string | null;
             createdById: string;
@@ -66,8 +66,8 @@ export declare class QuestionsService {
     }>;
     findOne(id: string): Promise<{
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
         createdBy: {
             id: string;
@@ -79,17 +79,17 @@ export declare class QuestionsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
     }>;
     update(id: string, dto: UpdateQuestionDto, userId: string, userRole: Role, imagePath?: string): Promise<{
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
         createdBy: {
             id: string;
@@ -101,9 +101,9 @@ export declare class QuestionsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -113,8 +113,8 @@ export declare class QuestionsService {
     }>;
     review(id: string, status: QuestionStatus): Promise<{
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
         createdBy: {
             id: string;
@@ -126,9 +126,9 @@ export declare class QuestionsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        questionText: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -137,21 +137,21 @@ export declare class QuestionsService {
         message: string;
         quiz: ({
             subject: {
-                id: string;
                 name: string;
+                id: string;
             };
             _count: {
                 questions: number;
             };
         } & {
+            title: string;
+            description: string | null;
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            title: string;
-            description: string | null;
-            isPublished: boolean;
             subjectId: string;
             materialId: string | null;
+            isPublished: boolean;
         }) | null;
     }>;
     private callGeminiForMCQs;

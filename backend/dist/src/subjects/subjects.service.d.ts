@@ -4,12 +4,12 @@ export declare class SubjectsService {
     private prisma;
     constructor(prisma: PrismaService);
     create(dto: CreateSubjectDto): Promise<{
+        description: string | null;
+        name: string;
         id: string;
+        code: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        code: string | null;
-        description: string | null;
     }>;
     findAll(page?: number, limit?: number, search?: string): Promise<{
         data: ({
@@ -18,12 +18,12 @@ export declare class SubjectsService {
                 quizzes: number;
             };
         } & {
+            description: string | null;
+            name: string;
             id: string;
+            code: string | null;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
-            code: string | null;
-            description: string | null;
         })[];
         meta: {
             total: number;
@@ -38,20 +38,20 @@ export declare class SubjectsService {
             quizzes: number;
         };
     } & {
+        description: string | null;
+        name: string;
         id: string;
+        code: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        code: string | null;
-        description: string | null;
     }>;
     update(id: string, dto: UpdateSubjectDto): Promise<{
+        description: string | null;
+        name: string;
         id: string;
+        code: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        code: string | null;
-        description: string | null;
     }>;
     remove(id: string): Promise<{
         message: string;

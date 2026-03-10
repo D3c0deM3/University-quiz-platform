@@ -10,14 +10,14 @@ export declare class QuizzesService {
                 questions: number;
             };
         } & {
+            title: string;
+            description: string | null;
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            title: string;
-            description: string | null;
-            isPublished: boolean;
             subjectId: string;
             materialId: string | null;
+            isPublished: boolean;
         })[];
         meta: {
             total: number;
@@ -28,44 +28,44 @@ export declare class QuizzesService {
     }>;
     findOne(quizId: string): Promise<{
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
         _count: {
             questions: number;
         };
         questions: {
-            id: string;
             options: {
                 id: string;
-                optionText: string;
                 orderIndex: number;
+                optionText: string;
             }[];
+            id: string;
             orderIndex: number;
             questionText: string;
             questionType: import("@prisma/client").$Enums.QuestionType;
         }[];
     } & {
+        title: string;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
-        description: string | null;
-        isPublished: boolean;
         subjectId: string;
         materialId: string | null;
+        isPublished: boolean;
     }>;
     startAttempt(quizId: string, userId: string): Promise<{
         quiz: {
-            id: string;
             title: string;
+            id: string;
             questions: {
-                id: string;
                 options: {
                     id: string;
-                    optionText: string;
                     orderIndex: number;
+                    optionText: string;
                 }[];
+                id: string;
                 orderIndex: number;
                 questionText: string;
                 questionType: import("@prisma/client").$Enums.QuestionType;
@@ -96,9 +96,9 @@ export declare class QuizzesService {
         quizId: string;
         userId: string;
         quiz: {
-            id: string;
             title: string;
             description: string | null;
+            id: string;
         };
         score: number | null;
         totalPoints: number | null;
@@ -150,8 +150,8 @@ export declare class QuizzesService {
                 id: string;
                 title: string;
                 subject: {
-                    id: string;
                     name: string;
+                    id: string;
                 };
                 _count: {
                     questions: number;

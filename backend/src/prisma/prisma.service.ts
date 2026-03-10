@@ -9,7 +9,12 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+    const connectionString = process.env.DATABASE_URL;
+    const isHeroku = connectionString?.includes('.amazonaws.com');
+    const pool = new pg.Pool({
+      connectionString,
+      ...(isHeroku && { ssl: { rejectUnauthorized: false } }),
+    });
     const adapter = new PrismaPg(pool);
     super({ adapter });
   }

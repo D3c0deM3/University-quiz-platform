@@ -6,24 +6,24 @@ export declare class UsersController {
     constructor(usersService: UsersService);
     create(dto: CreateUserDto): Promise<{
         id: string;
-        email: string;
         phone: string | null;
+        createdAt: Date;
+        email: string;
         firstName: string;
         lastName: string;
         role: import("@prisma/client").$Enums.Role;
         isActive: boolean;
-        createdAt: Date;
     }>;
     findAll(page: number, limit: number, role?: Role, search?: string): Promise<{
         data: {
             id: string;
-            email: string;
             phone: string | null;
+            createdAt: Date;
+            email: string;
             firstName: string;
             lastName: string;
             role: import("@prisma/client").$Enums.Role;
             isActive: boolean;
-            createdAt: Date;
         }[];
         meta: {
             total: number;
@@ -34,24 +34,24 @@ export declare class UsersController {
     }>;
     findOne(id: string): Promise<{
         id: string;
-        email: string;
         phone: string | null;
+        createdAt: Date;
+        email: string;
         firstName: string;
         lastName: string;
         role: import("@prisma/client").$Enums.Role;
         isActive: boolean;
-        createdAt: Date;
         updatedAt: Date;
     }>;
     update(id: string, dto: UpdateUserDto): Promise<{
         id: string;
-        email: string;
         phone: string | null;
+        createdAt: Date;
+        email: string;
         firstName: string;
         lastName: string;
         role: import("@prisma/client").$Enums.Role;
         isActive: boolean;
-        createdAt: Date;
         updatedAt: Date;
     }>;
     remove(id: string): Promise<{
@@ -59,8 +59,8 @@ export declare class UsersController {
     }>;
     assignRole(id: string, dto: AssignRoleDto): Promise<{
         id: string;
-        email: string;
         phone: string | null;
+        email: string;
         firstName: string;
         lastName: string;
         role: import("@prisma/client").$Enums.Role;

@@ -7,20 +7,20 @@ export declare class SubscriptionsService {
     assign(dto: AssignSubscriptionDto): Promise<{
         user: {
             id: string;
-            email: string;
             phone: string | null;
+            email: string;
             firstName: string;
             lastName: string;
         };
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
     } & {
         id: string;
+        expiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
-        expiresAt: Date | null;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
         subjectId: string;
         userId: string;
@@ -28,20 +28,20 @@ export declare class SubscriptionsService {
     bulkAssign(dto: BulkAssignDto): Promise<({
         user: {
             id: string;
-            email: string;
             phone: string | null;
+            email: string;
             firstName: string;
             lastName: string;
         };
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
     } & {
         id: string;
+        expiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
-        expiresAt: Date | null;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
         subjectId: string;
         userId: string;
@@ -49,20 +49,20 @@ export declare class SubscriptionsService {
     revoke(subscriptionId: string): Promise<{
         user: {
             id: string;
-            email: string;
             phone: string | null;
+            email: string;
             firstName: string;
             lastName: string;
         };
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
     } & {
         id: string;
+        expiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
-        expiresAt: Date | null;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
         subjectId: string;
         userId: string;
@@ -70,20 +70,20 @@ export declare class SubscriptionsService {
     update(subscriptionId: string, dto: UpdateSubscriptionDto): Promise<{
         user: {
             id: string;
-            email: string;
             phone: string | null;
+            email: string;
             firstName: string;
             lastName: string;
         };
         subject: {
-            id: string;
             name: string;
+            id: string;
         };
     } & {
         id: string;
+        expiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
-        expiresAt: Date | null;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
         subjectId: string;
         userId: string;
@@ -92,21 +92,21 @@ export declare class SubscriptionsService {
         data: ({
             user: {
                 id: string;
-                email: string;
                 phone: string | null;
+                email: string;
                 firstName: string;
                 lastName: string;
                 role: import("@prisma/client").$Enums.Role;
             };
             subject: {
-                id: string;
                 name: string;
+                id: string;
             };
         } & {
             id: string;
+            expiresAt: Date | null;
             createdAt: Date;
             updatedAt: Date;
-            expiresAt: Date | null;
             status: import("@prisma/client").$Enums.SubscriptionStatus;
             subjectId: string;
             userId: string;
@@ -120,16 +120,16 @@ export declare class SubscriptionsService {
     }>;
     findByUser(userId: string): Promise<({
         subject: {
-            id: string;
-            name: string;
-            code: string | null;
             description: string | null;
+            name: string;
+            id: string;
+            code: string | null;
         };
     } & {
         id: string;
+        expiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
-        expiresAt: Date | null;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
         subjectId: string;
         userId: string;
@@ -137,16 +137,16 @@ export declare class SubscriptionsService {
     getMySubscriptions(userId: string): Promise<{
         subscriptions: ({
             subject: {
-                id: string;
-                name: string;
-                code: string | null;
                 description: string | null;
+                name: string;
+                id: string;
+                code: string | null;
             };
         } & {
             id: string;
+            expiresAt: Date | null;
             createdAt: Date;
             updatedAt: Date;
-            expiresAt: Date | null;
             status: import("@prisma/client").$Enums.SubscriptionStatus;
             subjectId: string;
             userId: string;
