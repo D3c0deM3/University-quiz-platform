@@ -78,7 +78,7 @@ function LoginContent() {
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="phone" className="text-sm font-medium text-gray-700 dark:text-slate-300">
+            <label htmlFor="phone" className="text-sm font-medium text-gray-700 dark:text-zinc-300">
               {t('login.phone')}
             </label>
             <Input
@@ -92,7 +92,7 @@ function LoginContent() {
             )}
           </div>
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-slate-300">
+            <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-zinc-300">
               {t('login.password')}
             </label>
             <Input
@@ -109,7 +109,7 @@ function LoginContent() {
             {t('login.submit')}
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-500 dark:text-slate-400">
+        <p className="mt-4 text-center text-sm text-gray-500 dark:text-zinc-400">
           {t('login.noAccount')}{' '}
           <Link href="/register" className="font-medium text-blue-600 dark:text-blue-400 hover:underline">
             {t('login.register')}

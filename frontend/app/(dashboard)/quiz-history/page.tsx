@@ -55,8 +55,8 @@ export default function QuizHistoryPage() {
  return (
  <div className="space-y-4 sm:space-y-6">
  <div>
- <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100">{t('quizHistory.title')}</h1>
- <p className="text-xs sm:text-base text-gray-500 dark:text-slate-400">{t('quizHistory.subtitle')}</p>
+ <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-zinc-100">{t('quizHistory.title')}</h1>
+ <p className="text-xs sm:text-base text-gray-500 dark:text-zinc-400">{t('quizHistory.subtitle')}</p>
  </div>
 
  {/* Stats */}
@@ -64,33 +64,33 @@ export default function QuizHistoryPage() {
  <div className="grid grid-cols-3 gap-2 sm:gap-4">
  <Card>
  <CardContent className="p-3 sm:p-5">
- <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 mb-1.5 sm:mb-2">
+ <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-500/10 mb-1.5 sm:mb-2">
  <ClipboardList size={16} className="text-blue-600 dark:text-blue-400" />
  </div>
- <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100">{stats.totalAttempts}</p>
- <p className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400 leading-tight">{t('quizHistory.totalAttempts')}</p>
+ <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-zinc-100">{stats.totalAttempts}</p>
+ <p className="text-[10px] sm:text-sm text-gray-500 dark:text-zinc-400 leading-tight">{t('quizHistory.totalAttempts')}</p>
  </CardContent>
  </Card>
  <Card>
  <CardContent className="p-3 sm:p-5">
- <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/40 mb-1.5 sm:mb-2">
+ <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/10 mb-1.5 sm:mb-2">
  <TrendingUp size={16} className="text-green-600 dark:text-green-400" />
  </div>
- <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100">
+ <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-zinc-100">
  {Math.round(stats.averageScore)}%
  </p>
- <p className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400 leading-tight">{t('quizHistory.averageScore')}</p>
+ <p className="text-[10px] sm:text-sm text-gray-500 dark:text-zinc-400 leading-tight">{t('quizHistory.averageScore')}</p>
  </CardContent>
  </Card>
  <Card>
  <CardContent className="p-3 sm:p-5">
- <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/40 mb-1.5 sm:mb-2">
+ <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/10 mb-1.5 sm:mb-2">
  <Trophy size={16} className="text-purple-600 dark:text-purple-400" />
  </div>
- <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100">
+ <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-zinc-100">
  {stats.subjectStats.length}
  </p>
- <p className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400 leading-tight">{t('quizHistory.subjectsTested')}</p>
+ <p className="text-[10px] sm:text-sm text-gray-500 dark:text-zinc-400 leading-tight">{t('quizHistory.subjectsTested')}</p>
  </CardContent>
  </Card>
  </div>
@@ -107,8 +107,8 @@ export default function QuizHistoryPage() {
  {stats.subjectStats.map((ss) => (
  <div key={ss.subjectId} className="flex items-center gap-2.5 sm:gap-4">
  <div className="flex-1 min-w-0">
- <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{ss.subjectName}</p>
- <div className="mt-1 h-1.5 sm:h-2 rounded-full bg-gray-200 dark:bg-slate-600">
+ <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{ss.subjectName}</p>
+ <div className="mt-1 h-1.5 sm:h-2 rounded-full bg-gray-200 dark:bg-zinc-600">
  <div
  className="h-full rounded-full bg-blue-600 transition-all"
  style={{ width: `${Math.min(ss.averageScore, 100)}%` }}
@@ -116,8 +116,8 @@ export default function QuizHistoryPage() {
  </div>
  </div>
  <div className="text-right shrink-0">
- <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-slate-100">{Math.round(ss.averageScore)}%</p>
- <p className="text-[10px] sm:text-xs text-gray-400 dark:text-slate-500">{ss.totalAttempts} {t('quizHistory.attempts')}</p>
+ <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-zinc-100">{Math.round(ss.averageScore)}%</p>
+ <p className="text-[10px] sm:text-xs text-gray-400 dark:text-zinc-500">{ss.totalAttempts} {t('quizHistory.attempts')}</p>
  </div>
  </div>
  ))}
@@ -159,26 +159,26 @@ export default function QuizHistoryPage() {
  const scoreVal = att.score ?? 0;
  const scoreColor =
  scoreVal >= 80
- ? 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40'
+ ? 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-500/10'
  : scoreVal >= 50
- ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/40'
- : 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40';
+ ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-500/10'
+ : 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-500/10';
 
  return (
  <Link
  key={att.id}
  href={`/quizzes/${att.quizId}/results/${att.id}`}
- className="flex items-center gap-2.5 sm:gap-4 rounded-lg border border-gray-100 dark:border-slate-700 p-2.5 sm:p-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+ className="flex items-center gap-2.5 sm:gap-4 rounded-lg border border-gray-100 dark:border-zinc-700 p-2.5 sm:p-4 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
  >
  <div className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full ${scoreColor} shrink-0`}>
  <CheckCircle2 size={14} className="sm:hidden" />
  <CheckCircle2 size={18} className="hidden sm:block" />
  </div>
  <div className="flex-1 min-w-0">
- <p className="text-xs sm:text-base font-medium text-gray-900 dark:text-slate-100 line-clamp-1">
+ <p className="text-xs sm:text-base font-medium text-gray-900 dark:text-zinc-100 line-clamp-1">
  {att.quiz?.title || att.quizTitle || t('quizHistory.quiz')}
  </p>
- <p className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400 line-clamp-1">
+ <p className="text-[10px] sm:text-sm text-gray-500 dark:text-zinc-400 line-clamp-1">
  {att.subjectName || att.quiz?.subject?.name
  ? <span className="text-blue-600 dark:text-blue-400">{att.subjectName || att.quiz?.subject?.name}</span>
  : null}
@@ -200,7 +200,7 @@ export default function QuizHistoryPage() {
  >
  {formatScore(att.score)}
  </Badge>
- <ArrowRight size={14} className="text-gray-400 dark:text-slate-500 hidden sm:block" />
+ <ArrowRight size={14} className="text-gray-400 dark:text-zinc-500 hidden sm:block" />
  </div>
  </Link>
  );
@@ -220,7 +220,7 @@ export default function QuizHistoryPage() {
  >
  {t('common.previous')}
  </Button>
- <span className="text-xs sm:text-sm text-gray-500 dark:text-slate-400">
+ <span className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400">
  {page}/{totalPages}
  </span>
  <Button

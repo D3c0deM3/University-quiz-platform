@@ -77,18 +77,18 @@ export default function MaterialDetailPage() {
  <div className="space-y-6 max-w-4xl">
  <Link
  href="/search"
- className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300"
+ className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
  >
  <ArrowLeft size={14} /> {t('materials.backToSearch')}
  </Link>
 
  {/* Header */}
  <div className="flex items-start gap-4">
- <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/40 shrink-0">
+ <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-500/10 shrink-0">
  <FileText size={28} className="text-blue-600 dark:text-blue-400" />
  </div>
  <div className="flex-1">
- <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
+ <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
  {metadata?.title || material.originalName}
  </h1>
  <div className="mt-2 flex flex-wrap gap-2">
@@ -122,7 +122,7 @@ export default function MaterialDetailPage() {
  <a
  href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/materials/${material.id}/download`}
  target="_blank"
- className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 h-10 px-4 py-2 shrink-0"
+ className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700 h-10 px-4 py-2 shrink-0"
  >
  <Download size={16} />
  {t('materials.download')}
@@ -139,7 +139,7 @@ export default function MaterialDetailPage() {
  </CardTitle>
  </CardHeader>
  <CardContent>
- <p className="text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+ <p className="text-gray-700 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
  {metadata.summary}
  </p>
  </CardContent>
@@ -158,28 +158,28 @@ export default function MaterialDetailPage() {
  </CardHeader>
  <CardContent className="space-y-3 text-sm">
  <div className="flex justify-between">
- <span className="text-gray-500 dark:text-slate-400">{t('materials.originalName')}</span>
- <span className="font-medium text-gray-900 dark:text-slate-100">{material.originalName}</span>
+ <span className="text-gray-500 dark:text-zinc-400">{t('materials.originalName')}</span>
+ <span className="font-medium text-gray-900 dark:text-zinc-100">{material.originalName}</span>
  </div>
  <div className="flex justify-between">
- <span className="text-gray-500 dark:text-slate-400">{t('common.type')}</span>
- <span className="font-medium text-gray-900 dark:text-slate-100">{material.fileType.toUpperCase()}</span>
+ <span className="text-gray-500 dark:text-zinc-400">{t('common.type')}</span>
+ <span className="font-medium text-gray-900 dark:text-zinc-100">{material.fileType.toUpperCase()}</span>
  </div>
  <div className="flex justify-between">
- <span className="text-gray-500 dark:text-slate-400">{t('materials.size')}</span>
- <span className="font-medium text-gray-900 dark:text-slate-100">
+ <span className="text-gray-500 dark:text-zinc-400">{t('materials.size')}</span>
+ <span className="font-medium text-gray-900 dark:text-zinc-100">
  {(material.fileSize / 1024).toFixed(1)} KB
  </span>
  </div>
  <div className="flex justify-between">
- <span className="text-gray-500 dark:text-slate-400">{t('materials.subject')}</span>
- <span className="font-medium text-gray-900 dark:text-slate-100">
+ <span className="text-gray-500 dark:text-zinc-400">{t('materials.subject')}</span>
+ <span className="font-medium text-gray-900 dark:text-zinc-100">
  {material.subject?.name || material.subjectId}
  </span>
  </div>
  <div className="flex justify-between">
- <span className="text-gray-500 dark:text-slate-400">{t('materials.uploaded')}</span>
- <span className="font-medium text-gray-900 dark:text-slate-100">{formatDate(material.createdAt)}</span>
+ <span className="text-gray-500 dark:text-zinc-400">{t('materials.uploaded')}</span>
+ <span className="font-medium text-gray-900 dark:text-zinc-100">{formatDate(material.createdAt)}</span>
  </div>
  </CardContent>
  </Card>
@@ -195,13 +195,13 @@ export default function MaterialDetailPage() {
  <CardContent className="space-y-4">
  {metadata?.contentType && (
  <div className="space-y-1">
- <p className="text-xs font-medium text-gray-500 dark:text-slate-400">{t('materials.contentType')}</p>
- <p className="text-sm text-gray-900 dark:text-slate-100">{metadata.contentType}</p>
+ <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">{t('materials.contentType')}</p>
+ <p className="text-sm text-gray-900 dark:text-zinc-100">{metadata.contentType}</p>
  </div>
  )}
  {metadata?.keywords && metadata.keywords.length > 0 && (
  <div className="space-y-1.5">
- <p className="text-xs font-medium text-gray-500 dark:text-slate-400 flex items-center gap-1">
+ <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 flex items-center gap-1">
  <Hash size={12} /> {t('materials.keywords')}
  </p>
  <div className="flex flex-wrap gap-1.5">
@@ -213,7 +213,7 @@ export default function MaterialDetailPage() {
  )}
  {metadata?.topics && metadata.topics.length > 0 && (
  <div className="space-y-1.5">
- <p className="text-xs font-medium text-gray-500 dark:text-slate-400 flex items-center gap-1">
+ <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 flex items-center gap-1">
  <BookOpen size={12} /> {t('materials.topics')}
  </p>
  <div className="flex flex-wrap gap-1.5">
@@ -225,7 +225,7 @@ export default function MaterialDetailPage() {
  )}
  {metadata?.tags && metadata.tags.length > 0 && (
  <div className="space-y-1.5">
- <p className="text-xs font-medium text-gray-500 dark:text-slate-400 flex items-center gap-1">
+ <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 flex items-center gap-1">
  <Tag size={12} /> {t('materials.tags')}
  </p>
  <div className="flex flex-wrap gap-1.5">
@@ -236,14 +236,14 @@ export default function MaterialDetailPage() {
  </div>
  )}
  {!metadata && (
- <p className="text-sm text-gray-400 dark:text-slate-500">{t('materials.noMetadata')}</p>
+ <p className="text-sm text-gray-400 dark:text-zinc-500">{t('materials.noMetadata')}</p>
  )}
  </CardContent>
  </Card>
  </div>
 
  {/* Created date */}
- <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-slate-500">
+ <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-zinc-500">
  <Calendar size={14} />
  {t('materials.created')} {formatDate(material.createdAt)}
  </div>

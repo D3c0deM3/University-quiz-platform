@@ -99,8 +99,8 @@ export default function CreateQuestionPage() {
  </Button>
  </Link>
  <div>
- <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('questions.addQuestion')}</h1>
- <p className="text-gray-500 dark:text-slate-400">
+ <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{t('questions.addQuestion')}</h1>
+ <p className="text-gray-500 dark:text-zinc-400">
  {isAdmin
  ? t('createQuestion.publishedImmediately')
  : t('createQuestion.submitForReview')}
@@ -116,7 +116,7 @@ export default function CreateQuestionPage() {
  <form onSubmit={handleSubmit} className="space-y-5">
  {/* Subject */}
  <div>
- <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+ <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
  {t('createQuestion.subject')} <span className="text-red-500">*</span>
  </label>
  <Select
@@ -133,7 +133,7 @@ export default function CreateQuestionPage() {
 
  {/* Question */}
  <div>
- <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+ <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
  {t('questions.question')} <span className="text-red-500">*</span>
  </label>
  <Textarea
@@ -144,12 +144,12 @@ export default function CreateQuestionPage() {
  required
  maxLength={5000}
  />
- <p className="mt-1 text-xs text-gray-400 dark:text-slate-500">{questionText.length}/5000</p>
+ <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">{questionText.length}/5000</p>
  </div>
 
  {/* Answer */}
  <div>
- <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+ <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
  {t('questions.answer')} <span className="text-red-500">*</span>
  </label>
  <Textarea
@@ -160,13 +160,13 @@ export default function CreateQuestionPage() {
  required
  maxLength={10000}
  />
- <p className="mt-1 text-xs text-gray-400 dark:text-slate-500">{answerText.length}/10000</p>
+ <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">{answerText.length}/10000</p>
  </div>
 
  {/* Image Upload */}
  <div>
- <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
- {t('createQuestion.image')} <span className="text-gray-400 dark:text-slate-500">{t('createQuestion.imageOptional')}</span>
+ <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
+ {t('createQuestion.image')} <span className="text-gray-400 dark:text-zinc-500">{t('createQuestion.imageOptional')}</span>
  </label>
  {imagePreview ? (
  <div className="relative inline-block">
@@ -184,10 +184,10 @@ export default function CreateQuestionPage() {
  </button>
  </div>
  ) : (
- <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 p-6 hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
- <Upload size={24} className="text-gray-400 dark:text-slate-500 mb-2" />
- <span className="text-sm text-gray-500 dark:text-slate-400">{t('createQuestion.clickToUpload')}</span>
- <span className="text-xs text-gray-400 dark:text-slate-500 mt-1">{t('createQuestion.imageFormats')}</span>
+ <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-600 p-6 hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
+ <Upload size={24} className="text-gray-400 dark:text-zinc-500 mb-2" />
+ <span className="text-sm text-gray-500 dark:text-zinc-400">{t('createQuestion.clickToUpload')}</span>
+ <span className="text-xs text-gray-400 dark:text-zinc-500 mt-1">{t('createQuestion.imageFormats')}</span>
  <input
  type="file"
  className="hidden"
@@ -200,7 +200,7 @@ export default function CreateQuestionPage() {
 
  {/* Info notice for students */}
  {!isAdmin && (
- <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 p-4 text-sm text-amber-800">
+ <div className="rounded-lg bg-amber-50 dark:bg-amber-500/8 border border-amber-200 p-4 text-sm text-amber-800">
  <strong>{t('createQuestion.note')}</strong> {t('createQuestion.reviewNote')}
  </div>
  )}

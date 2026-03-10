@@ -184,8 +184,8 @@ export default function AdminSubscriptionsPage() {
  {/* Header */}
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('adminSubs.title')}</h1>
- <p className="text-gray-500 dark:text-slate-400">{t('adminSubs.subtitle')}</p>
+ <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{t('adminSubs.title')}</h1>
+ <p className="text-gray-500 dark:text-zinc-400">{t('adminSubs.subtitle')}</p>
  </div>
  <Button onClick={() => setShowAssignForm(!showAssignForm)}>
  <UserPlus size={16} className="mr-2" />
@@ -195,14 +195,14 @@ export default function AdminSubscriptionsPage() {
 
  {/* Assign form */}
  {showAssignForm && (
- <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30">
+ <Card className="border-blue-200 dark:border-blue-500/20 bg-blue-50/30">
  <CardHeader>
  <CardTitle className="text-base">{t('adminSubs.assignSubjects')}</CardTitle>
  </CardHeader>
  <CardContent className="space-y-4">
  {/* Phone search */}
  <div>
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">{t('adminSubs.selectUser')}</label>
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">{t('adminSubs.selectUser')}</label>
  <div className="flex gap-2">
  <Input
  type="tel"
@@ -223,20 +223,20 @@ export default function AdminSubscriptionsPage() {
  </div>
  {/* Search results */}
  {phoneResults.length > 0 && (
- <div className="mt-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm divide-y divide-gray-100">
+ <div className="mt-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-sm divide-y divide-gray-100">
  {phoneResults.map((u) => (
  <button
  key={u.id}
  type="button"
  onClick={() => selectUser(u)}
- className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer"
+ className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-blue-50 dark:hover:bg-blue-500/15 transition-colors cursor-pointer"
  >
- <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium text-xs">
+ <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 font-medium text-xs">
  {u.firstName?.[0]}{u.lastName?.[0]}
  </div>
  <div>
- <p className="font-medium text-gray-900 dark:text-slate-100">{u.firstName} {u.lastName}</p>
- <p className="text-xs text-gray-500 dark:text-slate-400">{u.phone}</p>
+ <p className="font-medium text-gray-900 dark:text-zinc-100">{u.firstName} {u.lastName}</p>
+ <p className="text-xs text-gray-500 dark:text-zinc-400">{u.phone}</p>
  </div>
  </button>
  ))}
@@ -244,7 +244,7 @@ export default function AdminSubscriptionsPage() {
  )}
  {/* Selected user indicator */}
  {selectedUser && (
- <div className="mt-2 flex items-center gap-2 rounded-lg border border-green-300 bg-green-50 dark:bg-green-900/20 px-3 py-2 text-sm">
+ <div className="mt-2 flex items-center gap-2 rounded-lg border border-green-300 bg-green-50 dark:bg-green-500/8 px-3 py-2 text-sm">
  <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
  <span className="font-medium text-green-800">
  {selectedUser.firstName} {selectedUser.lastName}
@@ -256,7 +256,7 @@ export default function AdminSubscriptionsPage() {
 
  {/* Subject checkboxes */}
  <div>
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 block">
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">
  {t('adminSubs.selectSubjects')} ({selectedSubjectIds.length})
  </label>
  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -269,20 +269,20 @@ export default function AdminSubscriptionsPage() {
  onClick={() => toggleSubject(s.id)}
  className={`flex items-center gap-2 rounded-lg border p-3 text-left text-sm transition-colors cursor-pointer ${
  checked
- ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-800'
- : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:border-gray-300 dark:border-slate-600'
+ ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/8 text-blue-800'
+ : 'border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:border-gray-300 dark:border-zinc-600'
  }`}
  >
  <div
  className={`flex h-5 w-5 items-center justify-center rounded border ${
- checked ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-slate-600'
+ checked ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-zinc-600'
  }`}
  >
  {checked && <CheckCircle size={14} className="text-white" />}
  </div>
  <BookOpen size={14} className="shrink-0" />
  <span className="truncate">{s.name}</span>
- {s.code && <span className="text-xs text-gray-400 dark:text-slate-500 shrink-0">({s.code})</span>}
+ {s.code && <span className="text-xs text-gray-400 dark:text-zinc-500 shrink-0">({s.code})</span>}
  </button>
  );
  })}
@@ -314,7 +314,7 @@ export default function AdminSubscriptionsPage() {
  {/* Filters */}
  <div className="flex gap-3">
  <div className="relative max-w-xs flex-1">
- <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={16} />
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" size={16} />
  <Input
  placeholder={t('adminSubs.searchPlaceholder')}
  className="pl-9"
@@ -344,22 +344,22 @@ export default function AdminSubscriptionsPage() {
  <div className="divide-y divide-gray-100">
  {filtered.map((sub) => (
  <div key={sub.id} className="flex items-center gap-4 px-6 py-4">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-700">
- <CreditCard size={18} className="text-gray-500 dark:text-slate-400" />
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-700">
+ <CreditCard size={18} className="text-gray-500 dark:text-zinc-400" />
  </div>
  <div className="flex-1 min-w-0">
- <p className="font-medium text-gray-900 dark:text-slate-100">
+ <p className="font-medium text-gray-900 dark:text-zinc-100">
  {sub.user?.firstName} {sub.user?.lastName}
- <span className="text-gray-400 dark:text-slate-500 font-normal ml-2 text-sm">{sub.user?.phone}</span>
+ <span className="text-gray-400 dark:text-zinc-500 font-normal ml-2 text-sm">{sub.user?.phone}</span>
  </p>
- <p className="text-sm text-gray-500 dark:text-slate-400">
+ <p className="text-sm text-gray-500 dark:text-zinc-400">
  {sub.subject?.name}
- {sub.subject?.code && <span className="ml-1 text-gray-400 dark:text-slate-500">({sub.subject.code})</span>}
+ {sub.subject?.code && <span className="ml-1 text-gray-400 dark:text-zinc-500">({sub.subject.code})</span>}
  </p>
  </div>
  <div className="flex items-center gap-3 shrink-0">
  <Badge variant={statusVariant(sub.status)}>{sub.status}</Badge>
- <span className="text-xs text-gray-400 dark:text-slate-500">{formatDate(sub.createdAt)}</span>
+ <span className="text-xs text-gray-400 dark:text-zinc-500">{formatDate(sub.createdAt)}</span>
  {sub.status === 'ACTIVE' && (
  <button
  onClick={() => handleRevoke(sub)}

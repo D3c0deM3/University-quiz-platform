@@ -128,13 +128,13 @@ export default function UsersPage() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('adminUsers.title')}</h1>
- <p className="text-gray-500 dark:text-slate-400">{t('adminUsers.subtitle')}</p>
+ <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{t('adminUsers.title')}</h1>
+ <p className="text-gray-500 dark:text-zinc-400">{t('adminUsers.subtitle')}</p>
  </div>
 
  <form onSubmit={handleSearch} className="flex items-center gap-3">
  <div className="relative flex-1 max-w-md">
- <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" size={18} />
  <Input
  placeholder={t('adminUsers.searchPlaceholder')}
  className="pl-10"
@@ -176,14 +176,14 @@ export default function UsersPage() {
  <div className="divide-y divide-gray-100">
  {users.map((u, i) => (
  <div key={u.id} className="flex items-center gap-4 p-4 animate-item-in" style={{ animationDelay: `${i * 40}ms` }}>
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-700 shrink-0">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-700 shrink-0">
  {roleIcon(u.role)}
  </div>
  <div className="flex-1 min-w-0">
- <p className="font-medium text-gray-900 dark:text-slate-100">
+ <p className="font-medium text-gray-900 dark:text-zinc-100">
  {u.firstName} {u.lastName}
  </p>
- <p className="text-sm text-gray-500 dark:text-slate-400">{u.phone} • {t('common.joined')} {formatDate(u.createdAt)}</p>
+ <p className="text-sm text-gray-500 dark:text-zinc-400">{u.phone} • {t('common.joined')} {formatDate(u.createdAt)}</p>
  </div>
  <div className="flex items-center gap-3 shrink-0">
  <Badge variant={roleVariant(u.role)}>{u.role}</Badge>
@@ -199,7 +199,7 @@ export default function UsersPage() {
  <Button
  variant="ghost"
  size="icon"
- className="text-gray-400 dark:text-slate-500 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-900/20"
+ className="text-gray-400 dark:text-zinc-500 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/8"
  onClick={() => openDeleteDialog(u)}
  title={t('adminUsers.deleteUser')}
  >
@@ -218,7 +218,7 @@ export default function UsersPage() {
  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => load(page - 1)}>
  {t('common.previous')}
  </Button>
- <span className="text-sm text-gray-500 dark:text-slate-400">{t('common.page')} {page} {t('common.of')} {totalPages}</span>
+ <span className="text-sm text-gray-500 dark:text-zinc-400">{t('common.page')} {page} {t('common.of')} {totalPages}</span>
  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => load(page + 1)}>
  {t('common.next')}
  </Button>
@@ -235,10 +235,10 @@ export default function UsersPage() {
  />
 
  {/* Dialog */}
- <div className="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-6 animate-fade-in">
+ <div className="relative bg-white dark:bg-zinc-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-6 animate-fade-in">
  <button
  onClick={closeDeleteDialog}
- className="absolute top-4 right-4 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 cursor-pointer"
+ className="absolute top-4 right-4 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 cursor-pointer"
  >
  <X size={20} />
  </button>
@@ -247,22 +247,22 @@ export default function UsersPage() {
  /* ── Step 1: First confirmation ── */
  <div className="space-y-4">
  <div className="flex items-center gap-3">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 shrink-0">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10 shrink-0">
  <AlertTriangle size={20} className="text-red-600 dark:text-red-400" />
  </div>
  <div>
- <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('adminUsers.deleteUser')}</h3>
- <p className="text-sm text-gray-500 dark:text-slate-400">{t('adminUsers.cannotBeUndone')}</p>
+ <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('adminUsers.deleteUser')}</h3>
+ <p className="text-sm text-gray-500 dark:text-zinc-400">{t('adminUsers.cannotBeUndone')}</p>
  </div>
  </div>
 
- <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 p-4">
+ <div className="rounded-lg bg-red-50 dark:bg-red-500/8 border border-red-100 p-4">
  <p className="text-sm text-red-800">
  {t('adminUsers.aboutToDelete', { name: `${deleteTarget.firstName} ${deleteTarget.lastName}`, phone: deleteTarget.phone })}
  </p>
  </div>
 
- <p className="text-sm text-gray-600 dark:text-slate-400">
+ <p className="text-sm text-gray-600 dark:text-zinc-400">
  {t('adminUsers.areYouSure')}
  </p>
 
@@ -279,19 +279,19 @@ export default function UsersPage() {
  /* ── Step 2: Type name to confirm ── */
  <div className="space-y-4">
  <div className="flex items-center gap-3">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 shrink-0">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10 shrink-0">
  <Trash2 size={20} className="text-red-600 dark:text-red-400" />
  </div>
  <div>
- <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('adminUsers.finalConfirmation')}</h3>
- <p className="text-sm text-gray-500 dark:text-slate-400">{t('adminUsers.typeNameSubtitle')}</p>
+ <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('adminUsers.finalConfirmation')}</h3>
+ <p className="text-sm text-gray-500 dark:text-zinc-400">{t('adminUsers.typeNameSubtitle')}</p>
  </div>
  </div>
 
- <div className="rounded-lg bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 p-4">
- <p className="text-sm text-gray-700 dark:text-slate-300">
+ <div className="rounded-lg bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 p-4">
+ <p className="text-sm text-gray-700 dark:text-zinc-300">
  {t('adminUsers.toConfirmType')}{' '}
- <strong className="text-gray-900 dark:text-slate-100 select-all">{expectedName}</strong>
+ <strong className="text-gray-900 dark:text-zinc-100 select-all">{expectedName}</strong>
  </p>
  </div>
 

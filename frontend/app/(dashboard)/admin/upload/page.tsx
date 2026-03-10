@@ -60,8 +60,8 @@ export default function UploadPage() {
  return (
  <div className="max-w-2xl mx-auto space-y-6">
  <div>
- <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('adminUpload.title')}</h1>
- <p className="text-gray-500 dark:text-slate-400">{t('adminUpload.subtitle')}</p>
+ <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{t('adminUpload.title')}</h1>
+ <p className="text-gray-500 dark:text-zinc-400">{t('adminUpload.subtitle')}</p>
  </div>
 
  <Card>
@@ -97,16 +97,16 @@ export default function UploadPage() {
  className={cn(
  'flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition-colors cursor-pointer',
  dragOver
- ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
- : 'border-gray-300 dark:border-slate-600 hover:border-gray-400',
+ ? 'border-blue-400 bg-blue-50 dark:bg-blue-500/8'
+ : 'border-gray-300 dark:border-zinc-600 hover:border-gray-400',
  )}
  onClick={() => document.getElementById('file-input')?.click()}
  >
- <Upload size={40} className="text-gray-400 dark:text-slate-500 mb-3" />
- <p className="text-sm font-medium text-gray-700 dark:text-slate-300">
+ <Upload size={40} className="text-gray-400 dark:text-zinc-500 mb-3" />
+ <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">
  {t('adminUpload.chooseFile')}
  </p>
- <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{t('adminUpload.supported')}</p>
+ <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">{t('adminUpload.supported')}</p>
  <input
  id="file-input"
  type="file"
@@ -119,17 +119,17 @@ export default function UploadPage() {
  />
  </div>
  ) : (
- <div className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
- <div className="flex h-10 w-10 items-center justify-center rounded bg-blue-100 dark:bg-blue-900/40">
+ <div className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
+ <div className="flex h-10 w-10 items-center justify-center rounded bg-blue-100 dark:bg-blue-500/10">
  <FileText size={20} className="text-blue-600 dark:text-blue-400" />
  </div>
  <div className="flex-1 min-w-0">
- <p className="font-medium text-gray-900 dark:text-slate-100 truncate">{file.name}</p>
- <p className="text-sm text-gray-500 dark:text-slate-400">{(file.size / 1024).toFixed(1)} KB</p>
+ <p className="font-medium text-gray-900 dark:text-zinc-100 truncate">{file.name}</p>
+ <p className="text-sm text-gray-500 dark:text-zinc-400">{(file.size / 1024).toFixed(1)} KB</p>
  </div>
  <button
  onClick={() => setFile(null)}
- className="rounded-lg p-1.5 text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-600 dark:hover:text-slate-300 cursor-pointer"
+ className="rounded-lg p-1.5 text-gray-400 dark:text-zinc-500 hover:bg-gray-100 dark:hover:bg-zinc-700 hover:text-gray-600 dark:hover:text-zinc-300 cursor-pointer"
  >
  <X size={18} />
  </button>
@@ -151,7 +151,7 @@ export default function UploadPage() {
  onChange={(e) => setNumQuestions(Math.max(1, parseInt(e.target.value, 10) || 1))}
  placeholder="10"
  />
- <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">{t('adminUpload.numQuestionsHint') || 'Min: 1. Default: 10'}</p>
+ <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">{t('adminUpload.numQuestionsHint') || 'Min: 1. Default: 10'}</p>
  </CardContent>
  </Card>
 

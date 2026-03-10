@@ -1,36 +1,114 @@
-import axios from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { generateFingerprint, getDeviceName } from './fingerprint';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+// ─── In-Memory Access Token ────────────────────────────
+// Access token is NEVER stored in localStorage — only in memory.
+// This prevents trivial token theft via copy-paste.
+let accessToken: string | null = null;
+
+export function setAccessToken(token: string | null) {
+  accessToken = token;
+}
+
+export function getAccessToken(): string | null {
+  return accessToken;
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // Sends HttpOnly cookies (refresh token)
 });
 
-// Request interceptor — attach JWT token
+// Request interceptor — attach in-memory access token + device fingerprint
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
+    // Send device fingerprint on auth-sensitive requests
+    config.headers['X-Device-Fingerprint'] = generateFingerprint();
+    config.headers['X-Device-Name'] = getDeviceName();
   }
   return config;
 });
 
-// Response interceptor — handle 401
+// ─── Token Refresh Queue ──────────────────────────────
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
+
+function subscribeTokenRefresh(cb: (token: string) => void) {
+  refreshSubscribers.push(cb);
+}
+
+function onRefreshed(token: string) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+}
+
+// Response interceptor — auto-refresh on 401
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      // Try to refresh, or redirect to login
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    if (
+      error.response?.status === 401 &&
+      typeof window !== 'undefined' &&
+      !originalRequest._retry
+    ) {
       const path = window.location.pathname;
-      if (path !== '/login' && path !== '/register') {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+
+      // Don't try to refresh on auth pages
+      if (path === '/login' || path === '/register') {
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        // Another refresh is in flight — queue this request
+        return new Promise((resolve) => {
+          subscribeTokenRefresh((newToken: string) => {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            resolve(api(originalRequest));
+          });
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Call refresh endpoint — refresh token is in HttpOnly cookie
+        const { data } = await axios.post(
+          `${API_BASE_URL}/auth/refresh`,
+          {},
+          {
+            withCredentials: true,
+            headers: {
+              'X-Device-Fingerprint': generateFingerprint(),
+              'X-Device-Name': getDeviceName(),
+            },
+          },
+        );
+
+        const newToken = data.accessToken;
+        setAccessToken(newToken);
+        onRefreshed(newToken);
+
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed — session is invalid, redirect to login
+        setAccessToken(null);
         window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   },
 );
@@ -57,6 +135,11 @@ export const authApi = {
     api.post('/auth/verify-otp', { phone, code }),
   profile: () => api.get('/auth/profile'),
   refresh: () => api.post('/auth/refresh'),
+  logout: () => api.post('/auth/logout'),
+  logoutAll: () => api.post('/auth/logout-all'),
+  sessions: () => api.get('/auth/sessions'),
+  revokeSession: (sessionId: string) =>
+    api.post('/auth/sessions/revoke', { sessionId }),
 };
 
 // ─── Subjects ─────────────────────────────────────────

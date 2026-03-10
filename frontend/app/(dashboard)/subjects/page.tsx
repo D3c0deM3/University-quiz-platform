@@ -69,14 +69,14 @@ export default function SubjectsPage() {
  <div className="space-y-6">
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('subjects.title')}</h1>
- <p className="text-gray-500 dark:text-slate-400">{t('subjects.subtitle')}</p>
+ <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{t('subjects.title')}</h1>
+ <p className="text-gray-500 dark:text-zinc-400">{t('subjects.subtitle')}</p>
  </div>
  </div>
 
  {/* Search */}
  <div className="relative max-w-md">
- <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" size={18} />
  <Input
  placeholder={t('subjects.searchPlaceholder')}
  className="pl-10"
@@ -106,11 +106,11 @@ export default function SubjectsPage() {
 
  return isLocked ? (
  <div key={subject.id}>
- <Card className="h-full relative overflow-hidden border-gray-200 dark:border-slate-700 opacity-80">
+ <Card className="h-full relative overflow-hidden border-gray-200 dark:border-zinc-700 opacity-80">
  <CardContent className="flex flex-col gap-3 p-6">
  <div className="flex items-start justify-between">
- <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 dark:bg-slate-700">
- <Lock size={20} className="text-gray-400 dark:text-slate-500" />
+ <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 dark:bg-zinc-700">
+ <Lock size={20} className="text-gray-400 dark:text-zinc-500" />
  </div>
  <div className="flex items-center gap-1.5">
  {subject.code && (
@@ -120,9 +120,9 @@ export default function SubjectsPage() {
  </div>
  </div>
  <div>
- <h3 className="font-semibold text-gray-900 dark:text-slate-100">{subject.name}</h3>
+ <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{subject.name}</h3>
  {subject.description && (
- <p className="mt-1 text-sm text-gray-500 dark:text-slate-400 line-clamp-2">
+ <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400 line-clamp-2">
  {subject.description}
  </p>
  )}
@@ -131,7 +131,7 @@ export default function SubjectsPage() {
  <Button
  size="sm"
  variant="outline"
- className="w-full border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer"
+ className="w-full border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/15 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer"
  onClick={() => setModalSubject(subject)}
  >
  <Sparkles size={14} className="mr-1.5" /> Subscribe
@@ -145,7 +145,7 @@ export default function SubjectsPage() {
  <Card className="h-full transition-shadow hover:shadow-md cursor-pointer">
  <CardContent className="flex flex-col gap-3 p-6">
  <div className="flex items-start justify-between">
- <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
+ <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-500/10">
  <BookOpen size={20} className="text-blue-600 dark:text-blue-400" />
  </div>
  <div className="flex items-center gap-1.5">
@@ -156,9 +156,9 @@ export default function SubjectsPage() {
  </div>
  </div>
  <div>
- <h3 className="font-semibold text-gray-900 dark:text-slate-100">{subject.name}</h3>
+ <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{subject.name}</h3>
  {subject.description && (
- <p className="mt-1 text-sm text-gray-500 dark:text-slate-400 line-clamp-2">
+ <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400 line-clamp-2">
  {subject.description}
  </p>
  )}
@@ -183,85 +183,85 @@ export default function SubjectsPage() {
  onClick={() => setModalSubject(null)}
  />
  {/* Modal */}
- <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+ <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-zinc-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
  {/* Close button */}
  <button
  onClick={() => setModalSubject(null)}
- className="absolute right-4 top-4 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
+ className="absolute right-4 top-4 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
  >
  <X size={20} />
  </button>
 
  {/* Header */}
- <div className="px-6 pt-6 pb-4 text-center border-b border-gray-100 dark:border-slate-700">
- <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40">
+ <div className="px-6 pt-6 pb-4 text-center border-b border-gray-100 dark:border-zinc-700">
+ <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-500/10">
  <BookOpen size={26} className="text-blue-600 dark:text-blue-400" />
  </div>
- <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">
+ <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100">
  Subscribe to {modalSubject.name}
  </h2>
- <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+ <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
  Unlock full access to this subject&apos;s learning resources
  </p>
  </div>
 
  {/* Pricing */}
  <div className="px-6 py-5">
- <div className="rounded-xl bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700 p-4 text-center mb-5">
- <p className="text-3xl font-bold text-gray-900 dark:text-slate-100">$1</p>
- <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">10,000 UZS &middot; one-time per subject</p>
+ <div className="rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-700 p-4 text-center mb-5">
+ <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">$1</p>
+ <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">10,000 UZS &middot; one-time per subject</p>
  </div>
 
  {/* What's included */}
- <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-3">What&apos;s included</p>
+ <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500 mb-3">What&apos;s included</p>
  <ul className="space-y-2.5 mb-5">
- <li className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-slate-300">
+ <li className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-zinc-300">
  <CheckCircle2 size={16} className="text-green-500 mt-0.5 shrink-0" />
  All quizzes &amp; practice tests for this subject
  </li>
- <li className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-slate-300">
+ <li className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-zinc-300">
  <CheckCircle2 size={16} className="text-green-500 mt-0.5 shrink-0" />
  Complete Q&amp;A question bank
  </li>
- <li className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-slate-300">
+ <li className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-zinc-300">
  <CheckCircle2 size={16} className="text-green-500 mt-0.5 shrink-0" />
  Study materials &amp; documents
  </li>
- <li className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-slate-300">
+ <li className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-zinc-300">
  <CheckCircle2 size={16} className="text-green-500 mt-0.5 shrink-0" />
  Continuous content updates at no extra cost
  </li>
  </ul>
 
  {/* Contact */}
- <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-3">Get in touch</p>
+ <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500 mb-3">Get in touch</p>
  <div className="space-y-2">
  <a
  href="tel:+998915817711"
- className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-slate-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+ className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-zinc-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
  >
- <Phone size={18} className="text-gray-500 dark:text-slate-400" />
+ <Phone size={18} className="text-gray-500 dark:text-zinc-400" />
  <span>+998 91 581 77 11</span>
  </a>
  <a
  href="https://t.me/D3c0de_M3"
  target="_blank"
  rel="noopener noreferrer"
- className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-slate-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+ className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-zinc-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
  >
  <MessageCircle size={18} className="text-blue-500" />
  <span>@D3c0de_M3</span>
- <span className="ml-auto text-xs text-gray-400 dark:text-slate-500">Telegram</span>
+ <span className="ml-auto text-xs text-gray-400 dark:text-zinc-500">Telegram</span>
  </a>
  <a
  href="https://t.me/cdimock_test"
  target="_blank"
  rel="noopener noreferrer"
- className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-slate-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+ className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-zinc-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
  >
  <MessageCircle size={18} className="text-blue-500" />
  <span>@cdimock_test</span>
- <span className="ml-auto text-xs text-gray-400 dark:text-slate-500">Telegram</span>
+ <span className="ml-auto text-xs text-gray-400 dark:text-zinc-500">Telegram</span>
  </a>
  </div>
  </div>

@@ -158,17 +158,17 @@ export default function SubjectQuestionsPage() {
  {/* Back + Header */}
  <Link
  href="/questions"
- className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300"
+ className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
  >
  <ArrowLeft size={12} /> {t('questions.backToQABank')}
  </Link>
 
  <div className="flex items-start justify-between gap-3">
  <div className="min-w-0 flex-1">
- <h1 className="text-base sm:text-2xl font-bold text-gray-900 dark:text-slate-100 leading-tight">
+ <h1 className="text-base sm:text-2xl font-bold text-gray-900 dark:text-zinc-100 leading-tight">
  {subject?.name || t('subjects.title')} — {t('questions.qa')}
  </h1>
- <p className="text-xs sm:text-base text-gray-500 dark:text-slate-400 mt-1 line-clamp-2">
+ <p className="text-xs sm:text-base text-gray-500 dark:text-zinc-400 mt-1 line-clamp-2">
  {subject?.description || t('questions.browseQA')}
  </p>
  </div>
@@ -184,7 +184,7 @@ export default function SubjectQuestionsPage() {
  {/* Filters */}
  <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
  <form onSubmit={handleSearch} className="relative flex-1 min-w-0">
- <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={16} />
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" size={16} />
  <Input
  placeholder={t('questions.searchPlaceholder')}
  className="pl-9"
@@ -200,7 +200,7 @@ export default function SubjectQuestionsPage() {
  >
  <User size={12} className="mr-1" /> {t('questions.myQuestions')}
  </Button>
- <span className="text-xs sm:text-sm text-gray-500 dark:text-slate-400">{total} {t('questions.count')}</span>
+ <span className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400">{total} {t('questions.count')}</span>
  </div>
  </div>
 
@@ -235,14 +235,14 @@ export default function SubjectQuestionsPage() {
  return (
  <Card
  key={q.id}
- className="overflow-hidden transition-all hover:shadow-md border-gray-200 dark:border-slate-700 animate-item-in"
+ className="overflow-hidden transition-all hover:shadow-md border-gray-200 dark:border-zinc-700 animate-item-in"
  style={{ animationDelay: `${idx * 40}ms` }}
  >
  <CardContent className="p-0">
  {/* Question header row */}
  <div
  className={`flex items-start gap-2.5 sm:gap-4 p-3 sm:p-5 cursor-pointer ${
- isExpanded && !isEditing ? 'border-b border-gray-100 dark:border-slate-700' : ''
+ isExpanded && !isEditing ? 'border-b border-gray-100 dark:border-zinc-700' : ''
  }`}
  onClick={() => {
  if (!isEditing) setExpandedId(isExpanded ? null : q.id);
@@ -254,10 +254,10 @@ export default function SubjectQuestionsPage() {
  </div>
 
  <div className="flex-1 min-w-0">
- <p className="font-medium sm:font-semibold text-gray-900 dark:text-slate-100 text-[13px] sm:text-[15px] leading-snug break-words">
+ <p className="font-medium sm:font-semibold text-gray-900 dark:text-zinc-100 text-[13px] sm:text-[15px] leading-snug break-words">
  {q.questionText}
  </p>
- <div className="mt-1.5 sm:mt-2 flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-400 dark:text-slate-500">
+ <div className="mt-1.5 sm:mt-2 flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-400 dark:text-zinc-500">
  <span className="flex items-center gap-1">
  <User size={10} />
  {q.createdBy?.firstName} {q.createdBy?.lastName}
@@ -280,7 +280,7 @@ export default function SubjectQuestionsPage() {
  <Button
  size="sm"
  variant="ghost"
- className="text-gray-400 dark:text-slate-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:text-blue-400 h-7 w-7 sm:h-8 sm:w-8 p-0"
+ className="text-gray-400 dark:text-zinc-500 hover:bg-blue-50 dark:hover:bg-blue-500/15 hover:text-blue-600 dark:text-blue-400 h-7 w-7 sm:h-8 sm:w-8 p-0"
  onClick={(e) => {
  e.stopPropagation();
  startEdit(q);
@@ -292,7 +292,7 @@ export default function SubjectQuestionsPage() {
  <Button
  size="sm"
  variant="ghost"
- className="text-gray-400 dark:text-slate-500 hover:bg-red-50 dark:bg-red-900/20 hover:text-red-600 dark:text-red-400 h-7 w-7 sm:h-8 sm:w-8 p-0"
+ className="text-gray-400 dark:text-zinc-500 hover:bg-red-50 dark:bg-red-500/8 hover:text-red-600 dark:text-red-400 h-7 w-7 sm:h-8 sm:w-8 p-0"
  onClick={(e) => {
  e.stopPropagation();
  handleDelete(q.id);
@@ -305,30 +305,30 @@ export default function SubjectQuestionsPage() {
  )}
  {!isEditing &&
  (isExpanded ? (
- <ChevronUp size={16} className="text-gray-400 dark:text-slate-500 ml-0.5" />
+ <ChevronUp size={16} className="text-gray-400 dark:text-zinc-500 ml-0.5" />
  ) : (
- <ChevronDown size={16} className="text-gray-400 dark:text-slate-500 ml-0.5" />
+ <ChevronDown size={16} className="text-gray-400 dark:text-zinc-500 ml-0.5" />
  ))}
  </div>
  </div>
 
  {/* Expanded: Answer + Image */}
  {isExpanded && !isEditing && (
- <div className="p-3 sm:p-5 pt-2 sm:pt-4 bg-gradient-to-b from-gray-50/80 to-white space-y-3 sm:space-y-4">
- <div className="rounded-lg sm:rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 p-3 sm:p-4">
+ <div className="p-3 sm:p-5 pt-2 sm:pt-4 bg-gradient-to-b from-gray-50/80 to-white dark:from-zinc-800/50 dark:to-zinc-900 space-y-3 sm:space-y-4">
+ <div className="rounded-lg sm:rounded-xl bg-green-50 dark:bg-green-500/8 border border-green-200 dark:border-green-500/20 p-3 sm:p-4">
  <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
  <MessageSquare size={12} className="text-green-600 dark:text-green-400" />
  <p className="text-[10px] sm:text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">
  {t('questions.answer')}
  </p>
  </div>
- <p className="text-xs sm:text-sm text-gray-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+ <p className="text-xs sm:text-sm text-gray-800 dark:text-zinc-200 whitespace-pre-wrap leading-relaxed">
  {q.answerText}
  </p>
  </div>
  {q.imagePath && (
  <div>
- <p className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+ <p className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
  {t('questions.attachedImage')}
  </p>
  <img
@@ -348,7 +348,7 @@ export default function SubjectQuestionsPage() {
  onClick={(e) => e.stopPropagation()}
  >
  <div>
- <label className="block text-[10px] sm:text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+ <label className="block text-[10px] sm:text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">
  {t('questions.question')}
  </label>
  <Textarea
@@ -359,7 +359,7 @@ export default function SubjectQuestionsPage() {
  />
  </div>
  <div>
- <label className="block text-[10px] sm:text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+ <label className="block text-[10px] sm:text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">
  {t('questions.answer')}
  </label>
  <Textarea
@@ -399,7 +399,7 @@ export default function SubjectQuestionsPage() {
  >
  <ChevronLeft size={12} className="mr-0.5" /> {t('common.previous')}
  </Button>
- <span className="text-xs sm:text-sm text-gray-600 dark:text-slate-400">
+ <span className="text-xs sm:text-sm text-gray-600 dark:text-zinc-400">
  {page}/{totalPages}
  </span>
  <Button

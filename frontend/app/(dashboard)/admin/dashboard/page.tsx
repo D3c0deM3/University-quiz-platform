@@ -117,25 +117,25 @@ export default function AdminDashboardPage() {
  label: t('adminDashboard.totalMaterials'),
  value: stats?.totalMaterials ?? 0,
  icon: <FileText size={20} />,
- color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20',
+ color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/8',
  },
  {
  label: t('adminDashboard.pendingReview'),
  value: stats?.pendingReview ?? 0,
  icon: <Clock size={20} />,
- color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20',
+ color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/8',
  },
  {
  label: t('adminDashboard.published'),
  value: stats?.published ?? 0,
  icon: <CheckCircle2 size={20} />,
- color: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20',
+ color: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/8',
  },
  {
  label: t('adminDashboard.failed'),
  value: stats?.failed ?? 0,
  icon: <AlertTriangle size={20} />,
- color: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20',
+ color: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/8',
  },
  {
  label: t('adminDashboard.totalUsers'),
@@ -147,7 +147,7 @@ export default function AdminDashboardPage() {
  label: t('adminDashboard.totalSubjects'),
  value: stats?.totalSubjects ?? 0,
  icon: <BookOpen size={20} />,
- color: 'text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20',
+ color: 'text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/8',
  },
  ];
 
@@ -156,8 +156,8 @@ export default function AdminDashboardPage() {
  {/* Header */}
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('adminDashboard.title')}</h1>
- <p className="text-gray-500 dark:text-slate-400 mt-1">{t('adminDashboard.subtitle')}</p>
+ <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{t('adminDashboard.title')}</h1>
+ <p className="text-gray-500 dark:text-zinc-400 mt-1">{t('adminDashboard.subtitle')}</p>
  </div>
  <div className="flex items-center gap-3">
  <Link href="/admin/upload">
@@ -179,8 +179,8 @@ export default function AdminDashboardPage() {
  <TrendingUp size={14} className="text-gray-300" />
  </div>
  <div className="mt-3">
- <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{stat.value}</p>
- <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{stat.label}</p>
+ <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{stat.value}</p>
+ <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{stat.label}</p>
  </div>
  </CardContent>
  </Card>
@@ -203,7 +203,7 @@ export default function AdminDashboardPage() {
  </CardHeader>
  <CardContent>
  {pendingMaterials.length === 0 ? (
- <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-8">
+ <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-8">
  No materials pending review
  </p>
  ) : (
@@ -212,16 +212,16 @@ export default function AdminDashboardPage() {
  <Link
  key={m.id}
  href={`/admin/materials/${m.id}`}
- className="flex items-center gap-3 rounded-lg border border-gray-100 dark:border-slate-700 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+ className="flex items-center gap-3 rounded-lg border border-gray-100 dark:border-zinc-700 p-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
  >
- <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 shrink-0">
+ <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/8 text-amber-600 dark:text-amber-400 shrink-0">
  <Eye size={16} />
  </div>
  <div className="flex-1 min-w-0">
- <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
+ <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">
  {m.metadata?.title || m.originalName}
  </p>
- <p className="text-xs text-gray-400 dark:text-slate-500">
+ <p className="text-xs text-gray-400 dark:text-zinc-500">
  {m.subject?.name} • {formatDate(m.createdAt)}
  </p>
  </div>
@@ -250,23 +250,23 @@ export default function AdminDashboardPage() {
  </CardHeader>
  <CardContent>
  {recentMaterials.length === 0 ? (
- <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-8">No materials yet</p>
+ <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-8">No materials yet</p>
  ) : (
  <div className="space-y-3">
  {recentMaterials.map((m) => (
  <Link
  key={m.id}
  href={`/admin/materials/${m.id}`}
- className="flex items-center gap-3 rounded-lg border border-gray-100 dark:border-slate-700 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+ className="flex items-center gap-3 rounded-lg border border-gray-100 dark:border-zinc-700 p-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
  >
- <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shrink-0">
+ <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/8 text-blue-600 dark:text-blue-400 shrink-0">
  <FileText size={16} />
  </div>
  <div className="flex-1 min-w-0">
- <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
+ <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">
  {m.metadata?.title || m.originalName}
  </p>
- <p className="text-xs text-gray-400 dark:text-slate-500">
+ <p className="text-xs text-gray-400 dark:text-zinc-500">
  {m.subject?.name} • {formatDate(m.createdAt)}
  </p>
  </div>
@@ -331,21 +331,21 @@ export default function AdminDashboardPage() {
  </CardHeader>
  <CardContent>
  {subjects.length === 0 ? (
- <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-8">No subjects created yet</p>
+ <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-8">No subjects created yet</p>
  ) : (
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
  {subjects.slice(0, 6).map((s) => (
  <div
  key={s.id}
- className="flex items-center gap-3 rounded-lg border border-gray-100 dark:border-slate-700 p-3"
+ className="flex items-center gap-3 rounded-lg border border-gray-100 dark:border-zinc-700 p-3"
  >
- <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 shrink-0">
+ <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 dark:bg-cyan-500/8 text-cyan-600 dark:text-cyan-400 shrink-0">
  <BookOpen size={16} />
  </div>
  <div className="min-w-0">
- <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{s.name}</p>
+ <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{s.name}</p>
  {s.code && (
- <p className="text-xs text-gray-400 dark:text-slate-500">{s.code}</p>
+ <p className="text-xs text-gray-400 dark:text-zinc-500">{s.code}</p>
  )}
  </div>
  </div>

@@ -105,39 +105,39 @@ export default function SubjectDetailPage() {
  <div>
  <Link
  href="/subjects"
- className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 mb-2"
+ className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 mb-2"
  >
  <ArrowLeft size={12} /> {t('subjectDetail.back')}
  </Link>
  <div className="flex items-center gap-2 sm:gap-3">
- <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100">{subject.name}</h1>
+ <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-zinc-100">{subject.name}</h1>
  {subject.code && <Badge variant="outline" className="text-[10px] sm:text-xs shrink-0">{subject.code}</Badge>}
  </div>
  {subject.description && (
- <p className="mt-1 text-xs sm:text-base text-gray-500 dark:text-slate-400">{subject.description}</p>
+ <p className="mt-1 text-xs sm:text-base text-gray-500 dark:text-zinc-400">{subject.description}</p>
  )}
  </div>
 
  <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50">
  <CardContent className="py-8 sm:py-12 text-center space-y-4 sm:space-y-6 px-4 sm:px-6">
  <div className="flex justify-center">
- <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
+ <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/10">
  <Lock size={22} className="text-amber-600 dark:text-amber-400" />
  </div>
  </div>
  <div>
- <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-slate-100">{t('subjectDetail.subscriptionRequired')}</h2>
- <p className="mt-1.5 sm:mt-2 text-xs sm:text-base text-gray-600 dark:text-slate-400 max-w-md mx-auto">
+ <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-zinc-100">{t('subjectDetail.subscriptionRequired')}</h2>
+ <p className="mt-1.5 sm:mt-2 text-xs sm:text-base text-gray-600 dark:text-zinc-400 max-w-md mx-auto">
  {t('subjectDetail.subscriptionDesc', { name: subject.name })}
  </p>
  </div>
 
- <div className="rounded-xl bg-white dark:bg-slate-800 border border-amber-200 p-4 sm:p-6 max-w-sm mx-auto space-y-3 sm:space-y-4">
+ <div className="rounded-xl bg-white dark:bg-zinc-800 border border-amber-200 p-4 sm:p-6 max-w-sm mx-auto space-y-3 sm:space-y-4">
  <div className="text-center">
- <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">{t('subjectDetail.price')}</p>
- <p className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400">{t('subjectDetail.priceDesc')}</p>
+ <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-zinc-100">{t('subjectDetail.price')}</p>
+ <p className="text-[10px] sm:text-sm text-gray-500 dark:text-zinc-400">{t('subjectDetail.priceDesc')}</p>
  </div>
- <ul className="text-sm text-gray-600 dark:text-slate-400 space-y-2 text-left">
+ <ul className="text-sm text-gray-600 dark:text-zinc-400 space-y-2 text-left">
  <li className="flex items-center gap-2">
  <span className="text-green-500">&#10003;</span> {t('subjectDetail.allQuizzes')}
  </li>
@@ -154,7 +154,7 @@ export default function SubjectDetailPage() {
  </div>
 
  <div className="space-y-3">
- <p className="text-sm font-medium text-gray-700 dark:text-slate-300">{t('subjectDetail.contactUs')}</p>
+ <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('subjectDetail.contactUs')}</p>
  <div className="flex flex-wrap justify-center gap-4">
  <a
  href="tel:+998915817711"
@@ -191,16 +191,16 @@ export default function SubjectDetailPage() {
  <div>
  <Link
  href="/subjects"
- className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 mb-2"
+ className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 mb-2"
  >
  <ArrowLeft size={12} /> {t('subjectDetail.back')}
  </Link>
  <div className="flex items-center gap-2 sm:gap-3">
- <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100">{subject.name}</h1>
+ <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-zinc-100">{subject.name}</h1>
  {subject.code && <Badge variant="outline" className="text-[10px] sm:text-xs shrink-0">{subject.code}</Badge>}
  </div>
  {subject.description && (
- <p className="mt-1 text-xs sm:text-base text-gray-500 dark:text-slate-400">{subject.description}</p>
+ <p className="mt-1 text-xs sm:text-base text-gray-500 dark:text-zinc-400">{subject.description}</p>
  )}
  </div>
 
@@ -225,17 +225,17 @@ export default function SubjectDetailPage() {
  <Link
  key={m.id}
  href={`/materials/${m.id}`}
- className="flex items-center gap-2 sm:gap-3 rounded-lg border border-gray-100 dark:border-slate-700 p-2.5 sm:p-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+ className="flex items-center gap-2 sm:gap-3 rounded-lg border border-gray-100 dark:border-zinc-700 p-2.5 sm:p-4 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
  >
- <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded bg-gray-100 dark:bg-slate-700 shrink-0">
- <FileText size={14} className="text-gray-500 dark:text-slate-400" />
+ <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded bg-gray-100 dark:bg-zinc-700 shrink-0">
+ <FileText size={14} className="text-gray-500 dark:text-zinc-400" />
  </div>
  <div className="flex-1 min-w-0">
- <p className="text-xs sm:text-base font-medium text-gray-900 dark:text-slate-100 line-clamp-2 sm:line-clamp-1 leading-snug">
+ <p className="text-xs sm:text-base font-medium text-gray-900 dark:text-zinc-100 line-clamp-2 sm:line-clamp-1 leading-snug">
  {m.metadata?.title || m.originalName}
  </p>
  {m.metadata?.summary && (
- <p className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400 line-clamp-1 mt-0.5">{m.metadata.summary}</p>
+ <p className="text-[10px] sm:text-sm text-gray-500 dark:text-zinc-400 line-clamp-1 mt-0.5">{m.metadata.summary}</p>
  )}
  </div>
  <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs">{m.fileType.toUpperCase()}</Badge>
@@ -266,14 +266,14 @@ export default function SubjectDetailPage() {
  {quizzes.map((q) => (
  <div
  key={q.id}
- className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 dark:border-slate-700 p-2.5 sm:p-4"
+ className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 dark:border-zinc-700 p-2.5 sm:p-4"
  >
  <div className="flex-1 min-w-0">
- <p className="text-xs sm:text-base font-medium text-gray-900 dark:text-slate-100 line-clamp-2 leading-snug">{q.title}</p>
+ <p className="text-xs sm:text-base font-medium text-gray-900 dark:text-zinc-100 line-clamp-2 leading-snug">{q.title}</p>
  {q.description && (
- <p className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400 line-clamp-1 mt-0.5">{q.description}</p>
+ <p className="text-[10px] sm:text-sm text-gray-500 dark:text-zinc-400 line-clamp-1 mt-0.5">{q.description}</p>
  )}
- <p className="text-[10px] sm:text-xs text-gray-400 dark:text-slate-500 mt-0.5">
+ <p className="text-[10px] sm:text-xs text-gray-400 dark:text-zinc-500 mt-0.5">
  {q._count?.questions ?? 0} {t('subjectDetail.questionCount')}
  </p>
  </div>

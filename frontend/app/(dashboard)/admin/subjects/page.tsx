@@ -155,8 +155,8 @@ export default function AdminSubjectsPage() {
  {/* Header */}
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('adminSubjects.title')}</h1>
- <p className="text-gray-500 dark:text-slate-400 mt-1">{t('adminSubjects.subtitle')}</p>
+ <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{t('adminSubjects.title')}</h1>
+ <p className="text-gray-500 dark:text-zinc-400 mt-1">{t('adminSubjects.subtitle')}</p>
  </div>
  <Button
  onClick={() => {
@@ -173,7 +173,7 @@ export default function AdminSubjectsPage() {
 
  {/* Search */}
  <div className="relative max-w-md">
- <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" size={18} />
  <Input
  placeholder={t('adminSubjects.searchPlaceholder')}
  className="pl-10"
@@ -184,7 +184,7 @@ export default function AdminSubjectsPage() {
 
  {/* Create Form */}
  {showCreate && (
- <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30">
+ <Card className="border-blue-200 dark:border-blue-500/20 bg-blue-50/30">
  <CardHeader className="pb-3">
  <CardTitle className="text-base flex items-center gap-2">
  <Plus size={16} className="text-blue-600 dark:text-blue-400" />
@@ -194,7 +194,7 @@ export default function AdminSubjectsPage() {
  <CardContent>
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
  <div>
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">
  {t('adminSubjects.name')} <span className="text-red-500">*</span>
  </label>
  <Input
@@ -204,7 +204,7 @@ export default function AdminSubjectsPage() {
  />
  </div>
  <div>
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">{t('adminSubjects.code')}</label>
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">{t('adminSubjects.code')}</label>
  <Input
  placeholder={t('adminSubjects.codePlaceholder')}
  value={form.code}
@@ -212,7 +212,7 @@ export default function AdminSubjectsPage() {
  />
  </div>
  <div>
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">{t('adminSubjects.description')}</label>
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">{t('adminSubjects.description')}</label>
  <Input
  placeholder={t('adminSubjects.descPlaceholder')}
  value={form.description}
@@ -263,21 +263,21 @@ export default function AdminSubjectsPage() {
  <div>
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
  <div>
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">{t('adminSubjects.name')}</label>
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">{t('adminSubjects.name')}</label>
  <Input
  value={form.name}
  onChange={(e) => setForm({ ...form, name: e.target.value })}
  />
  </div>
  <div>
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">{t('adminSubjects.code')}</label>
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">{t('adminSubjects.code')}</label>
  <Input
  value={form.code}
  onChange={(e) => setForm({ ...form, code: e.target.value })}
  />
  </div>
  <div>
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">
  {t('adminSubjects.description')}
  </label>
  <Input
@@ -300,22 +300,22 @@ export default function AdminSubjectsPage() {
  ) : (
  /* View Mode */
  <div className="flex items-center gap-4">
- <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 shrink-0">
+ <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 dark:bg-cyan-500/8 text-cyan-600 dark:text-cyan-400 shrink-0">
  <BookOpen size={20} />
  </div>
  <div className="flex-1 min-w-0">
  <div className="flex items-center gap-2">
- <h3 className="font-semibold text-gray-900 dark:text-slate-100">{subject.name}</h3>
+ <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{subject.name}</h3>
  {subject.code && (
- <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400 px-2 py-0.5 rounded-full">
+ <span className="text-xs bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-400 px-2 py-0.5 rounded-full">
  {subject.code}
  </span>
  )}
  </div>
  {subject.description && (
- <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{subject.description}</p>
+ <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">{subject.description}</p>
  )}
- <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+ <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
  {t('materials.created')} {formatDate(subject.createdAt)}
  </p>
  </div>
@@ -326,7 +326,7 @@ export default function AdminSubjectsPage() {
  onClick={() => startEdit(subject)}
  title={t('adminSubjects.editSubject')}
  >
- <Pencil size={16} className="text-gray-500 dark:text-slate-400" />
+ <Pencil size={16} className="text-gray-500 dark:text-zinc-400" />
  </Button>
  <Button
  variant="ghost"
@@ -347,7 +347,7 @@ export default function AdminSubjectsPage() {
  )}
 
  {/* Summary */}
- <p className="text-sm text-gray-400 dark:text-slate-500 text-center">
+ <p className="text-sm text-gray-400 dark:text-zinc-500 text-center">
  {filteredSubjects.length} subject{filteredSubjects.length !== 1 ? 's' : ''}
  {search ? ' matching your search' : ' total'}
  </p>

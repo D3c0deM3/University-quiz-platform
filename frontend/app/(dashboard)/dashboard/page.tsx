@@ -110,8 +110,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100">{t('dashboard.title')}</h1>
-        <p className="text-xs sm:text-base text-gray-500 dark:text-slate-400 truncate">
+        <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-zinc-100">{t('dashboard.title')}</h1>
+        <p className="text-xs sm:text-base text-gray-500 dark:text-zinc-400 truncate">
           {t('dashboard.greeting', { name: user?.firstName || '' })}
         </p>
       </div>
@@ -122,7 +122,7 @@ export default function DashboardPage() {
           <div ref={dropdownRef} className="relative">
             <form onSubmit={handleSearch} className="flex gap-2 sm:gap-3">
               <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={16} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" size={16} />
                 <Input
                   placeholder={t('dashboard.searchPlaceholder')}
                   className="pl-9 sm:pl-10"
@@ -136,15 +136,15 @@ export default function DashboardPage() {
 
             {/* Live search dropdown */}
             {showDropdown && (searchResults.length > 0 || searchSubjects.length > 0 || searchLoading) && (
-              <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-white dark:bg-slate-800 shadow-lg overflow-hidden animate-dropdown-in">
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-white dark:bg-zinc-800 shadow-lg overflow-hidden animate-dropdown-in">
                 {searchLoading && searchResults.length === 0 && searchSubjects.length === 0 ? (
-                  <div className="px-4 py-3 text-sm text-gray-400 dark:text-slate-500">{t('common.loading')}...</div>
+                  <div className="px-4 py-3 text-sm text-gray-400 dark:text-zinc-500">{t('common.loading')}...</div>
                 ) : (
                   <>
                     {/* Subject results */}
                     {searchSubjects.length > 0 && (
                       <div>
-                        <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider bg-gray-50 dark:bg-slate-800/50">
+                        <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider bg-gray-50 dark:bg-zinc-800/50">
                           {t('subjects.title')}
                         </div>
                         {searchSubjects.map((s, i) => (
@@ -152,14 +152,14 @@ export default function DashboardPage() {
                             key={s.id}
                             href={`/subjects/${s.id}`}
                             onClick={() => setShowDropdown(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-b last:border-b-0 animate-item-in"
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors border-b last:border-b-0 animate-item-in"
                             style={{ animationDelay: `${i * 40}ms` }}
                           >
                             <BookOpen size={16} className="text-blue-500 shrink-0" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{s.name}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{s.name}</p>
                               {s.description && (
-                                <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{s.description}</p>
+                                <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">{s.description}</p>
                               )}
                             </div>
                             <Badge variant="outline" className="shrink-0 text-[10px]">
@@ -173,7 +173,7 @@ export default function DashboardPage() {
                     {searchResults.length > 0 && (
                       <div>
                         {searchSubjects.length > 0 && (
-                          <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider bg-gray-50 dark:bg-slate-800/50">
+                          <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider bg-gray-50 dark:bg-zinc-800/50">
                             {t('sidebar.materials')}
                           </div>
                         )}
@@ -182,16 +182,16 @@ export default function DashboardPage() {
                             key={m.id}
                             href={`/materials/${m.id}`}
                             onClick={() => setShowDropdown(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-b last:border-b-0 animate-item-in"
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors border-b last:border-b-0 animate-item-in"
                             style={{ animationDelay: `${(searchSubjects.length + i) * 40}ms` }}
                           >
-                            <FileText size={16} className="text-gray-400 dark:text-slate-500 shrink-0" />
+                            <FileText size={16} className="text-gray-400 dark:text-zinc-500 shrink-0" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
+                              <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">
                                 {m.metadata?.title || m.originalName}
                               </p>
                               {m.subject?.name && (
-                                <p className="text-xs text-gray-500 dark:text-slate-400">{m.subject.name}</p>
+                                <p className="text-xs text-gray-500 dark:text-zinc-400">{m.subject.name}</p>
                               )}
                             </div>
                             <Badge variant="secondary" className="shrink-0 text-[10px]">
@@ -204,7 +204,7 @@ export default function DashboardPage() {
                     <Link
                       href={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
                       onClick={() => setShowDropdown(false)}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors font-medium border-t"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/15 transition-colors font-medium border-t"
                     >
                       {t('common.search')} &quot;{searchQuery.trim()}&quot;
                       <ArrowRight size={14} />
@@ -221,50 +221,50 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
         <Card>
           <CardContent className="p-3 sm:p-5">
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 shrink-0 mb-2">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-500/10 shrink-0 mb-2">
               <ClipboardList size={16} className="text-blue-600 dark:text-blue-400 sm:hidden" />
               <ClipboardList size={20} className="text-blue-600 dark:text-blue-400 hidden sm:block" />
             </div>
-            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100">
+            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-zinc-100">
               {loading ? '—' : stats?.totalAttempts ?? 0}
             </p>
-            <p className="text-[11px] sm:text-sm text-gray-500 dark:text-slate-400 leading-tight">{t('dashboard.quizzesTaken')}</p>
+            <p className="text-[11px] sm:text-sm text-gray-500 dark:text-zinc-400 leading-tight">{t('dashboard.quizzesTaken')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 sm:p-5">
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/40 shrink-0 mb-2">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/10 shrink-0 mb-2">
               <TrendingUp size={16} className="text-green-600 dark:text-green-400 sm:hidden" />
               <TrendingUp size={20} className="text-green-600 dark:text-green-400 hidden sm:block" />
             </div>
-            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100">
+            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-zinc-100">
               {loading ? '—' : stats?.averageScore != null ? `${Math.round(stats.averageScore)}%` : '0%'}
             </p>
-            <p className="text-[11px] sm:text-sm text-gray-500 dark:text-slate-400 leading-tight">{t('dashboard.avgScore')}</p>
+            <p className="text-[11px] sm:text-sm text-gray-500 dark:text-zinc-400 leading-tight">{t('dashboard.avgScore')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 sm:p-5">
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/40 shrink-0 mb-2">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/10 shrink-0 mb-2">
               <BookOpen size={16} className="text-purple-600 dark:text-purple-400 sm:hidden" />
               <BookOpen size={20} className="text-purple-600 dark:text-purple-400 hidden sm:block" />
             </div>
-            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100">
+            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-zinc-100">
               {loading ? '—' : Array.isArray(subjects) ? subjects.length : 0}
             </p>
-            <p className="text-[11px] sm:text-sm text-gray-500 dark:text-slate-400 leading-tight">{t('dashboard.subjects')}</p>
+            <p className="text-[11px] sm:text-sm text-gray-500 dark:text-zinc-400 leading-tight">{t('dashboard.subjects')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 sm:p-5">
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/40 shrink-0 mb-2">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-500/10 shrink-0 mb-2">
               <FileText size={16} className="text-orange-600 dark:text-orange-400 sm:hidden" />
               <FileText size={20} className="text-orange-600 dark:text-orange-400 hidden sm:block" />
             </div>
-            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100">
+            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-zinc-100">
               {loading ? '—' : recentMaterials.length}
             </p>
-            <p className="text-[11px] sm:text-sm text-gray-500 dark:text-slate-400 leading-tight">{t('dashboard.recentMaterials')}</p>
+            <p className="text-[11px] sm:text-sm text-gray-500 dark:text-zinc-400 leading-tight">{t('dashboard.recentMaterials')}</p>
           </CardContent>
         </Card>
       </div>
@@ -300,16 +300,16 @@ export default function DashboardPage() {
                   <Link
                     key={m.id}
                     href={`/materials/${m.id}`}
-                    className="flex items-center gap-2 sm:gap-3 rounded-lg p-2 sm:p-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    className="flex items-center gap-2 sm:gap-3 rounded-lg p-2 sm:p-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
                   >
-                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded bg-gray-100 dark:bg-slate-700 shrink-0">
-                      <FileText size={14} className="text-gray-500 dark:text-slate-400" />
+                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded bg-gray-100 dark:bg-zinc-700 shrink-0">
+                      <FileText size={14} className="text-gray-500 dark:text-zinc-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
+                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">
                         {m.metadata?.title || m.originalName}
                       </p>
-                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-400 truncate">
+                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400 truncate">
                         {m.fileType.toUpperCase()} • {m.subject?.name || ''}
                       </p>
                     </div>
@@ -354,15 +354,15 @@ export default function DashboardPage() {
                   <Link
                     key={s.id}
                     href={`/subjects/${s.id}`}
-                    className="flex items-center gap-2 sm:gap-3 rounded-lg p-2 sm:p-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    className="flex items-center gap-2 sm:gap-3 rounded-lg p-2 sm:p-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
                   >
-                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded bg-blue-50 dark:bg-blue-900/20 shrink-0">
+                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded bg-blue-50 dark:bg-blue-500/8 shrink-0">
                       <BookOpen size={14} className="text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{s.name}</p>
+                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{s.name}</p>
                       {s.description && (
-                        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-400 truncate">{s.description}</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400 truncate">{s.description}</p>
                       )}
                     </div>
                     {s.code && (
@@ -389,25 +389,25 @@ export default function DashboardPage() {
               {stats.subjectStats.map((ss) => (
                 <div
                   key={ss.subjectId}
-                  className="rounded-lg border border-gray-200 dark:border-slate-700 p-3 sm:p-4"
+                  className="rounded-lg border border-gray-200 dark:border-zinc-700 p-3 sm:p-4"
                 >
-                  <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{ss.subjectName}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{ss.subjectName}</p>
                   <div className="mt-2 grid grid-cols-3 gap-1 sm:gap-2 text-center">
                     <div>
                       <p className="text-sm sm:text-lg font-bold text-blue-600 dark:text-blue-400">{ss.totalAttempts}</p>
-                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-400">{t('dashboard.quizzesTaken')}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">{t('dashboard.quizzesTaken')}</p>
                     </div>
                     <div>
                       <p className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400">
                         {Math.round(ss.averageScore)}%
                       </p>
-                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-400">{t('dashboard.avgScore')}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">{t('dashboard.avgScore')}</p>
                     </div>
                     <div>
                       <p className="text-sm sm:text-lg font-bold text-purple-600 dark:text-purple-400">
                         {Math.round(ss.bestScore)}%
                       </p>
-                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-400">{t('common.explore')}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">{t('common.explore')}</p>
                     </div>
                   </div>
                 </div>

@@ -61,7 +61,7 @@ export default function QuizResultsPage() {
  <div className="max-w-3xl mx-auto space-y-6">
  <Link
  href="/quiz-history"
- className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300"
+ className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
  >
  <ArrowLeft size={14} /> Back to History
  </Link>
@@ -69,7 +69,7 @@ export default function QuizResultsPage() {
  {/* Score card */}
  <Card className="text-center">
  <CardHeader>
- <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40">
+ <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-500/10">
  <Trophy size={32} className="text-blue-600 dark:text-blue-400" />
  </div>
  <CardTitle className="text-2xl">Quiz Complete!</CardTitle>
@@ -87,7 +87,7 @@ export default function QuizResultsPage() {
  <XCircle size={16} /> {incorrect} incorrect
  </span>
  {pending > 0 && (
- <span className="flex items-center gap-1 text-gray-400 dark:text-slate-500">
+ <span className="flex items-center gap-1 text-gray-400 dark:text-zinc-500">
  <Minus size={16} /> {pending} pending
  </span>
  )}
@@ -105,7 +105,7 @@ export default function QuizResultsPage() {
 
  {/* Question breakdown */}
  <div className="space-y-4">
- <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Question Breakdown</h2>
+ <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Question Breakdown</h2>
  {answers.map((ans, idx) => {
  const q = ans.question;
  if (!q) return null;
@@ -115,19 +115,19 @@ export default function QuizResultsPage() {
  key={ans.id}
  className={
  ans.isCorrect === true
- ? 'border-green-200 bg-green-50/50'
+ ? 'border-green-200 dark:border-green-500/20 bg-green-50/50 dark:bg-green-500/5'
  : ans.isCorrect === false
- ? 'border-red-200 bg-red-50/50'
- : 'border-gray-200 dark:border-slate-700'
+ ? 'border-red-200 dark:border-red-500/20 bg-red-50/50 dark:bg-red-500/5'
+ : 'border-gray-200 dark:border-zinc-700'
  }
  >
  <CardContent className="p-4 space-y-3">
  <div className="flex items-start gap-3">
- <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white dark:bg-slate-800 text-xs font-bold shrink-0 border">
+ <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white dark:bg-zinc-800 text-xs font-bold shrink-0 border">
  {idx + 1}
  </span>
  <div className="flex-1">
- <p className="font-medium text-gray-900 dark:text-slate-100">{q.questionText}</p>
+ <p className="font-medium text-gray-900 dark:text-zinc-100">{q.questionText}</p>
  <div className="mt-2 space-y-1.5">
  {q.options.map((opt) => {
  const isUserAnswer = ans.selectedOptionId === opt.id;
@@ -137,10 +137,10 @@ export default function QuizResultsPage() {
  key={opt.id}
  className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm ${
  isCorrectOption
- ? 'bg-green-100 dark:bg-green-900/40 text-green-800 font-medium'
+ ? 'bg-green-100 dark:bg-green-500/10 text-green-800 font-medium'
  : isUserAnswer
- ? 'bg-red-100 dark:bg-red-900/40 text-red-800'
- : 'text-gray-600 dark:text-slate-400'
+ ? 'bg-red-100 dark:bg-red-500/10 text-red-800'
+ : 'text-gray-600 dark:text-zinc-400'
  }`}
  >
  {isCorrectOption ? (
@@ -165,13 +165,13 @@ export default function QuizResultsPage() {
  );
  })}
  {ans.textAnswer && (
- <div className="rounded-md bg-gray-100 dark:bg-slate-700 px-3 py-1.5 text-sm text-gray-700 dark:text-slate-300">
+ <div className="rounded-md bg-gray-100 dark:bg-zinc-700 px-3 py-1.5 text-sm text-gray-700 dark:text-zinc-300">
  Your answer: {ans.textAnswer}
  </div>
  )}
  </div>
  {q.explanation && (
- <div className="mt-3 rounded-md bg-blue-50 dark:bg-blue-900/20 px-3 py-2 text-sm text-blue-800">
+ <div className="mt-3 rounded-md bg-blue-50 dark:bg-blue-500/8 px-3 py-2 text-sm text-blue-800">
  <strong>Explanation:</strong> {q.explanation}
  </div>
  )}
@@ -182,7 +182,7 @@ export default function QuizResultsPage() {
  ) : ans.isCorrect === false ? (
  <XCircle size={20} className="text-red-500" />
  ) : (
- <Minus size={20} className="text-gray-400 dark:text-slate-500" />
+ <Minus size={20} className="text-gray-400 dark:text-zinc-500" />
  )}
  </div>
  </div>

@@ -96,8 +96,8 @@ export default function AdminMaterialsPage() {
  <div className="space-y-6">
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('adminMaterials.title')}</h1>
- <p className="text-gray-500 dark:text-slate-400">{t('adminMaterials.subtitle')}</p>
+ <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{t('adminMaterials.title')}</h1>
+ <p className="text-gray-500 dark:text-zinc-400">{t('adminMaterials.subtitle')}</p>
  </div>
  <Link href="/admin/upload">
  <Button>{t('adminMaterials.uploadMaterial')}</Button>
@@ -114,7 +114,7 @@ export default function AdminMaterialsPage() {
  <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
  ))}
  </Select>
- <span className="text-sm text-gray-500 dark:text-slate-400">{t('adminMaterials.totalMaterials', { count: total })}</span>
+ <span className="text-sm text-gray-500 dark:text-zinc-400">{t('adminMaterials.totalMaterials', { count: total })}</span>
  </div>
 
  {loading ? (
@@ -142,16 +142,16 @@ export default function AdminMaterialsPage() {
  <Link
  key={m.id}
  href={`/admin/materials/${m.id}`}
- className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+ className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
  >
- <div className="flex h-10 w-10 items-center justify-center rounded bg-gray-100 dark:bg-slate-700 shrink-0">
- <FileText size={18} className="text-gray-500 dark:text-slate-400" />
+ <div className="flex h-10 w-10 items-center justify-center rounded bg-gray-100 dark:bg-zinc-700 shrink-0">
+ <FileText size={18} className="text-gray-500 dark:text-zinc-400" />
  </div>
  <div className="flex-1 min-w-0">
- <p className="font-medium text-gray-900 dark:text-slate-100 truncate">
+ <p className="font-medium text-gray-900 dark:text-zinc-100 truncate">
  {m.metadata?.title || m.originalName}
  </p>
- <p className="text-sm text-gray-500 dark:text-slate-400">
+ <p className="text-sm text-gray-500 dark:text-zinc-400">
  {m.fileType.toUpperCase()} • {(m.fileSize / 1024).toFixed(0)} KB • {formatDate(m.createdAt)}
  </p>
  </div>
@@ -159,12 +159,12 @@ export default function AdminMaterialsPage() {
  <Badge variant={statusVariant(m.status)}>{t(STATUS_LABEL_MAP[m.status] || m.status)}</Badge>
  <button
  onClick={(e) => handleDelete(m.id, e)}
- className="p-1.5 rounded-md text-gray-400 dark:text-slate-500 hover:bg-red-50 dark:bg-red-900/20 hover:text-red-600 dark:text-red-400 transition-colors"
+ className="p-1.5 rounded-md text-gray-400 dark:text-zinc-500 hover:bg-red-50 dark:bg-red-500/8 hover:text-red-600 dark:text-red-400 transition-colors"
  title={t('adminMaterials.deleteMaterial')}
  >
  <Trash2 size={16} />
  </button>
- <Eye size={16} className="text-gray-400 dark:text-slate-500" />
+ <Eye size={16} className="text-gray-400 dark:text-zinc-500" />
  </div>
  </Link>
  ))}
@@ -178,7 +178,7 @@ export default function AdminMaterialsPage() {
  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => load(page - 1)}>
  {t('common.previous')}
  </Button>
- <span className="text-sm text-gray-500 dark:text-slate-400">{t('common.page')} {page} {t('common.of')} {totalPages}</span>
+ <span className="text-sm text-gray-500 dark:text-zinc-400">{t('common.page')} {page} {t('common.of')} {totalPages}</span>
  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => load(page + 1)}>
  {t('common.next')}
  </Button>

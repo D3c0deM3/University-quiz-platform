@@ -138,15 +138,15 @@ function SearchContent() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('search.title')}</h1>
- <p className="text-gray-500 dark:text-slate-400">{t('search.typeToSearchDesc')}</p>
+ <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{t('search.title')}</h1>
+ <p className="text-gray-500 dark:text-zinc-400">{t('search.typeToSearchDesc')}</p>
  </div>
 
  {/* Search bar */}
  <form onSubmit={handleSearch} className="space-y-3">
  <div className="flex gap-3">
  <div className="relative flex-1">
- <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
+ <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" size={18} />
  <Input
  placeholder={t('search.placeholder')}
  className="pl-10"
@@ -178,7 +178,7 @@ function SearchContent() {
  <Card>
  <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
  <div className="space-y-1.5">
- <label className="text-xs font-medium text-gray-500 dark:text-slate-400">{t('search.subject')}</label>
+ <label className="text-xs font-medium text-gray-500 dark:text-zinc-400">{t('search.subject')}</label>
  <Select value={subject} onChange={(e) => setSubject(e.target.value)}>
  <option value="">{t('search.allSubjects')}</option>
  {subjects.map((s) => (
@@ -189,7 +189,7 @@ function SearchContent() {
  </Select>
  </div>
  <div className="space-y-1.5">
- <label className="text-xs font-medium text-gray-500 dark:text-slate-400">{t('questions.difficulty')}</label>
+ <label className="text-xs font-medium text-gray-500 dark:text-zinc-400">{t('questions.difficulty')}</label>
  <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
  <option value="">{t('common.all')}</option>
  <option value="BEGINNER">{t('questions.easy')}</option>
@@ -198,7 +198,7 @@ function SearchContent() {
  </Select>
  </div>
  <div className="space-y-1.5">
- <label className="text-xs font-medium text-gray-500 dark:text-slate-400">{t('common.type')}</label>
+ <label className="text-xs font-medium text-gray-500 dark:text-zinc-400">{t('common.type')}</label>
  <Select value={fileType} onChange={(e) => setFileType(e.target.value)}>
  <option value="">{t('common.all')}</option>
  <option value="pdf">PDF</option>
@@ -208,7 +208,7 @@ function SearchContent() {
  </Select>
  </div>
  <div className="space-y-1.5">
- <label className="text-xs font-medium text-gray-500 dark:text-slate-400">{t('search.sortBy')}</label>
+ <label className="text-xs font-medium text-gray-500 dark:text-zinc-400">{t('search.sortBy')}</label>
  <Select value={sort} onChange={(e) => setSort(e.target.value)}>
  <option value="relevance">{t('search.relevance')}</option>
  <option value="date">{t('search.date')}</option>
@@ -248,26 +248,26 @@ function SearchContent() {
  />
  ) : (
  <>
- <p className="text-sm text-gray-500 dark:text-slate-400">
+ <p className="text-sm text-gray-500 dark:text-zinc-400">
  {total + subjectResults.length} {t('search.results')}
  </p>
 
  {/* Subject results */}
  {subjectResults.length > 0 && (
  <div className="space-y-2">
- <h3 className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">{t('subjects.title')}</h3>
+ <h3 className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">{t('subjects.title')}</h3>
  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
  {subjectResults.map((s, i) => (
  <Link key={s.id} href={`/subjects/${s.id}`}>
  <Card className="transition-all hover:shadow-md cursor-pointer animate-item-in" style={{ animationDelay: `${i * 50}ms` }}>
  <CardContent className="flex items-center gap-3 p-3">
- <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 shrink-0">
+ <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-500/10 shrink-0">
  <BookOpen size={18} className="text-blue-600 dark:text-blue-400" />
  </div>
  <div className="flex-1 min-w-0">
- <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm truncate">{s.name}</h3>
+ <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm truncate">{s.name}</h3>
  {s.description && (
- <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{s.description}</p>
+ <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">{s.description}</p>
  )}
  </div>
  </CardContent>
@@ -282,22 +282,22 @@ function SearchContent() {
  {results.length > 0 && (
  <div className="space-y-2">
  {subjectResults.length > 0 && (
- <h3 className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">{t('sidebar.materials')}</h3>
+ <h3 className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">{t('sidebar.materials')}</h3>
  )}
  <div className="space-y-3">
  {results.map((m, i) => (
  <Link key={m.id} href={`/materials/${m.id}`}>
  <Card className="transition-all hover:shadow-md cursor-pointer animate-item-in" style={{ animationDelay: `${(subjectResults.length + i) * 50}ms` }}>
  <CardContent className="flex gap-4 p-4">
- <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 dark:bg-slate-700 shrink-0">
- <FileText size={20} className="text-gray-500 dark:text-slate-400" />
+ <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 dark:bg-zinc-700 shrink-0">
+ <FileText size={20} className="text-gray-500 dark:text-zinc-400" />
  </div>
  <div className="flex-1 min-w-0">
- <h3 className="font-medium text-gray-900 dark:text-slate-100">
+ <h3 className="font-medium text-gray-900 dark:text-zinc-100">
  {m.metadata?.title || m.originalName}
  </h3>
  {m.metadata?.summary && (
- <p className="mt-1 text-sm text-gray-500 dark:text-slate-400 line-clamp-2">
+ <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400 line-clamp-2">
  {m.metadata.summary}
  </p>
  )}
@@ -343,7 +343,7 @@ function SearchContent() {
  >
  {t('common.previous')}
  </Button>
- <span className="text-sm text-gray-500 dark:text-slate-400">
+ <span className="text-sm text-gray-500 dark:text-zinc-400">
  {t('common.page')} {page} {t('common.of')} {totalPages}
  </span>
  <Button

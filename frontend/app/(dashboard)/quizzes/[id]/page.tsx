@@ -160,21 +160,21 @@ export default function QuizTakePage() {
  <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
  <Link
  href={`/subjects/${quiz.subjectId}`}
- className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300"
+ className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
  >
  <ArrowLeft size={12} /> {t('quiz.backToSubject')}
  </Link>
 
  <Card>
  <CardHeader className="text-center p-4 sm:p-6">
- <div className="mx-auto mb-2 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40">
+ <div className="mx-auto mb-2 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-500/10">
  <ClipboardList size={24} className="text-blue-600 dark:text-blue-400" />
  </div>
  <CardTitle className="text-lg sm:text-2xl">{quiz.title}</CardTitle>
  {quiz.description && <CardDescription className="text-xs sm:text-sm">{quiz.description}</CardDescription>}
  </CardHeader>
  <CardContent className="space-y-5 text-center px-4 sm:px-6 pb-4 sm:pb-6">
- <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-500 dark:text-slate-400">
+ <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-500 dark:text-zinc-400">
  <span className="flex items-center gap-1">
  <ClipboardList size={13} />
  {questions.length} {t('quiz.questions').toLowerCase()}
@@ -187,46 +187,46 @@ export default function QuizTakePage() {
 
  {/* Feedback mode selector */}
  <div className="mx-auto max-w-sm space-y-2">
- <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300">{t('quiz.feedbackModeLabel')}</p>
+ <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300">{t('quiz.feedbackModeLabel')}</p>
  <div className="grid grid-cols-1 gap-2">
  <button
  onClick={() => setFeedbackMode('instant')}
  className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer ${
  feedbackMode === 'instant'
- ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-500'
- : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700'
+ ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/8 ring-1 ring-blue-500'
+ : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:border-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-700'
  }`}
  >
  <div className={`flex h-8 w-8 items-center justify-center rounded-full shrink-0 ${
- feedbackMode === 'instant' ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-100 dark:bg-slate-700'
+ feedbackMode === 'instant' ? 'bg-blue-100 dark:bg-blue-500/10' : 'bg-gray-100 dark:bg-zinc-700'
  }`}>
- <Eye size={16} className={feedbackMode === 'instant' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-slate-500'} />
+ <Eye size={16} className={feedbackMode === 'instant' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-zinc-500'} />
  </div>
  <div className="min-w-0">
- <p className={`text-xs sm:text-sm font-medium ${feedbackMode === 'instant' ? 'text-blue-900' : 'text-gray-700 dark:text-slate-300'}`}>
+ <p className={`text-xs sm:text-sm font-medium ${feedbackMode === 'instant' ? 'text-blue-900' : 'text-gray-700 dark:text-zinc-300'}`}>
  {t('quiz.instantFeedback')}
  </p>
- <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-400">{t('quiz.instantFeedbackDesc')}</p>
+ <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">{t('quiz.instantFeedbackDesc')}</p>
  </div>
  </button>
  <button
  onClick={() => setFeedbackMode('end')}
  className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer ${
  feedbackMode === 'end'
- ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-500'
- : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700'
+ ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/8 ring-1 ring-blue-500'
+ : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:border-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-700'
  }`}
  >
  <div className={`flex h-8 w-8 items-center justify-center rounded-full shrink-0 ${
- feedbackMode === 'end' ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-100 dark:bg-slate-700'
+ feedbackMode === 'end' ? 'bg-blue-100 dark:bg-blue-500/10' : 'bg-gray-100 dark:bg-zinc-700'
  }`}>
- <EyeOff size={16} className={feedbackMode === 'end' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-slate-500'} />
+ <EyeOff size={16} className={feedbackMode === 'end' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-zinc-500'} />
  </div>
  <div className="min-w-0">
- <p className={`text-xs sm:text-sm font-medium ${feedbackMode === 'end' ? 'text-blue-900' : 'text-gray-700 dark:text-slate-300'}`}>
+ <p className={`text-xs sm:text-sm font-medium ${feedbackMode === 'end' ? 'text-blue-900' : 'text-gray-700 dark:text-zinc-300'}`}>
  {t('quiz.reviewAtEnd')}
  </p>
- <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-400">{t('quiz.reviewAtEndDesc')}</p>
+ <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">{t('quiz.reviewAtEndDesc')}</p>
  </div>
  </button>
  </div>
@@ -253,8 +253,8 @@ export default function QuizTakePage() {
  {/* Progress header */}
  <div className="flex items-center justify-between gap-2">
  <div className="min-w-0 flex-1">
- <h1 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-slate-100 truncate">{quiz.title}</h1>
- <p className="text-[11px] sm:text-sm text-gray-500 dark:text-slate-400">
+ <h1 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-zinc-100 truncate">{quiz.title}</h1>
+ <p className="text-[11px] sm:text-sm text-gray-500 dark:text-zinc-400">
  {currentIndex + 1}/{questions.length} • {answeredCount} {t('quiz.answered')}
  </p>
  </div>
@@ -264,7 +264,7 @@ export default function QuizTakePage() {
  </div>
 
  {/* Progress bar */}
- <div className="h-1.5 sm:h-2 rounded-full bg-gray-200 dark:bg-slate-600 mt-3 sm:mt-0">
+ <div className="h-1.5 sm:h-2 rounded-full bg-gray-200 dark:bg-zinc-600 mt-3 sm:mt-0">
  <div
  className="h-full rounded-full bg-blue-600 transition-all"
  style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
@@ -276,8 +276,8 @@ export default function QuizTakePage() {
  <Card className={`mt-3 sm:mt-0 flex-1 sm:flex-none flex flex-col ${
  isCurrentRevealed
  ? revealed[currentQ.id].isCorrect
- ? 'border-green-200 bg-green-50/30'
- : 'border-red-200 bg-red-50/30'
+ ? 'border-green-200 dark:border-green-500/20 bg-green-50/30 dark:bg-green-500/5'
+ : 'border-red-200 dark:border-red-500/20 bg-red-50/30 dark:bg-red-500/5'
  : ''
  }`}>
  <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-4">
@@ -285,9 +285,9 @@ export default function QuizTakePage() {
  <span className={`flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-bold shrink-0 ${
  isCurrentRevealed
  ? revealed[currentQ.id].isCorrect
- ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400'
- : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
- : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
+ ? 'bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-400'
+ : 'bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400'
+ : 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
  }`}>
  {currentIndex + 1}
  </span>
@@ -322,19 +322,19 @@ export default function QuizTakePage() {
 
  if (isRevealed) {
  if (isCorrectOption) {
- optionClass = 'border-green-500 bg-green-50 dark:bg-green-900/20 ring-1 ring-green-500';
+ optionClass = 'border-green-500 bg-green-50 dark:bg-green-500/8 ring-1 ring-green-500';
  iconElement = <CheckCircle2 size={18} className="text-green-600 dark:text-green-400 shrink-0" />;
  } else if (isWrongSelected) {
- optionClass = 'border-red-500 bg-red-50 dark:bg-red-900/20 ring-1 ring-red-500';
+ optionClass = 'border-red-500 bg-red-50 dark:bg-red-500/8 ring-1 ring-red-500';
  iconElement = <XCircle size={18} className="text-red-500 shrink-0" />;
  } else {
- optionClass = 'border-gray-200 dark:border-slate-700 opacity-60';
+ optionClass = 'border-gray-200 dark:border-zinc-700 opacity-60';
  iconElement = <Circle size={18} className="text-gray-300 shrink-0" />;
  }
  } else {
  optionClass = isSelected
- ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
- : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700';
+ ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/8'
+ : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:border-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-700';
  iconElement = isSelected
  ? <CheckCircle2 size={18} className="text-blue-600 dark:text-blue-400 shrink-0" />
  : <Circle size={18} className="text-gray-300 shrink-0" />;
@@ -356,10 +356,10 @@ export default function QuizTakePage() {
  ? 'text-green-900 font-medium'
  : isWrongSelected
  ? 'text-red-900 font-medium'
- : 'text-gray-500 dark:text-slate-400'
+ : 'text-gray-500 dark:text-zinc-400'
  : isSelected
  ? 'text-blue-900 font-medium'
- : 'text-gray-700 dark:text-slate-300'
+ : 'text-gray-700 dark:text-zinc-300'
  }`}>
  {opt.optionText}
  </span>
@@ -378,7 +378,7 @@ export default function QuizTakePage() {
  })
  )}
  {isCurrentRevealed && currentQ.explanation && (
- <div className="mt-2 rounded-md bg-blue-50 dark:bg-blue-900/20 px-3 py-2 text-xs sm:text-sm text-blue-800">
+ <div className="mt-2 rounded-md bg-blue-50 dark:bg-blue-500/8 px-3 py-2 text-xs sm:text-sm text-blue-800">
  <strong>{t('quiz.explanation')}:</strong> {currentQ.explanation}
  </div>
  )}
@@ -403,9 +403,9 @@ export default function QuizTakePage() {
  ? 'bg-green-500 text-white'
  : 'bg-red-500 text-white';
  } else if (answered) {
- dotClass = 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300';
+ dotClass = 'bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-300';
  } else {
- dotClass = 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:bg-slate-600';
+ dotClass = 'bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-zinc-400 hover:bg-gray-200 dark:bg-zinc-600';
  }
  return (
  <button
@@ -431,7 +431,7 @@ export default function QuizTakePage() {
  >
  {t('common.previous')}
  </Button>
- <span className="text-[10px] text-gray-400 dark:text-slate-500 sm:hidden">
+ <span className="text-[10px] text-gray-400 dark:text-zinc-500 sm:hidden">
  {currentIndex + 1}/{questions.length}
  </span>
  {currentIndex < questions.length - 1 ? (

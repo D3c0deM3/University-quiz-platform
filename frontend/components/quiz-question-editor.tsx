@@ -250,7 +250,7 @@ export function QuizQuestionEditor({ quiz, onRefresh }: QuizQuestionEditorProps)
  return (
  <div className="space-y-4">
  <div className="flex items-center justify-between">
- <h3 className="font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
+ <h3 className="font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
  <HelpCircle size={18} className="text-blue-500" />
  Questions ({questions.length})
  </h3>
@@ -262,7 +262,7 @@ export function QuizQuestionEditor({ quiz, onRefresh }: QuizQuestionEditorProps)
 
  {/* Add New Question Form */}
  {showAddForm && editingQuestion && (
- <Card className="border-green-200 bg-green-50/20">
+ <Card className="border-green-200 dark:border-green-500/20 bg-green-50/20 dark:bg-green-500/5">
  <CardHeader className="pb-3">
  <CardTitle className="text-base flex items-center gap-2">
  <Plus size={16} className="text-green-600 dark:text-green-400" />
@@ -288,7 +288,7 @@ export function QuizQuestionEditor({ quiz, onRefresh }: QuizQuestionEditorProps)
 
  {/* Questions List */}
  {questions.length === 0 && !showAddForm ? (
- <div className="text-center py-10 text-gray-400 dark:text-slate-500">
+ <div className="text-center py-10 text-gray-400 dark:text-zinc-500">
  <HelpCircle size={40} className="mx-auto mb-3 opacity-50" />
  <p className="text-sm">No questions yet. Add your first question.</p>
  </div>
@@ -299,7 +299,7 @@ export function QuizQuestionEditor({ quiz, onRefresh }: QuizQuestionEditorProps)
  key={q.id}
  className={cn(
  'border rounded-xl transition-all',
- expandedId === q.id ? 'border-blue-200 dark:border-blue-800 bg-blue-50/10' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800',
+ expandedId === q.id ? 'border-blue-200 dark:border-blue-500/20 bg-blue-50/10' : 'border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800',
  )}
  >
  {/* Question Header */}
@@ -314,18 +314,18 @@ export function QuizQuestionEditor({ quiz, onRefresh }: QuizQuestionEditorProps)
  <div className="text-gray-300 shrink-0">
  <GripVertical size={16} />
  </div>
- <span className="text-sm font-bold text-gray-400 dark:text-slate-500 shrink-0 w-7">
+ <span className="text-sm font-bold text-gray-400 dark:text-zinc-500 shrink-0 w-7">
  {idx + 1}.
  </span>
  <div className="flex-1 min-w-0">
- <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
+ <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">
  {q.questionText}
  </p>
  </div>
  <Badge variant={typeVariant(q.questionType)} className="shrink-0">
  {typeLabel(q.questionType)}
  </Badge>
- <span className="text-xs text-gray-400 dark:text-slate-500 shrink-0">
+ <span className="text-xs text-gray-400 dark:text-zinc-500 shrink-0">
  {q.options.length} options
  </span>
  <div className="flex items-center gap-1 shrink-0">
@@ -355,16 +355,16 @@ export function QuizQuestionEditor({ quiz, onRefresh }: QuizQuestionEditorProps)
  <Trash2 size={14} className="text-red-500" />
  </Button>
  {expandedId === q.id ? (
- <ChevronDown size={16} className="text-gray-400 dark:text-slate-500" />
+ <ChevronDown size={16} className="text-gray-400 dark:text-zinc-500" />
  ) : (
- <ChevronRight size={16} className="text-gray-400 dark:text-slate-500" />
+ <ChevronRight size={16} className="text-gray-400 dark:text-zinc-500" />
  )}
  </div>
  </div>
 
  {/* Expanded Content */}
  {expandedId === q.id && (
- <div className="px-4 pb-4 border-t border-gray-100 dark:border-slate-700">
+ <div className="px-4 pb-4 border-t border-gray-100 dark:border-zinc-700">
  {editingQuestionId === q.id && editingQuestion ? (
  /* Edit Mode */
  <div className="pt-4">
@@ -386,8 +386,8 @@ export function QuizQuestionEditor({ quiz, onRefresh }: QuizQuestionEditorProps)
  <div className="pt-4 space-y-3">
  {q.explanation && (
  <div className="text-sm">
- <span className="font-medium text-gray-600 dark:text-slate-400">Explanation: </span>
- <span className="text-gray-500 dark:text-slate-400">{q.explanation}</span>
+ <span className="font-medium text-gray-600 dark:text-zinc-400">Explanation: </span>
+ <span className="text-gray-500 dark:text-zinc-400">{q.explanation}</span>
  </div>
  )}
  <div className="space-y-2">
@@ -397,8 +397,8 @@ export function QuizQuestionEditor({ quiz, onRefresh }: QuizQuestionEditorProps)
  className={cn(
  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm',
  opt.isCorrect
- ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 text-green-800'
- : 'bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700 text-gray-600 dark:text-slate-400',
+ ? 'bg-green-50 dark:bg-green-500/8 border border-green-200 text-green-800'
+ : 'bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-700 text-gray-600 dark:text-zinc-400',
  )}
  >
  {opt.isCorrect ? (
@@ -457,7 +457,7 @@ function QuestionForm({
  {/* Question Text + Type */}
  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
  <div className="md:col-span-3">
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">
  Question Text <span className="text-red-500">*</span>
  </label>
  <Textarea
@@ -468,7 +468,7 @@ function QuestionForm({
  />
  </div>
  <div>
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">Type</label>
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">Type</label>
  <Select
  value={question.questionType}
  onChange={(e) => onTypeChange(e.target.value)}
@@ -482,7 +482,7 @@ function QuestionForm({
 
  {/* Explanation */}
  <div>
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">
  Explanation (optional)
  </label>
  <Input
@@ -495,9 +495,9 @@ function QuestionForm({
  {/* Options */}
  {question.questionType !== 'SHORT_ANSWER' && (
  <div>
- <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 block">
+ <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">
  Options
- <span className="font-normal text-gray-400 dark:text-slate-500 ml-2">
+ <span className="font-normal text-gray-400 dark:text-zinc-500 ml-2">
  (click the circle to mark correct answer)
  </span>
  </label>
@@ -511,7 +511,7 @@ function QuestionForm({
  'shrink-0 rounded-full p-0.5 transition-colors cursor-pointer',
  opt.isCorrect
  ? 'text-green-600 dark:text-green-400'
- : 'text-gray-300 hover:text-gray-500 dark:text-slate-400',
+ : 'text-gray-300 hover:text-gray-500 dark:text-zinc-400',
  )}
  title={opt.isCorrect ? 'Correct answer' : 'Mark as correct'}
  >
@@ -521,7 +521,7 @@ function QuestionForm({
  <CircleDot size={20} />
  )}
  </button>
- <span className="text-sm font-bold text-gray-400 dark:text-slate-500 shrink-0 w-5">
+ <span className="text-sm font-bold text-gray-400 dark:text-zinc-500 shrink-0 w-5">
  {String.fromCharCode(65 + idx)}.
  </span>
  <Input
@@ -561,7 +561,7 @@ function QuestionForm({
  )}
 
  {/* Actions */}
- <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-slate-700">
+ <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-zinc-700">
  <Button onClick={onSave} loading={saving} size="sm">
  <Save size={14} />
  Save Question
