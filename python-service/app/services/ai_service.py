@@ -72,14 +72,10 @@ Return ONLY valid JSON (no markdown, no code fences) as an array of question obj
 
 Rules:
 - Generate exactly {num_questions} questions
-- Mix question types: MCQ (multiple choice, 4 options), TRUE_FALSE (2 options: True/False), SHORT_ANSWER (no options needed)
-- ~60% MCQ, ~20% TRUE_FALSE, ~20% SHORT_ANSWER
-- For MCQ: exactly 4 options, exactly 1 correct
-- For TRUE_FALSE: exactly 2 options ("True" and "False"), exactly 1 correct
-- For SHORT_ANSWER: options array should be empty [], put the expected answer in "explanation"
+- All questions must be MCQ (multiple choice) with exactly 4 options and exactly 1 correct answer
+- question_type must always be "MCQ"
 - Questions must be directly answerable from the provided text
 - Vary difficulty: some easy, some medium, some challenging
-- question_type must be exactly: "MCQ", "TRUE_FALSE", or "SHORT_ANSWER"
 
 TEXT TO CREATE QUESTIONS FROM:
 """
@@ -217,13 +213,9 @@ async def generate_quiz_questions(text: str, num_questions: int = 10) -> list:
             if not q.get("question_text"):
                 continue
 
-            qt = str(q.get("question_type", "MCQ")).upper()
-            if qt not in ("MCQ", "TRUE_FALSE", "SHORT_ANSWER"):
-                qt = "MCQ"
-
             validated_q = {
                 "question_text": q["question_text"],
-                "question_type": qt,
+                "question_type": "MCQ",
                 "options": q.get("options", []),
                 "explanation": q.get("explanation", ""),
             }
