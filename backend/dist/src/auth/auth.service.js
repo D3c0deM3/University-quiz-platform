@@ -47,8 +47,10 @@ const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
 const bcrypt = __importStar(require("bcrypt"));
+const crypto = __importStar(require("crypto"));
 const prisma_service_js_1 = require("../prisma/prisma.service.js");
 const telegram_service_js_1 = require("../telegram/telegram.service.js");
+const client_1 = require("@prisma/client");
 let AuthService = class AuthService {
     prisma;
     jwtService;
@@ -60,7 +62,90 @@ let AuthService = class AuthService {
         this.configService = configService;
         this.telegramService = telegramService;
     }
-    async register(dto) {
+    hashToken(token) {
+        return crypto.createHash('sha256').update(token).digest('hex');
+    }
+    async generateTokens(payload) {
+        const [accessToken, refreshToken] = await Promise.all([
+            this.jwtService.signAsync(payload, {
+                secret: this.configService.get('JWT_SECRET'),
+                expiresIn: '15m',
+            }),
+            this.jwtService.signAsync(payload, {
+                secret: this.configService.get('JWT_REFRESH_SECRET'),
+                expiresIn: '7d',
+            }),
+        ]);
+        return { accessToken, refreshToken };
+    }
+    async revokeAllUserSessions(userId, exceptSessionId) {
+        const where = {
+            userId,
+            status: client_1.SessionStatus.ACTIVE,
+        };
+        if (exceptSessionId) {
+            where.NOT = { id: exceptSessionId };
+        }
+        const sessions = await this.prisma.userSession.findMany({ where });
+        if (sessions.length > 0) {
+            await this.prisma.sessionEvent.createMany({
+                data: sessions.map((s) => ({
+                    sessionId: s.id,
+                    eventType: client_1.SessionEventType.FORCED_LOGOUT,
+                    metadata: { reason: 'new_login_from_another_device' },
+                })),
+            });
+            await this.prisma.userSession.updateMany({
+                where,
+                data: {
+                    status: client_1.SessionStatus.REVOKED,
+                    revokedAt: new Date(),
+                },
+            });
+        }
+    }
+    async createSession(user, ctx) {
+        await this.revokeAllUserSessions(user.id);
+        const session = await this.prisma.userSession.create({
+            data: {
+                userId: user.id,
+                refreshTokenHash: 'pending',
+                deviceName: ctx.deviceName || null,
+                fingerprintHash: ctx.fingerprint
+                    ? this.hashToken(ctx.fingerprint)
+                    : null,
+                ipFirstSeen: ctx.ip || null,
+                ipLastSeen: ctx.ip || null,
+                userAgent: ctx.userAgent || null,
+                status: client_1.SessionStatus.ACTIVE,
+            },
+        });
+        const tokens = await this.generateTokens({
+            sub: user.id,
+            phone: user.phone,
+            role: user.role,
+            sessionId: session.id,
+        });
+        const refreshTokenHash = this.hashToken(tokens.refreshToken);
+        await this.prisma.userSession.update({
+            where: { id: session.id },
+            data: { refreshTokenHash },
+        });
+        await this.prisma.sessionEvent.create({
+            data: {
+                sessionId: session.id,
+                eventType: client_1.SessionEventType.LOGIN,
+                ip: ctx.ip || null,
+                userAgent: ctx.userAgent || null,
+            },
+        });
+        return {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            sessionId: session.id,
+        };
+    }
+    async register(dto, ctx = {}) {
         const existing = await this.prisma.user.findUnique({
             where: { phone: dto.phone },
         });
@@ -76,11 +161,7 @@ let AuthService = class AuthService {
                 lastName: dto.lastName,
             },
         });
-        const tokens = await this.generateTokens({
-            sub: user.id,
-            phone: user.phone,
-            role: user.role,
-        });
+        const session = await this.createSession({ id: user.id, phone: user.phone, role: user.role }, ctx);
         return {
             user: {
                 id: user.id,
@@ -89,7 +170,9 @@ let AuthService = class AuthService {
                 lastName: user.lastName,
                 role: user.role,
             },
-            ...tokens,
+            accessToken: session.accessToken,
+            sessionId: session.sessionId,
+            _refreshToken: session.refreshToken,
         };
     }
     async getOtpLink(phone) {
@@ -114,7 +197,7 @@ let AuthService = class AuthService {
         }
         return { verified: true, message: result.message };
     }
-    async registerWithOtp(dto) {
+    async registerWithOtp(dto, ctx = {}) {
         const otpResult = await this.telegramService.verifyOtp(dto.phone, dto.otpCode);
         if (!otpResult.valid) {
             throw new common_1.BadRequestException(otpResult.message);
@@ -134,11 +217,7 @@ let AuthService = class AuthService {
                 lastName: dto.lastName,
             },
         });
-        const tokens = await this.generateTokens({
-            sub: user.id,
-            phone: user.phone,
-            role: user.role,
-        });
+        const session = await this.createSession({ id: user.id, phone: user.phone, role: user.role }, ctx);
         return {
             user: {
                 id: user.id,
@@ -147,10 +226,12 @@ let AuthService = class AuthService {
                 lastName: user.lastName,
                 role: user.role,
             },
-            ...tokens,
+            accessToken: session.accessToken,
+            sessionId: session.sessionId,
+            _refreshToken: session.refreshToken,
         };
     }
-    async login(dto) {
+    async login(dto, ctx = {}) {
         const user = await this.prisma.user.findUnique({
             where: { phone: dto.phone },
         });
@@ -164,11 +245,7 @@ let AuthService = class AuthService {
         if (!passwordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        const tokens = await this.generateTokens({
-            sub: user.id,
-            phone: user.phone,
-            role: user.role,
-        });
+        const session = await this.createSession({ id: user.id, phone: user.phone, role: user.role }, ctx);
         return {
             user: {
                 id: user.id,
@@ -177,7 +254,9 @@ let AuthService = class AuthService {
                 lastName: user.lastName,
                 role: user.role,
             },
-            ...tokens,
+            accessToken: session.accessToken,
+            sessionId: session.sessionId,
+            _refreshToken: session.refreshToken,
         };
     }
     async getProfile(userId) {
@@ -198,35 +277,189 @@ let AuthService = class AuthService {
         }
         return user;
     }
-    async refreshToken(userId) {
+    async refreshToken(oldRefreshToken, ctx = {}) {
+        let payload;
+        try {
+            payload = await this.jwtService.verifyAsync(oldRefreshToken, {
+                secret: this.configService.get('JWT_REFRESH_SECRET'),
+            });
+        }
+        catch {
+            throw new common_1.UnauthorizedException('Invalid or expired refresh token');
+        }
         const user = await this.prisma.user.findUnique({
-            where: { id: userId },
+            where: { id: payload.sub },
         });
         if (!user || !user.isActive) {
             throw new common_1.UnauthorizedException('User not found or inactive');
         }
-        const tokens = await this.generateTokens({
+        const oldHash = this.hashToken(oldRefreshToken);
+        const session = await this.prisma.userSession.findFirst({
+            where: {
+                refreshTokenHash: oldHash,
+                userId: user.id,
+                status: client_1.SessionStatus.ACTIVE,
+            },
+        });
+        if (!session) {
+            await this.revokeAllUserSessions(user.id);
+            const anySession = await this.prisma.userSession.findFirst({
+                where: { userId: user.id },
+                orderBy: { createdAt: 'desc' },
+            });
+            if (anySession) {
+                await this.prisma.sessionEvent.create({
+                    data: {
+                        sessionId: anySession.id,
+                        eventType: client_1.SessionEventType.FINGERPRINT_MISMATCH,
+                        ip: ctx.ip || null,
+                        metadata: { reason: 'refresh_token_reuse_detected' },
+                    },
+                });
+            }
+            throw new common_1.UnauthorizedException('Session invalid. All sessions revoked for security. Please log in again.');
+        }
+        if (session.fingerprintHash && ctx.fingerprint) {
+            const newFpHash = this.hashToken(ctx.fingerprint);
+            if (newFpHash !== session.fingerprintHash) {
+                await this.prisma.sessionEvent.create({
+                    data: {
+                        sessionId: session.id,
+                        eventType: client_1.SessionEventType.FINGERPRINT_MISMATCH,
+                        ip: ctx.ip || null,
+                        metadata: {
+                            reason: 'fingerprint_changed_during_refresh',
+                            oldFp: session.fingerprintHash.slice(0, 8),
+                            newFp: newFpHash.slice(0, 8),
+                        },
+                    },
+                });
+                await this.prisma.userSession.update({
+                    where: { id: session.id },
+                    data: { status: client_1.SessionStatus.REVOKED, revokedAt: new Date() },
+                });
+                throw new common_1.UnauthorizedException('Device fingerprint mismatch detected. Please log in again.');
+            }
+        }
+        if (session.ipLastSeen && ctx.ip && session.ipLastSeen !== ctx.ip) {
+            await this.prisma.sessionEvent.create({
+                data: {
+                    sessionId: session.id,
+                    eventType: client_1.SessionEventType.SUSPICIOUS_IP_CHANGE,
+                    ip: ctx.ip,
+                    metadata: {
+                        previousIp: session.ipLastSeen,
+                        newIp: ctx.ip,
+                    },
+                },
+            });
+        }
+        const newTokens = await this.generateTokens({
             sub: user.id,
             phone: user.phone,
             role: user.role,
+            sessionId: session.id,
         });
-        return tokens;
-    }
-    async generateTokens(payload) {
-        const [accessToken, refreshToken] = await Promise.all([
-            this.jwtService.signAsync(payload, {
-                secret: this.configService.get('JWT_SECRET'),
-                expiresIn: this.configService.get('JWT_EXPIRATION', '1d'),
-            }),
-            this.jwtService.signAsync(payload, {
-                secret: this.configService.get('JWT_REFRESH_SECRET'),
-                expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION', '7d'),
-            }),
-        ]);
+        const newRefreshHash = this.hashToken(newTokens.refreshToken);
+        await this.prisma.userSession.update({
+            where: { id: session.id },
+            data: {
+                refreshTokenHash: newRefreshHash,
+                lastSeenAt: new Date(),
+                ipLastSeen: ctx.ip || session.ipLastSeen,
+            },
+        });
+        await this.prisma.sessionEvent.create({
+            data: {
+                sessionId: session.id,
+                eventType: client_1.SessionEventType.REFRESH,
+                ip: ctx.ip || null,
+                userAgent: ctx.userAgent || null,
+            },
+        });
         return {
-            accessToken,
-            refreshToken,
+            accessToken: newTokens.accessToken,
+            refreshToken: newTokens.refreshToken,
+            sessionId: session.id,
         };
+    }
+    async logout(refreshToken, sessionId) {
+        let session = null;
+        if (refreshToken) {
+            const hash = this.hashToken(refreshToken);
+            session = await this.prisma.userSession.findFirst({
+                where: { refreshTokenHash: hash, status: client_1.SessionStatus.ACTIVE },
+            });
+        }
+        if (!session && sessionId) {
+            session = await this.prisma.userSession.findFirst({
+                where: { id: sessionId, status: client_1.SessionStatus.ACTIVE },
+            });
+        }
+        if (!session)
+            return { message: 'Logged out' };
+        await this.prisma.userSession.update({
+            where: { id: session.id },
+            data: { status: client_1.SessionStatus.REVOKED, revokedAt: new Date() },
+        });
+        await this.prisma.sessionEvent.create({
+            data: {
+                sessionId: session.id,
+                eventType: client_1.SessionEventType.LOGOUT,
+            },
+        });
+        return { message: 'Logged out successfully' };
+    }
+    async logoutAllDevices(userId) {
+        await this.revokeAllUserSessions(userId);
+        return { message: 'All sessions revoked' };
+    }
+    async getActiveSessions(userId) {
+        return this.prisma.userSession.findMany({
+            where: { userId, status: client_1.SessionStatus.ACTIVE },
+            select: {
+                id: true,
+                deviceName: true,
+                ipFirstSeen: true,
+                ipLastSeen: true,
+                userAgent: true,
+                createdAt: true,
+                lastSeenAt: true,
+            },
+            orderBy: { lastSeenAt: 'desc' },
+        });
+    }
+    async revokeSession(userId, sessionId) {
+        const session = await this.prisma.userSession.findFirst({
+            where: { id: sessionId, userId, status: client_1.SessionStatus.ACTIVE },
+        });
+        if (!session) {
+            throw new common_1.BadRequestException('Session not found or already revoked');
+        }
+        await this.prisma.userSession.update({
+            where: { id: sessionId },
+            data: { status: client_1.SessionStatus.REVOKED, revokedAt: new Date() },
+        });
+        await this.prisma.sessionEvent.create({
+            data: {
+                sessionId,
+                eventType: client_1.SessionEventType.FORCED_LOGOUT,
+                metadata: { reason: 'manual_revoke_by_user' },
+            },
+        });
+        return { message: 'Session revoked' };
+    }
+    async validateSession(userId, sessionId) {
+        if (!sessionId)
+            return true;
+        const session = await this.prisma.userSession.findFirst({
+            where: {
+                id: sessionId,
+                userId,
+                status: client_1.SessionStatus.ACTIVE,
+            },
+        });
+        return !!session;
     }
 };
 exports.AuthService = AuthService;

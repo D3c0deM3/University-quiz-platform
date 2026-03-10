@@ -48,6 +48,22 @@ enum SubscriptionStatus {
   REVOKED
 }
 
+enum SessionEventType {
+  LOGIN
+  REFRESH
+  LOGOUT
+  SUSPICIOUS_IP_CHANGE
+  DEVICE_LIMIT_EXCEEDED
+  FINGERPRINT_MISMATCH
+  FORCED_LOGOUT
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
 // ─── Users ───────────────────────────────────────────────
 
 model User {
@@ -66,6 +82,7 @@ model User {
   quizAttempts       QuizAttempt[]
   manualQuestions    ManualQuestion[] @relation("CreatedQuestions")
   subscriptions      UserSubscription[]
+  sessions           UserSession[]
 
   @@map("users")
 }
@@ -317,4 +334,49 @@ model OtpVerification {
   @@index([phone])
   @@index([phone, code])
   @@map("otp_verifications")
+}
+
+// ─── User Sessions ───────────────────────────────────────
+
+model UserSession {
+  id               String        @id @default(uuid())
+  userId           String        @map("user_id")
+  refreshTokenHash String        @map("refresh_token_hash")
+  deviceName       String?       @map("device_name")
+  fingerprintHash  String?       @map("fingerprint_hash")
+  ipFirstSeen      String?       @map("ip_first_seen")
+  ipLastSeen       String?       @map("ip_last_seen")
+  userAgent        String?       @map("user_agent")
+  status           SessionStatus @default(ACTIVE)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  lastSeenAt       DateTime      @default(now()) @map("last_seen_at")
+  revokedAt        DateTime?     @map("revoked_at")
+
+  // Relations
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events SessionEvent[]
+
+  @@index([userId])
+  @@index([refreshTokenHash])
+  @@index([userId, status])
+  @@map("user_sessions")
+}
+
+// ─── Session Events ──────────────────────────────────────
+
+model SessionEvent {
+  id        String           @id @default(uuid())
+  sessionId String           @map("session_id")
+  eventType SessionEventType @map("event_type")
+  ip        String?
+  userAgent String?          @map("user_agent")
+  metadata  Json?
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  session UserSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([eventType])
+  @@map("session_events")
 }

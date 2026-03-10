@@ -60,8 +60,8 @@ let QuizzesController = class QuizzesController {
     async submitAttempt(attemptId, userId, dto) {
         return this.quizzesService.submitAttempt(attemptId, userId, dto);
     }
-    async checkAnswer(dto) {
-        return this.quizzesService.checkAnswer(dto);
+    async checkAnswer(dto, userId, role) {
+        return this.quizzesService.checkAnswer(dto, userId, role);
     }
     async getAttemptResults(attemptId, userId) {
         return this.quizzesService.getAttemptResults(attemptId, userId);
@@ -121,8 +121,10 @@ __decorate([
 __decorate([
     (0, common_1.Post)('quizzes/check-answer'),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, index_js_2.CurrentUser)('id')),
+    __param(2, (0, index_js_2.CurrentUser)('role')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [check_answer_dto_js_1.CheckAnswerDto]),
+    __metadata("design:paramtypes", [check_answer_dto_js_1.CheckAnswerDto, String, String]),
     __metadata("design:returntype", Promise)
 ], QuizzesController.prototype, "checkAnswer", null);
 __decorate([

@@ -75,8 +75,8 @@ export declare class QuizzesService {
     } & {
         id: string;
         createdAt: Date;
-        quizId: string;
         userId: string;
+        quizId: string;
         score: number | null;
         totalPoints: number | null;
         startedAt: Date;
@@ -181,7 +181,7 @@ export declare class QuizzesService {
             bestScore: number;
         }[];
     }>;
-    checkAnswer(dto: CheckAnswerDto): Promise<{
+    checkAnswer(dto: CheckAnswerDto, userId: string, role: string): Promise<{
         questionId: string;
         selectedOptionId: string;
         correctOptionId: string | null;

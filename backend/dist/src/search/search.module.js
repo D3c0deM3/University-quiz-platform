@@ -10,11 +10,13 @@ exports.SearchModule = void 0;
 const common_1 = require("@nestjs/common");
 const search_service_js_1 = require("./search.service.js");
 const search_controller_js_1 = require("./search.controller.js");
+const subscriptions_module_js_1 = require("../subscriptions/subscriptions.module.js");
 let SearchModule = class SearchModule {
 };
 exports.SearchModule = SearchModule;
 exports.SearchModule = SearchModule = __decorate([
     (0, common_1.Module)({
+        imports: [subscriptions_module_js_1.SubscriptionsModule],
         controllers: [search_controller_js_1.SearchController],
         providers: [search_service_js_1.SearchService],
         exports: [search_service_js_1.SearchService],

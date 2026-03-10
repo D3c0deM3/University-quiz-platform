@@ -78,8 +78,8 @@ export declare class QuizzesController {
     } & {
         id: string;
         createdAt: Date;
-        quizId: string;
         userId: string;
+        quizId: string;
         score: number | null;
         totalPoints: number | null;
         startedAt: Date;
@@ -95,7 +95,7 @@ export declare class QuizzesController {
         totalQuestions: number;
         completedAt: Date | null;
     }>;
-    checkAnswer(dto: CheckAnswerDto): Promise<{
+    checkAnswer(dto: CheckAnswerDto, userId: string, role: Role): Promise<{
         questionId: string;
         selectedOptionId: string;
         correctOptionId: string | null;

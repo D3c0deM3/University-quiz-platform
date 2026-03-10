@@ -16,34 +16,40 @@ exports.SearchController = void 0;
 const common_1 = require("@nestjs/common");
 const search_service_js_1 = require("./search.service.js");
 const index_js_1 = require("../auth/guards/index.js");
+const index_js_2 = require("../auth/decorators/index.js");
 const search_query_dto_js_1 = require("./dto/search-query.dto.js");
+const client_1 = require("@prisma/client");
 let SearchController = class SearchController {
     searchService;
     constructor(searchService) {
         this.searchService = searchService;
     }
-    async search(query) {
-        return this.searchService.search(query);
+    async search(query, userId, role) {
+        return this.searchService.search(query, userId, role);
     }
-    async deepSearch(q, page, limit) {
-        return this.searchService.deepSearch(q, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
+    async deepSearch(q, userId, role, page, limit) {
+        return this.searchService.deepSearch(q, userId, role, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
     }
 };
 exports.SearchController = SearchController;
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, index_js_2.CurrentUser)('id')),
+    __param(2, (0, index_js_2.CurrentUser)('role')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [search_query_dto_js_1.SearchQueryDto]),
+    __metadata("design:paramtypes", [search_query_dto_js_1.SearchQueryDto, String, String]),
     __metadata("design:returntype", Promise)
 ], SearchController.prototype, "search", null);
 __decorate([
     (0, common_1.Get)('deep'),
     __param(0, (0, common_1.Query)('q')),
-    __param(1, (0, common_1.Query)('page')),
-    __param(2, (0, common_1.Query)('limit')),
+    __param(1, (0, index_js_2.CurrentUser)('id')),
+    __param(2, (0, index_js_2.CurrentUser)('role')),
+    __param(3, (0, common_1.Query)('page')),
+    __param(4, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], SearchController.prototype, "deepSearch", null);
 exports.SearchController = SearchController = __decorate([

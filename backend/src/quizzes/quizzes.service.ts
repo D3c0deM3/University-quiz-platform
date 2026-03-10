@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { QuestionType } from '@prisma/client';
+import { QuestionType, Role } from '@prisma/client';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
 import { CheckAnswerDto } from './dto/check-answer.dto.js';
 
@@ -443,19 +443,41 @@ export class QuizzesService {
   }
 
   /**
-   * Check a single answer for instant-feedback mode.
-   * Returns the correct option id and whether the user's selection was correct.
+   * Check a single answer.
+   * SECURITY:
+   * - Admin/Teacher can check any answer freely (preview mode).
+   * - Students can ONLY check answers for questions in their COMPLETED attempts.
+   *   This prevents using the endpoint as an answer oracle during a live quiz.
    */
-  async checkAnswer(dto: CheckAnswerDto) {
+  async checkAnswer(dto: CheckAnswerDto, userId: string, role: string) {
     const question = await this.prisma.quizQuestion.findUnique({
       where: { id: dto.questionId },
       include: {
         options: { orderBy: { orderIndex: 'asc' } },
+        quiz: { select: { id: true, subjectId: true } },
       },
     });
 
     if (!question) {
       throw new NotFoundException('Question not found');
+    }
+
+    // Admin/Teacher can check freely
+    if (role !== Role.ADMIN && role !== Role.TEACHER) {
+      // Student: must have a COMPLETED attempt for the quiz containing this question
+      const completedAttempt = await this.prisma.quizAttempt.findFirst({
+        where: {
+          userId,
+          quizId: question.quiz.id,
+          completedAt: { not: null },
+        },
+      });
+
+      if (!completedAttempt) {
+        throw new ForbiddenException(
+          'You can only check answers after submitting a quiz attempt.',
+        );
+      }
     }
 
     const correctOption = question.options.find((o) => o.isCorrect);

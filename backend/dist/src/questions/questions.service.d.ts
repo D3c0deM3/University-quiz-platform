@@ -22,8 +22,8 @@ export declare class QuestionsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;
@@ -50,8 +50,8 @@ export declare class QuestionsService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            questionText: string;
             status: import("@prisma/client").$Enums.QuestionStatus;
+            questionText: string;
             subjectId: string;
             answerText: string;
             imagePath: string | null;
@@ -79,8 +79,8 @@ export declare class QuestionsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;
@@ -101,8 +101,8 @@ export declare class QuestionsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;
@@ -126,8 +126,8 @@ export declare class QuestionsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        questionText: string;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;

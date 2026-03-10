@@ -118,9 +118,14 @@ export class MaterialsController {
     @CurrentUser('id') userId?: string,
     @CurrentUser('role') role?: Role,
   ) {
-    if (role === Role.STUDENT && subjectId) {
-      const hasAccess = await this.subscriptionsService.hasAccess(userId!, subjectId);
-      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+    if (role === Role.STUDENT) {
+      if (subjectId) {
+        // Specific subject requested — verify access
+        const hasAccess = await this.subscriptionsService.hasAccess(userId!, subjectId);
+        if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+      }
+      // Students can only see materials from their subscribed subjects
+      return this.materialsService.findAllForStudent(page, limit, userId!, status, subjectId);
     }
     return this.materialsService.findAll(page, limit, status, subjectId);
   }

@@ -105,6 +105,55 @@ let MaterialsService = class MaterialsService {
             },
         };
     }
+    async findAllForStudent(page = 1, limit = 20, userId, status, subjectId) {
+        const subs = await this.prisma.userSubscription.findMany({
+            where: {
+                userId,
+                status: client_1.SubscriptionStatus.ACTIVE,
+                OR: [
+                    { expiresAt: null },
+                    { expiresAt: { gt: new Date() } },
+                ],
+            },
+            select: { subjectId: true },
+        });
+        const subscribedSubjectIds = subs.map((s) => s.subjectId);
+        if (subscribedSubjectIds.length === 0) {
+            return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+        }
+        const skip = (page - 1) * limit;
+        const where = {
+            status: status || client_1.MaterialStatus.PUBLISHED,
+            subjectId: subjectId
+                ? subjectId
+                : { in: subscribedSubjectIds },
+        };
+        const [materials, total] = await Promise.all([
+            this.prisma.material.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    subject: { select: { id: true, name: true } },
+                    uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+                    metadata: {
+                        select: { title: true, summary: true, keywords: true, tags: true },
+                    },
+                },
+            }),
+            this.prisma.material.count({ where }),
+        ]);
+        return {
+            data: materials,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
     async findOne(id) {
         const material = await this.prisma.material.findUnique({
             where: { id },

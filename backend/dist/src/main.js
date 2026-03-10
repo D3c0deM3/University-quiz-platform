@@ -6,11 +6,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@nestjs/core");
 const common_1 = require("@nestjs/common");
 const helmet_1 = __importDefault(require("helmet"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const path_1 = require("path");
 const app_module_js_1 = require("./app.module.js");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_js_1.AppModule);
     app.setGlobalPrefix('api');
+    app.use((0, cookie_parser_1.default)());
     const uploadDir = process.env.UPLOAD_DIR || '../uploads';
     app.useStaticAssets((0, path_1.join)(process.cwd(), uploadDir), {
         prefix: '/uploads/',

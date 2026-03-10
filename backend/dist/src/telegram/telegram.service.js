@@ -162,10 +162,20 @@ let TelegramService = TelegramService_1 = class TelegramService {
                 'Please use the registration page at UniTest to get your verification code.');
         });
         try {
-            this.bot.launch();
-            const botInfo = await this.bot.telegram.getMe();
-            this.botUsername = botInfo.username;
-            this.logger.log(`Telegram bot @${this.botUsername} started successfully`);
+            this.bot.catch((err) => {
+                this.logger.error('Telegram bot polling error (non-fatal)', err.message);
+            });
+            this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
+                this.logger.error('Telegram bot launch error (non-fatal)', err.message);
+            });
+            try {
+                const botInfo = await this.bot.telegram.getMe();
+                this.botUsername = botInfo.username;
+                this.logger.log(`Telegram bot @${this.botUsername} started successfully`);
+            }
+            catch (infoErr) {
+                this.logger.warn(`Could not fetch bot info: ${infoErr.message}`);
+            }
         }
         catch (error) {
             this.logger.error('Failed to start Telegram bot', error);

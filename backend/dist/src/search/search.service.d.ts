@@ -3,7 +3,8 @@ import { SearchQueryDto } from './dto/search-query.dto.js';
 export declare class SearchService {
     private prisma;
     constructor(prisma: PrismaService);
-    search(dto: SearchQueryDto): Promise<{
+    private getSubscribedSubjectIds;
+    search(dto: SearchQueryDto, userId: string, role: string): Promise<{
         data: {
             id: any;
             title: any;
@@ -33,7 +34,7 @@ export declare class SearchService {
             totalPages: number;
         };
     }>;
-    deepSearch(query: string, page?: number, limit?: number): Promise<{
+    deepSearch(query: string, userId: string, role: string, page?: number, limit?: number): Promise<{
         data: {
             id: any;
             title: any;

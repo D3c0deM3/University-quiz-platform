@@ -1,6 +1,9 @@
 -- Full-text search indexes for the search API
 -- Step 16: Database indexing for search
 
+-- Enable pg_trgm extension for trigram indexes
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- Full-text index on material_metadata title + summary
 CREATE INDEX IF NOT EXISTS "idx_metadata_fulltext"
   ON "material_metadata"

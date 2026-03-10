@@ -1,13 +1,31 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { MaterialStatus, DifficultyLevel } from '@prisma/client';
+import { MaterialStatus, DifficultyLevel, Role, SubscriptionStatus } from '@prisma/client';
 import { SearchQueryDto, SearchSortBy } from './dto/search-query.dto.js';
 
 @Injectable()
 export class SearchService {
   constructor(private prisma: PrismaService) {}
 
-  async search(dto: SearchQueryDto) {
+  /**
+   * Get the list of subject IDs a student is subscribed to.
+   */
+  private async getSubscribedSubjectIds(userId: string): Promise<string[]> {
+    const subs = await this.prisma.userSubscription.findMany({
+      where: {
+        userId,
+        status: SubscriptionStatus.ACTIVE,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+      },
+      select: { subjectId: true },
+    });
+    return subs.map((s) => s.subjectId);
+  }
+
+  async search(dto: SearchQueryDto, userId: string, role: string) {
     const page = dto.page ?? 1;
     const limit = dto.limit ?? 20;
     const skip = (page - 1) * limit;
@@ -16,6 +34,18 @@ export class SearchService {
     const conditions: string[] = ['m."status" = \'PUBLISHED\''];
     const params: any[] = [];
     let paramIndex = 1;
+
+    // SECURITY: Students can only search within their subscribed subjects
+    if (role === Role.STUDENT) {
+      const subjectIds = await this.getSubscribedSubjectIds(userId);
+      if (subjectIds.length === 0) {
+        // No subscriptions — return empty results
+        return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+      }
+      conditions.push(`m."subject_id" = ANY($${paramIndex}::text[])`);
+      params.push(subjectIds);
+      paramIndex++;
+    }
 
     // Full-text search on title + summary
     if (dto.q && dto.q.trim()) {
@@ -203,12 +233,30 @@ export class SearchService {
 
   /**
    * Deep search across text chunks for more thorough results.
+   * SECURITY: Students can only search within subscribed subjects.
    */
-  async deepSearch(query: string, page = 1, limit = 20) {
+  async deepSearch(query: string, userId: string, role: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
 
     if (!query || !query.trim()) {
       return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+    }
+
+    // Subscription filtering for students
+    let countSubjectFilter = '';
+    let dataSubjectFilter = '';
+    const extraParams: any[] = [];
+
+    if (role === Role.STUDENT) {
+      const subjectIds = await this.getSubscribedSubjectIds(userId);
+      if (subjectIds.length === 0) {
+        return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+      }
+      // Count query params: [searchTerms, subjectIds] → $2
+      countSubjectFilter = `AND m."subject_id" = ANY($2::text[])`;
+      // Data query params: [searchTerms, limit, skip, subjectIds] → $4
+      dataSubjectFilter = `AND m."subject_id" = ANY($4::text[])`;
+      extraParams.push(subjectIds);
     }
 
     const searchTerms = query
@@ -225,6 +273,7 @@ export class SearchService {
       JOIN "material_text_chunks" tc ON tc."material_id" = m."id"
       WHERE m."status" = 'PUBLISHED'
         AND to_tsvector('simple', tc."content") @@ to_tsquery('simple', $1)
+        ${countSubjectFilter}
     `;
 
     const dataQuery = `
@@ -245,13 +294,17 @@ export class SearchService {
       LEFT JOIN "subjects" s ON s."id" = m."subject_id"
       WHERE m."status" = 'PUBLISHED'
         AND to_tsvector('simple', tc."content") @@ to_tsquery('simple', $1)
+        ${dataSubjectFilter}
       ORDER BY m."id", rank DESC
       LIMIT $2 OFFSET $3
     `;
 
+    const countParams = [searchTerms, ...extraParams];
+    const dataParams = [searchTerms, limit, skip, ...extraParams];
+
     const [countResult, data] = await Promise.all([
-      this.prisma.$queryRawUnsafe<[{ total: number }]>(countQuery, searchTerms),
-      this.prisma.$queryRawUnsafe<any[]>(dataQuery, searchTerms, limit, skip),
+      this.prisma.$queryRawUnsafe<[{ total: number }]>(countQuery, ...countParams),
+      this.prisma.$queryRawUnsafe<any[]>(dataQuery, ...dataParams),
     ]);
 
     const total = countResult[0]?.total ?? 0;

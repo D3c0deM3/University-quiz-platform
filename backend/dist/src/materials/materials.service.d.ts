@@ -23,12 +23,12 @@ export declare class MaterialsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.MaterialStatus;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
-        status: import("@prisma/client").$Enums.MaterialStatus;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -39,10 +39,43 @@ export declare class MaterialsService {
                 id: string;
                 name: string;
             };
+            metadata: {
+                title: string | null;
+                summary: string | null;
+                keywords: string[];
+                tags: string[];
+            } | null;
             uploadedBy: {
                 id: string;
                 firstName: string;
                 lastName: string;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            status: import("@prisma/client").$Enums.MaterialStatus;
+            fileName: string;
+            originalName: string;
+            filePath: string;
+            fileType: string;
+            fileSize: number;
+            errorMessage: string | null;
+            subjectId: string;
+            uploadedById: string;
+        })[];
+        meta: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+        };
+    }>;
+    findAllForStudent(page: number | undefined, limit: number | undefined, userId: string, status?: MaterialStatus, subjectId?: string): Promise<{
+        data: ({
+            subject: {
+                id: string;
+                name: string;
             };
             metadata: {
                 title: string | null;
@@ -50,16 +83,21 @@ export declare class MaterialsService {
                 keywords: string[];
                 tags: string[];
             } | null;
+            uploadedBy: {
+                id: string;
+                firstName: string;
+                lastName: string;
+            };
         } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            status: import("@prisma/client").$Enums.MaterialStatus;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
-            status: import("@prisma/client").$Enums.MaterialStatus;
             errorMessage: string | null;
             subjectId: string;
             uploadedById: string;
@@ -80,11 +118,6 @@ export declare class MaterialsService {
             code: string | null;
             description: string | null;
         };
-        uploadedBy: {
-            id: string;
-            firstName: string;
-            lastName: string;
-        };
         metadata: {
             id: string;
             createdAt: Date;
@@ -98,6 +131,11 @@ export declare class MaterialsService {
             contentType: string | null;
             materialId: string;
         } | null;
+        uploadedBy: {
+            id: string;
+            firstName: string;
+            lastName: string;
+        };
         textChunks: {
             id: string;
             createdAt: Date;
@@ -109,12 +147,12 @@ export declare class MaterialsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.MaterialStatus;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
-        status: import("@prisma/client").$Enums.MaterialStatus;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -123,12 +161,12 @@ export declare class MaterialsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.MaterialStatus;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
-        status: import("@prisma/client").$Enums.MaterialStatus;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -244,12 +282,12 @@ export declare class MaterialsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.MaterialStatus;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
-        status: import("@prisma/client").$Enums.MaterialStatus;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -272,12 +310,12 @@ export declare class MaterialsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.MaterialStatus;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
-        status: import("@prisma/client").$Enums.MaterialStatus;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -286,12 +324,12 @@ export declare class MaterialsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.MaterialStatus;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
-        status: import("@prisma/client").$Enums.MaterialStatus;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -377,12 +415,12 @@ export declare class MaterialsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.MaterialStatus;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
-        status: import("@prisma/client").$Enums.MaterialStatus;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;

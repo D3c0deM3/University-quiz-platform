@@ -368,15 +368,28 @@ let QuizzesService = class QuizzesService {
             subjectStats,
         };
     }
-    async checkAnswer(dto) {
+    async checkAnswer(dto, userId, role) {
         const question = await this.prisma.quizQuestion.findUnique({
             where: { id: dto.questionId },
             include: {
                 options: { orderBy: { orderIndex: 'asc' } },
+                quiz: { select: { id: true, subjectId: true } },
             },
         });
         if (!question) {
             throw new common_1.NotFoundException('Question not found');
+        }
+        if (role !== client_1.Role.ADMIN && role !== client_1.Role.TEACHER) {
+            const completedAttempt = await this.prisma.quizAttempt.findFirst({
+                where: {
+                    userId,
+                    quizId: question.quiz.id,
+                    completedAt: { not: null },
+                },
+            });
+            if (!completedAttempt) {
+                throw new common_1.ForbiddenException('You can only check answers after submitting a quiz attempt.');
+            }
         }
         const correctOption = question.options.find((o) => o.isCorrect);
         const isCorrect = correctOption?.id === dto.selectedOptionId;

@@ -3,15 +3,23 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RegisterDto, LoginDto, RegisterWithOtpDto } from './dto/index.js';
 import { TelegramService } from '../telegram/telegram.service.js';
+export interface SessionContext {
+    ip?: string;
+    userAgent?: string;
+    fingerprint?: string;
+    deviceName?: string;
+}
 export declare class AuthService {
     private prisma;
     private jwtService;
     private configService;
     private telegramService;
     constructor(prisma: PrismaService, jwtService: JwtService, configService: ConfigService, telegramService: TelegramService);
-    register(dto: RegisterDto): Promise<{
-        accessToken: string;
-        refreshToken: string;
+    private hashToken;
+    private generateTokens;
+    private revokeAllUserSessions;
+    private createSession;
+    register(dto: RegisterDto, ctx?: SessionContext): Promise<{
         user: {
             id: string;
             phone: string;
@@ -19,6 +27,9 @@ export declare class AuthService {
             lastName: string;
             role: import("@prisma/client").$Enums.Role;
         };
+        accessToken: string;
+        sessionId: string;
+        _refreshToken: string;
     }>;
     getOtpLink(phone: string): Promise<{
         deepLink: string;
@@ -29,9 +40,7 @@ export declare class AuthService {
         verified: boolean;
         message: string;
     }>;
-    registerWithOtp(dto: RegisterWithOtpDto): Promise<{
-        accessToken: string;
-        refreshToken: string;
+    registerWithOtp(dto: RegisterWithOtpDto, ctx?: SessionContext): Promise<{
         user: {
             id: string;
             phone: string;
@@ -39,10 +48,11 @@ export declare class AuthService {
             lastName: string;
             role: import("@prisma/client").$Enums.Role;
         };
+        accessToken: string;
+        sessionId: string;
+        _refreshToken: string;
     }>;
-    login(dto: LoginDto): Promise<{
-        accessToken: string;
-        refreshToken: string;
+    login(dto: LoginDto, ctx?: SessionContext): Promise<{
         user: {
             id: string;
             phone: string;
@@ -50,6 +60,9 @@ export declare class AuthService {
             lastName: string;
             role: import("@prisma/client").$Enums.Role;
         };
+        accessToken: string;
+        sessionId: string;
+        _refreshToken: string;
     }>;
     getProfile(userId: string): Promise<{
         id: string;
@@ -60,9 +73,28 @@ export declare class AuthService {
         isActive: boolean;
         createdAt: Date;
     }>;
-    refreshToken(userId: string): Promise<{
+    refreshToken(oldRefreshToken: string, ctx?: SessionContext): Promise<{
         accessToken: string;
         refreshToken: string;
+        sessionId: string;
     }>;
-    private generateTokens;
+    logout(refreshToken: string, sessionId?: string): Promise<{
+        message: string;
+    }>;
+    logoutAllDevices(userId: string): Promise<{
+        message: string;
+    }>;
+    getActiveSessions(userId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        deviceName: string | null;
+        ipFirstSeen: string | null;
+        ipLastSeen: string | null;
+        userAgent: string | null;
+        lastSeenAt: Date;
+    }[]>;
+    revokeSession(userId: string, sessionId: string): Promise<{
+        message: string;
+    }>;
+    validateSession(userId: string, sessionId?: string): Promise<boolean>;
 }

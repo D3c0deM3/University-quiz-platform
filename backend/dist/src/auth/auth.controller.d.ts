@@ -3,9 +3,7 @@ import { RegisterDto, LoginDto, RegisterWithOtpDto, VerifyOtpDto, GetOtpLinkDto 
 export declare class AuthController {
     private authService;
     constructor(authService: AuthService);
-    register(dto: RegisterDto): Promise<{
-        accessToken: string;
-        refreshToken: string;
+    register(dto: RegisterDto, req: any, res: any): Promise<{
         user: {
             id: string;
             phone: string;
@@ -13,10 +11,10 @@ export declare class AuthController {
             lastName: string;
             role: import("@prisma/client").$Enums.Role;
         };
+        accessToken: string;
+        sessionId: string;
     }>;
-    registerWithOtp(dto: RegisterWithOtpDto): Promise<{
-        accessToken: string;
-        refreshToken: string;
+    registerWithOtp(dto: RegisterWithOtpDto, req: any, res: any): Promise<{
         user: {
             id: string;
             phone: string;
@@ -24,6 +22,8 @@ export declare class AuthController {
             lastName: string;
             role: import("@prisma/client").$Enums.Role;
         };
+        accessToken: string;
+        sessionId: string;
     }>;
     getOtpLink(dto: GetOtpLinkDto): Promise<{
         deepLink: string;
@@ -34,9 +34,7 @@ export declare class AuthController {
         verified: boolean;
         message: string;
     }>;
-    login(dto: LoginDto): Promise<{
-        accessToken: string;
-        refreshToken: string;
+    login(dto: LoginDto, req: any, res: any): Promise<{
         user: {
             id: string;
             phone: string;
@@ -44,6 +42,8 @@ export declare class AuthController {
             lastName: string;
             role: import("@prisma/client").$Enums.Role;
         };
+        accessToken: string;
+        sessionId: string;
     }>;
     getProfile(userId: string): Promise<{
         id: string;
@@ -54,8 +54,26 @@ export declare class AuthController {
         isActive: boolean;
         createdAt: Date;
     }>;
-    refresh(userId: string): Promise<{
+    refresh(req: any, res: any): Promise<{
         accessToken: string;
-        refreshToken: string;
+        sessionId: string;
+    } | undefined>;
+    logout(sessionId: string, req: any, res: any): Promise<{
+        message: string;
+    }>;
+    logoutAll(userId: string, res: any): Promise<{
+        message: string;
+    }>;
+    getSessions(userId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        deviceName: string | null;
+        ipFirstSeen: string | null;
+        ipLastSeen: string | null;
+        userAgent: string | null;
+        lastSeenAt: Date;
+    }[]>;
+    revokeSession(userId: string, sessionId: string): Promise<{
+        message: string;
     }>;
 }

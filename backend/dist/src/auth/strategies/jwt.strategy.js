@@ -27,16 +27,29 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
             secretOrKey: secret,
+            passReqToCallback: true,
         });
         this.configService = configService;
         this.prisma = prisma;
     }
-    async validate(payload) {
+    async validate(req, payload) {
         const user = await this.prisma.user.findUnique({
             where: { id: payload.sub },
         });
         if (!user || !user.isActive) {
             throw new common_1.UnauthorizedException('User not found or inactive');
+        }
+        if (payload.sessionId) {
+            const session = await this.prisma.userSession.findFirst({
+                where: {
+                    id: payload.sessionId,
+                    userId: user.id,
+                    status: 'ACTIVE',
+                },
+            });
+            if (!session) {
+                throw new common_1.UnauthorizedException('Session has been revoked. Please log in again.');
+            }
         }
         return {
             id: user.id,
@@ -44,6 +57,7 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
             role: user.role,
             firstName: user.firstName,
             lastName: user.lastName,
+            sessionId: payload.sessionId,
         };
     }
 };

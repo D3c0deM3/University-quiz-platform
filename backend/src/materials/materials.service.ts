@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { MaterialStatus, DifficultyLevel, QuestionType } from '@prisma/client';
+import { MaterialStatus, DifficultyLevel, QuestionType, SubscriptionStatus } from '@prisma/client';
 import { UpdateMetadataDto } from './dto/update-metadata.dto.js';
 import { UpdateQuizDto } from './dto/update-quiz.dto.js';
 import { CreateQuizQuestionDto, UpdateSingleQuestionDto } from './dto/quiz-question.dto.js';
@@ -97,6 +97,72 @@ export class MaterialsService {
     const where: any = {};
     if (status) where.status = status;
     if (subjectId) where.subjectId = subjectId;
+
+    const [materials, total] = await Promise.all([
+      this.prisma.material.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          subject: { select: { id: true, name: true } },
+          uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+          metadata: {
+            select: { title: true, summary: true, keywords: true, tags: true },
+          },
+        },
+      }),
+      this.prisma.material.count({ where }),
+    ]);
+
+    return {
+      data: materials,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * List materials restricted to subjects the student is subscribed to.
+   * Only PUBLISHED materials are shown.
+   */
+  async findAllForStudent(
+    page = 1,
+    limit = 20,
+    userId: string,
+    status?: MaterialStatus,
+    subjectId?: string,
+  ) {
+    // Get the student's active subscribed subject IDs
+    const subs = await this.prisma.userSubscription.findMany({
+      where: {
+        userId,
+        status: SubscriptionStatus.ACTIVE,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+      },
+      select: { subjectId: true },
+    });
+    const subscribedSubjectIds = subs.map((s) => s.subjectId);
+
+    if (subscribedSubjectIds.length === 0) {
+      return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+    }
+
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      status: status || MaterialStatus.PUBLISHED, // Students only see PUBLISHED by default
+      subjectId: subjectId
+        ? subjectId // Already verified access in controller
+        : { in: subscribedSubjectIds },
+    };
 
     const [materials, total] = await Promise.all([
       this.prisma.material.findMany({

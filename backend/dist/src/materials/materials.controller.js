@@ -85,10 +85,13 @@ let MaterialsController = class MaterialsController {
         };
     }
     async findAll(page, limit, status, subjectId, userId, role) {
-        if (role === client_1.Role.STUDENT && subjectId) {
-            const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
-            if (!hasAccess)
-                throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+        if (role === client_1.Role.STUDENT) {
+            if (subjectId) {
+                const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
+                if (!hasAccess)
+                    throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+            }
+            return this.materialsService.findAllForStudent(page, limit, userId, status, subjectId);
         }
         return this.materialsService.findAll(page, limit, status, subjectId);
     }

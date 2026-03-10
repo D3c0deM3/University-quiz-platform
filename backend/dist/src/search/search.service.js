@@ -12,19 +12,43 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SearchService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_js_1 = require("../prisma/prisma.service.js");
+const client_1 = require("@prisma/client");
 const search_query_dto_js_1 = require("./dto/search-query.dto.js");
 let SearchService = class SearchService {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async search(dto) {
+    async getSubscribedSubjectIds(userId) {
+        const subs = await this.prisma.userSubscription.findMany({
+            where: {
+                userId,
+                status: client_1.SubscriptionStatus.ACTIVE,
+                OR: [
+                    { expiresAt: null },
+                    { expiresAt: { gt: new Date() } },
+                ],
+            },
+            select: { subjectId: true },
+        });
+        return subs.map((s) => s.subjectId);
+    }
+    async search(dto, userId, role) {
         const page = dto.page ?? 1;
         const limit = dto.limit ?? 20;
         const skip = (page - 1) * limit;
         const conditions = ['m."status" = \'PUBLISHED\''];
         const params = [];
         let paramIndex = 1;
+        if (role === client_1.Role.STUDENT) {
+            const subjectIds = await this.getSubscribedSubjectIds(userId);
+            if (subjectIds.length === 0) {
+                return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+            }
+            conditions.push(`m."subject_id" = ANY($${paramIndex}::text[])`);
+            params.push(subjectIds);
+            paramIndex++;
+        }
         if (dto.q && dto.q.trim()) {
             const searchTerms = dto.q
                 .trim()
@@ -179,10 +203,22 @@ let SearchService = class SearchService {
             },
         };
     }
-    async deepSearch(query, page = 1, limit = 20) {
+    async deepSearch(query, userId, role, page = 1, limit = 20) {
         const skip = (page - 1) * limit;
         if (!query || !query.trim()) {
             return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+        }
+        let countSubjectFilter = '';
+        let dataSubjectFilter = '';
+        const extraParams = [];
+        if (role === client_1.Role.STUDENT) {
+            const subjectIds = await this.getSubscribedSubjectIds(userId);
+            if (subjectIds.length === 0) {
+                return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+            }
+            countSubjectFilter = `AND m."subject_id" = ANY($2::text[])`;
+            dataSubjectFilter = `AND m."subject_id" = ANY($4::text[])`;
+            extraParams.push(subjectIds);
         }
         const searchTerms = query
             .trim()
@@ -197,6 +233,7 @@ let SearchService = class SearchService {
       JOIN "material_text_chunks" tc ON tc."material_id" = m."id"
       WHERE m."status" = 'PUBLISHED'
         AND to_tsvector('simple', tc."content") @@ to_tsquery('simple', $1)
+        ${countSubjectFilter}
     `;
         const dataQuery = `
       SELECT DISTINCT ON (m."id")
@@ -216,12 +253,15 @@ let SearchService = class SearchService {
       LEFT JOIN "subjects" s ON s."id" = m."subject_id"
       WHERE m."status" = 'PUBLISHED'
         AND to_tsvector('simple', tc."content") @@ to_tsquery('simple', $1)
+        ${dataSubjectFilter}
       ORDER BY m."id", rank DESC
       LIMIT $2 OFFSET $3
     `;
+        const countParams = [searchTerms, ...extraParams];
+        const dataParams = [searchTerms, limit, skip, ...extraParams];
         const [countResult, data] = await Promise.all([
-            this.prisma.$queryRawUnsafe(countQuery, searchTerms),
-            this.prisma.$queryRawUnsafe(dataQuery, searchTerms, limit, skip),
+            this.prisma.$queryRawUnsafe(countQuery, ...countParams),
+            this.prisma.$queryRawUnsafe(dataQuery, ...dataParams),
         ]);
         const total = countResult[0]?.total ?? 0;
         return {

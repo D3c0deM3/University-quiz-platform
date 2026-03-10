@@ -97,10 +97,16 @@ export class QuizzesController {
 
   /**
    * POST /quizzes/check-answer — check a single answer for instant feedback
+   * SECURITY: Only admin/teacher can check answers freely.
+   * Students can only check answers for questions in their COMPLETED attempts.
    */
   @Post('quizzes/check-answer')
-  async checkAnswer(@Body() dto: CheckAnswerDto) {
-    return this.quizzesService.checkAnswer(dto);
+  async checkAnswer(
+    @Body() dto: CheckAnswerDto,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.quizzesService.checkAnswer(dto, userId, role);
   }
 
   /**

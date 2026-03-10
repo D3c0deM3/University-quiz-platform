@@ -3,14 +3,24 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RegisterDto, LoginDto, RegisterWithOtpDto } from './dto/index.js';
 import { TelegramService } from '../telegram/telegram.service.js';
 import type { JwtPayload } from './strategies/jwt.strategy.js';
+import { SessionStatus, SessionEventType } from '@prisma/client';
+
+export interface SessionContext {
+  ip?: string;
+  userAgent?: string;
+  fingerprint?: string;
+  deviceName?: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -21,8 +31,124 @@ export class AuthService {
     private telegramService: TelegramService,
   ) {}
 
-  async register(dto: RegisterDto) {
-    // Check if user already exists by phone
+  // ─── Helpers ─────────────────────────────────────────
+
+  private hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private async generateTokens(payload: JwtPayload) {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload as any, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+        expiresIn: '15m', // Short-lived access token
+      }),
+      this.jwtService.signAsync(payload as any, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: '7d',
+      }),
+    ]);
+
+    return { accessToken, refreshToken };
+  }
+
+  /**
+   * Revoke ALL active sessions for a user except optionally one.
+   * This enforces one-device-at-a-time.
+   */
+  private async revokeAllUserSessions(userId: string, exceptSessionId?: string) {
+    const where: any = {
+      userId,
+      status: SessionStatus.ACTIVE,
+    };
+    if (exceptSessionId) {
+      where.NOT = { id: exceptSessionId };
+    }
+
+    const sessions = await this.prisma.userSession.findMany({ where });
+
+    if (sessions.length > 0) {
+      // Log forced logout events
+      await this.prisma.sessionEvent.createMany({
+        data: sessions.map((s) => ({
+          sessionId: s.id,
+          eventType: SessionEventType.FORCED_LOGOUT,
+          metadata: { reason: 'new_login_from_another_device' },
+        })),
+      });
+
+      await this.prisma.userSession.updateMany({
+        where,
+        data: {
+          status: SessionStatus.REVOKED,
+          revokedAt: new Date(),
+        },
+      });
+    }
+  }
+
+  /**
+   * Create a persistent session and return tokens + session data.
+   */
+  private async createSession(
+    user: { id: string; phone: string; role: string },
+    ctx: SessionContext,
+  ) {
+    // Enforce one-device-at-a-time: revoke all existing sessions for this user
+    await this.revokeAllUserSessions(user.id);
+
+    // Create session record first with a placeholder hash
+    const session = await this.prisma.userSession.create({
+      data: {
+        userId: user.id,
+        refreshTokenHash: 'pending', // will be updated immediately
+        deviceName: ctx.deviceName || null,
+        fingerprintHash: ctx.fingerprint
+          ? this.hashToken(ctx.fingerprint)
+          : null,
+        ipFirstSeen: ctx.ip || null,
+        ipLastSeen: ctx.ip || null,
+        userAgent: ctx.userAgent || null,
+        status: SessionStatus.ACTIVE,
+      },
+    });
+
+    // Now generate tokens with sessionId embedded
+    const tokens = await this.generateTokens({
+      sub: user.id,
+      phone: user.phone,
+      role: user.role,
+      sessionId: session.id,
+    });
+
+    const refreshTokenHash = this.hashToken(tokens.refreshToken);
+
+    // Update session with the actual refresh token hash
+    await this.prisma.userSession.update({
+      where: { id: session.id },
+      data: { refreshTokenHash },
+    });
+
+    // Log login event
+    await this.prisma.sessionEvent.create({
+      data: {
+        sessionId: session.id,
+        eventType: SessionEventType.LOGIN,
+        ip: ctx.ip || null,
+        userAgent: ctx.userAgent || null,
+      },
+    });
+
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      sessionId: session.id,
+    };
+  }
+
+  // ─── Registration ────────────────────────────────────
+
+  async register(dto: RegisterDto, ctx: SessionContext = {}) {
     const existing = await this.prisma.user.findUnique({
       where: { phone: dto.phone },
     });
@@ -31,10 +157,8 @@ export class AuthService {
       throw new ConflictException('Phone number already registered');
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // Create user (default role: STUDENT)
     const user = await this.prisma.user.create({
       data: {
         phone: dto.phone,
@@ -44,12 +168,10 @@ export class AuthService {
       },
     });
 
-    // Generate tokens
-    const tokens = await this.generateTokens({
-      sub: user.id,
-      phone: user.phone,
-      role: user.role,
-    });
+    const session = await this.createSession(
+      { id: user.id, phone: user.phone, role: user.role },
+      ctx,
+    );
 
     return {
       user: {
@@ -59,14 +181,14 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
       },
-      ...tokens,
+      accessToken: session.accessToken,
+      sessionId: session.sessionId,
+      _refreshToken: session.refreshToken, // Used by controller to set HttpOnly cookie
     };
   }
 
-  /**
-   * Get the Telegram bot deep link for OTP verification.
-   * Also checks that the phone is not already registered.
-   */
+  // ─── OTP Link / Verify ──────────────────────────────
+
   async getOtpLink(phone: string) {
     const existing = await this.prisma.user.findUnique({
       where: { phone },
@@ -86,10 +208,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Verify OTP code without registering yet.
-   * Returns success/failure so frontend can show result before final registration.
-   */
   async verifyOtp(phone: string, code: string) {
     const result = await this.telegramService.verifyOtp(phone, code);
 
@@ -100,18 +218,12 @@ export class AuthService {
     return { verified: true, message: result.message };
   }
 
-  /**
-   * Register a new user with OTP verification.
-   * The phone must have been verified via Telegram OTP first.
-   */
-  async registerWithOtp(dto: RegisterWithOtpDto) {
-    // First verify the OTP code
+  async registerWithOtp(dto: RegisterWithOtpDto, ctx: SessionContext = {}) {
     const otpResult = await this.telegramService.verifyOtp(dto.phone, dto.otpCode);
     if (!otpResult.valid) {
       throw new BadRequestException(otpResult.message);
     }
 
-    // Check if user already exists
     const existing = await this.prisma.user.findUnique({
       where: { phone: dto.phone },
     });
@@ -120,10 +232,8 @@ export class AuthService {
       throw new ConflictException('Phone number already registered');
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // Create user (default role: STUDENT)
     const user = await this.prisma.user.create({
       data: {
         phone: dto.phone,
@@ -133,12 +243,10 @@ export class AuthService {
       },
     });
 
-    // Generate tokens
-    const tokens = await this.generateTokens({
-      sub: user.id,
-      phone: user.phone,
-      role: user.role,
-    });
+    const session = await this.createSession(
+      { id: user.id, phone: user.phone, role: user.role },
+      ctx,
+    );
 
     return {
       user: {
@@ -148,12 +256,15 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
       },
-      ...tokens,
+      accessToken: session.accessToken,
+      sessionId: session.sessionId,
+      _refreshToken: session.refreshToken,
     };
   }
 
-  async login(dto: LoginDto) {
-    // Find user by phone
+  // ─── Login ──────────────────────────────────────────
+
+  async login(dto: LoginDto, ctx: SessionContext = {}) {
     const user = await this.prisma.user.findUnique({
       where: { phone: dto.phone },
     });
@@ -166,19 +277,18 @@ export class AuthService {
       throw new UnauthorizedException('Account is deactivated');
     }
 
-    // Compare password
     const passwordValid = await bcrypt.compare(dto.password, user.password);
 
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Generate tokens
-    const tokens = await this.generateTokens({
-      sub: user.id,
-      phone: user.phone,
-      role: user.role,
-    });
+    // Check if there are already active sessions — if so, we forcefully
+    // terminate them (one-device-at-a-time policy).
+    const session = await this.createSession(
+      { id: user.id, phone: user.phone, role: user.role },
+      ctx,
+    );
 
     return {
       user: {
@@ -188,9 +298,13 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
       },
-      ...tokens,
+      accessToken: session.accessToken,
+      sessionId: session.sessionId,
+      _refreshToken: session.refreshToken,
     };
   }
+
+  // ─── Profile ────────────────────────────────────────
 
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -213,42 +327,242 @@ export class AuthService {
     return user;
   }
 
-  async refreshToken(userId: string) {
+  // ─── Refresh Token (Rotating) ───────────────────────
+
+  async refreshToken(oldRefreshToken: string, ctx: SessionContext = {}) {
+    // Decode the refresh token to get user info
+    let payload: JwtPayload;
+    try {
+      payload = await this.jwtService.verifyAsync(oldRefreshToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: payload.sub },
     });
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    const tokens = await this.generateTokens({
+    // Find the session by the hashed refresh token
+    const oldHash = this.hashToken(oldRefreshToken);
+    const session = await this.prisma.userSession.findFirst({
+      where: {
+        refreshTokenHash: oldHash,
+        userId: user.id,
+        status: SessionStatus.ACTIVE,
+      },
+    });
+
+    if (!session) {
+      // Token reuse detected — potential theft. Revoke all sessions for safety.
+      await this.revokeAllUserSessions(user.id);
+
+      // Log suspicious event
+      const anySession = await this.prisma.userSession.findFirst({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (anySession) {
+        await this.prisma.sessionEvent.create({
+          data: {
+            sessionId: anySession.id,
+            eventType: SessionEventType.FINGERPRINT_MISMATCH,
+            ip: ctx.ip || null,
+            metadata: { reason: 'refresh_token_reuse_detected' },
+          },
+        });
+      }
+
+      throw new UnauthorizedException('Session invalid. All sessions revoked for security. Please log in again.');
+    }
+
+    // Fingerprint risk check: if a fingerprint was stored and the new one differs significantly
+    if (session.fingerprintHash && ctx.fingerprint) {
+      const newFpHash = this.hashToken(ctx.fingerprint);
+      if (newFpHash !== session.fingerprintHash) {
+        // Suspicious — different device using the same refresh token
+        await this.prisma.sessionEvent.create({
+          data: {
+            sessionId: session.id,
+            eventType: SessionEventType.FINGERPRINT_MISMATCH,
+            ip: ctx.ip || null,
+            metadata: {
+              reason: 'fingerprint_changed_during_refresh',
+              oldFp: session.fingerprintHash.slice(0, 8),
+              newFp: newFpHash.slice(0, 8),
+            },
+          },
+        });
+
+        // Revoke this session and force re-login
+        await this.prisma.userSession.update({
+          where: { id: session.id },
+          data: { status: SessionStatus.REVOKED, revokedAt: new Date() },
+        });
+
+        throw new UnauthorizedException(
+          'Device fingerprint mismatch detected. Please log in again.',
+        );
+      }
+    }
+
+    // IP change detection (soft — just log, don't block)
+    if (session.ipLastSeen && ctx.ip && session.ipLastSeen !== ctx.ip) {
+      await this.prisma.sessionEvent.create({
+        data: {
+          sessionId: session.id,
+          eventType: SessionEventType.SUSPICIOUS_IP_CHANGE,
+          ip: ctx.ip,
+          metadata: {
+            previousIp: session.ipLastSeen,
+            newIp: ctx.ip,
+          },
+        },
+      });
+    }
+
+    // Issue new tokens (rotation) with sessionId
+    const newTokens = await this.generateTokens({
       sub: user.id,
       phone: user.phone,
       role: user.role,
+      sessionId: session.id,
     });
 
-    return tokens;
-  }
+    const newRefreshHash = this.hashToken(newTokens.refreshToken);
 
-  private async generateTokens(payload: JwtPayload) {
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload as any, {
-        secret: this.configService.get<string>('JWT_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_EXPIRATION', '1d') as any,
-      }),
-      this.jwtService.signAsync(payload as any, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>(
-          'JWT_REFRESH_EXPIRATION',
-          '7d',
-        ) as any,
-      }),
-    ]);
+    // Update session with new refresh token hash
+    await this.prisma.userSession.update({
+      where: { id: session.id },
+      data: {
+        refreshTokenHash: newRefreshHash,
+        lastSeenAt: new Date(),
+        ipLastSeen: ctx.ip || session.ipLastSeen,
+      },
+    });
+
+    // Log refresh event
+    await this.prisma.sessionEvent.create({
+      data: {
+        sessionId: session.id,
+        eventType: SessionEventType.REFRESH,
+        ip: ctx.ip || null,
+        userAgent: ctx.userAgent || null,
+      },
+    });
 
     return {
-      accessToken,
-      refreshToken,
+      accessToken: newTokens.accessToken,
+      refreshToken: newTokens.refreshToken,
+      sessionId: session.id,
     };
+  }
+
+  // ─── Logout ─────────────────────────────────────────
+
+  async logout(refreshToken: string, sessionId?: string) {
+    let session: any = null;
+
+    // Try to find session by refresh token first
+    if (refreshToken) {
+      const hash = this.hashToken(refreshToken);
+      session = await this.prisma.userSession.findFirst({
+        where: { refreshTokenHash: hash, status: SessionStatus.ACTIVE },
+      });
+    }
+
+    // Fall back to sessionId from JWT
+    if (!session && sessionId) {
+      session = await this.prisma.userSession.findFirst({
+        where: { id: sessionId, status: SessionStatus.ACTIVE },
+      });
+    }
+
+    if (!session) return { message: 'Logged out' };
+
+    await this.prisma.userSession.update({
+      where: { id: session.id },
+      data: { status: SessionStatus.REVOKED, revokedAt: new Date() },
+    });
+
+    await this.prisma.sessionEvent.create({
+      data: {
+        sessionId: session.id,
+        eventType: SessionEventType.LOGOUT,
+      },
+    });
+
+    return { message: 'Logged out successfully' };
+  }
+
+  async logoutAllDevices(userId: string) {
+    await this.revokeAllUserSessions(userId);
+    return { message: 'All sessions revoked' };
+  }
+
+  // ─── Session Management ─────────────────────────────
+
+  async getActiveSessions(userId: string) {
+    return this.prisma.userSession.findMany({
+      where: { userId, status: SessionStatus.ACTIVE },
+      select: {
+        id: true,
+        deviceName: true,
+        ipFirstSeen: true,
+        ipLastSeen: true,
+        userAgent: true,
+        createdAt: true,
+        lastSeenAt: true,
+      },
+      orderBy: { lastSeenAt: 'desc' },
+    });
+  }
+
+  async revokeSession(userId: string, sessionId: string) {
+    const session = await this.prisma.userSession.findFirst({
+      where: { id: sessionId, userId, status: SessionStatus.ACTIVE },
+    });
+
+    if (!session) {
+      throw new BadRequestException('Session not found or already revoked');
+    }
+
+    await this.prisma.userSession.update({
+      where: { id: sessionId },
+      data: { status: SessionStatus.REVOKED, revokedAt: new Date() },
+    });
+
+    await this.prisma.sessionEvent.create({
+      data: {
+        sessionId,
+        eventType: SessionEventType.FORCED_LOGOUT,
+        metadata: { reason: 'manual_revoke_by_user' },
+      },
+    });
+
+    return { message: 'Session revoked' };
+  }
+
+  /**
+   * Validate that the user's current session is still active.
+   * Called from JwtStrategy on every request.
+   */
+  async validateSession(userId: string, sessionId?: string): Promise<boolean> {
+    if (!sessionId) return true; // fallback for old tokens without sessionId
+
+    const session = await this.prisma.userSession.findFirst({
+      where: {
+        id: sessionId,
+        userId,
+        status: SessionStatus.ACTIVE,
+      },
+    });
+
+    return !!session;
   }
 }
