@@ -19,7 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { extname, join, isAbsolute } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { MaterialsService } from './materials.service.js';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards/index.js';
@@ -33,12 +33,13 @@ import { CreateQuizQuestionDto, UpdateSingleQuestionDto } from './dto/quiz-quest
 import type { MaterialProcessingJobData } from './processors/material-processing.processor.js';
 
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
+const resolvedUploadDir = isAbsolute(uploadDir) ? uploadDir : join(process.cwd(), uploadDir);
 
 const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt'];
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 const storage = diskStorage({
-  destination: join(process.cwd(), uploadDir),
+  destination: resolvedUploadDir,
   filename: (_req, file, callback) => {
     const ext = extname(file.originalname).toLowerCase();
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
