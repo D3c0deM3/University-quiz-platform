@@ -127,6 +127,8 @@ export const quizzesApi = {
   submitAttempt: (attemptId: string, answers: { questionId: string; selectedOptionId?: string; textAnswer?: string }[]) =>
     api.post(`/quiz-attempts/${attemptId}/submit`, { answers }),
   getResults: (attemptId: string) => api.get(`/quiz-attempts/${attemptId}/results`),
+  checkAnswer: (questionId: string, selectedOptionId: string) =>
+    api.post('/quizzes/check-answer', { questionId, selectedOptionId }),
   myAttempts: (page = 1, limit = 20) =>
     api.get('/my/quiz-attempts', { params: { page, limit } }),
   myAttemptDetail: (attemptId: string) => api.get(`/my/quiz-attempts/${attemptId}`),

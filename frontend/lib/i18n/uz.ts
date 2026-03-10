@@ -358,6 +358,12 @@ const uz: Record<string, string> = {
   'quiz.minutes': 'daqiqa',
   'quiz.notAnswered': 'Javob berilmagan',
   'quiz.answered': 'javob berilgan',
+  'quiz.feedbackModeLabel': 'Natija ko\'rsatish turini tanlang',
+  'quiz.instantFeedback': 'Darhol natija',
+  'quiz.instantFeedbackDesc': 'Keyingi savolga o\'tganingizda to\'g\'ri javobni ko\'ring',
+  'quiz.reviewAtEnd': 'Oxirida ko\'rish',
+  'quiz.reviewAtEndDesc': 'Testni yakunlaganingizdan keyin barcha natijalarni ko\'ring',
+  'quiz.explanation': 'Izoh',
 
   // ───── Admin bosh sahifa ─────
   'adminDashboard.title': 'Boshqaruv paneli',

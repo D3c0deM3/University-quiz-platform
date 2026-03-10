@@ -358,6 +358,12 @@ const en = {
   'quiz.minutes': 'minutes',
   'quiz.notAnswered': 'Not answered',
   'quiz.answered': 'answered',
+  'quiz.feedbackModeLabel': 'Choose feedback mode',
+  'quiz.instantFeedback': 'Instant Feedback',
+  'quiz.instantFeedbackDesc': 'See the correct answer right after you move to the next question',
+  'quiz.reviewAtEnd': 'Review at End',
+  'quiz.reviewAtEndDesc': 'See all results after you submit the quiz',
+  'quiz.explanation': 'Explanation',
 
   // ───── Admin Dashboard ─────
   'adminDashboard.title': 'Admin Dashboard',

@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service.js';
 import { QuestionType } from '@prisma/client';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
+import { CheckAnswerDto } from './dto/check-answer.dto.js';
 
 @Injectable()
 export class QuizzesService {
@@ -438,6 +439,33 @@ export class QuizzesService {
       totalAttempts,
       averageScore,
       subjectStats,
+    };
+  }
+
+  /**
+   * Check a single answer for instant-feedback mode.
+   * Returns the correct option id and whether the user's selection was correct.
+   */
+  async checkAnswer(dto: CheckAnswerDto) {
+    const question = await this.prisma.quizQuestion.findUnique({
+      where: { id: dto.questionId },
+      include: {
+        options: { orderBy: { orderIndex: 'asc' } },
+      },
+    });
+
+    if (!question) {
+      throw new NotFoundException('Question not found');
+    }
+
+    const correctOption = question.options.find((o) => o.isCorrect);
+    const isCorrect = correctOption?.id === dto.selectedOptionId;
+
+    return {
+      questionId: dto.questionId,
+      selectedOptionId: dto.selectedOptionId,
+      correctOptionId: correctOption?.id ?? null,
+      isCorrect,
     };
   }
 

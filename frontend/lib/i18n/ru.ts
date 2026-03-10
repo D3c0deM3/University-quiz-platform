@@ -358,6 +358,12 @@ const ru: Record<string, string> = {
   'quiz.minutes': 'минут',
   'quiz.notAnswered': 'Без ответа',
   'quiz.answered': 'отвечено',
+  'quiz.feedbackModeLabel': 'Выберите режим обратной связи',
+  'quiz.instantFeedback': 'Мгновенная проверка',
+  'quiz.instantFeedbackDesc': 'Увидеть правильный ответ сразу после перехода к следующему вопросу',
+  'quiz.reviewAtEnd': 'Просмотр в конце',
+  'quiz.reviewAtEndDesc': 'Увидеть все результаты после завершения теста',
+  'quiz.explanation': 'Объяснение',
 
   // ───── Панель администратора ─────
   'adminDashboard.title': 'Панель управления',

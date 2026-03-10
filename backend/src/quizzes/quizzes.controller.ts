@@ -15,6 +15,7 @@ import { JwtAuthGuard, RolesGuard } from '../auth/guards/index.js';
 import { CurrentUser, Roles } from '../auth/decorators/index.js';
 import { Role } from '@prisma/client';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
+import { CheckAnswerDto } from './dto/check-answer.dto.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { ForbiddenException } from '@nestjs/common';
 
@@ -92,6 +93,14 @@ export class QuizzesController {
     @Body() dto: SubmitQuizDto,
   ) {
     return this.quizzesService.submitAttempt(attemptId, userId, dto);
+  }
+
+  /**
+   * POST /quizzes/check-answer — check a single answer for instant feedback
+   */
+  @Post('quizzes/check-answer')
+  async checkAnswer(@Body() dto: CheckAnswerDto) {
+    return this.quizzesService.checkAnswer(dto);
   }
 
   /**

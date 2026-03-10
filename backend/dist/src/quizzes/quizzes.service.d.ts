@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
+import { CheckAnswerDto } from './dto/check-answer.dto.js';
 export declare class QuizzesService {
     private prisma;
     constructor(prisma: PrismaService);
@@ -179,6 +180,12 @@ export declare class QuizzesService {
             averageScore: number;
             bestScore: number;
         }[];
+    }>;
+    checkAnswer(dto: CheckAnswerDto): Promise<{
+        questionId: string;
+        selectedOptionId: string;
+        correctOptionId: string | null;
+        isCorrect: boolean;
     }>;
     deleteQuiz(quizId: string): Promise<{
         message: string;

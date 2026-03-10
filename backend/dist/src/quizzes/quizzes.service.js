@@ -368,6 +368,25 @@ let QuizzesService = class QuizzesService {
             subjectStats,
         };
     }
+    async checkAnswer(dto) {
+        const question = await this.prisma.quizQuestion.findUnique({
+            where: { id: dto.questionId },
+            include: {
+                options: { orderBy: { orderIndex: 'asc' } },
+            },
+        });
+        if (!question) {
+            throw new common_1.NotFoundException('Question not found');
+        }
+        const correctOption = question.options.find((o) => o.isCorrect);
+        const isCorrect = correctOption?.id === dto.selectedOptionId;
+        return {
+            questionId: dto.questionId,
+            selectedOptionId: dto.selectedOptionId,
+            correctOptionId: correctOption?.id ?? null,
+            isCorrect,
+        };
+    }
     async deleteQuiz(quizId) {
         const quiz = await this.prisma.quiz.findUnique({ where: { id: quizId } });
         if (!quiz) {

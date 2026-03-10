@@ -19,6 +19,7 @@ const index_js_1 = require("../auth/guards/index.js");
 const index_js_2 = require("../auth/decorators/index.js");
 const client_1 = require("@prisma/client");
 const submit_quiz_dto_js_1 = require("./dto/submit-quiz.dto.js");
+const check_answer_dto_js_1 = require("./dto/check-answer.dto.js");
 const subscriptions_service_js_1 = require("../subscriptions/subscriptions.service.js");
 const common_2 = require("@nestjs/common");
 let QuizzesController = class QuizzesController {
@@ -58,6 +59,9 @@ let QuizzesController = class QuizzesController {
     }
     async submitAttempt(attemptId, userId, dto) {
         return this.quizzesService.submitAttempt(attemptId, userId, dto);
+    }
+    async checkAnswer(dto) {
+        return this.quizzesService.checkAnswer(dto);
     }
     async getAttemptResults(attemptId, userId) {
         return this.quizzesService.getAttemptResults(attemptId, userId);
@@ -114,6 +118,13 @@ __decorate([
     __metadata("design:paramtypes", [String, String, submit_quiz_dto_js_1.SubmitQuizDto]),
     __metadata("design:returntype", Promise)
 ], QuizzesController.prototype, "submitAttempt", null);
+__decorate([
+    (0, common_1.Post)('quizzes/check-answer'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [check_answer_dto_js_1.CheckAnswerDto]),
+    __metadata("design:returntype", Promise)
+], QuizzesController.prototype, "checkAnswer", null);
 __decorate([
     (0, common_1.Get)('quiz-attempts/:id/results'),
     __param(0, (0, common_1.Param)('id')),

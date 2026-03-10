@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { quizzesApi } from '@/lib/api';
@@ -20,9 +20,15 @@ import {
   Circle,
   Clock,
   Send,
+  Eye,
+  EyeOff,
+  XCircle,
 } from 'lucide-react';
 
 type AnswerMap = Record<string, { selectedOptionId?: string; textAnswer?: string }>;
+type FeedbackMode = 'instant' | 'end';
+type RevealedAnswer = { correctOptionId: string | null; isCorrect: boolean };
+type RevealedMap = Record<string, RevealedAnswer>;
 
 export default function QuizTakePage() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +42,9 @@ export default function QuizTakePage() {
   const [starting, setStarting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('end');
+  const [revealed, setRevealed] = useState<RevealedMap>({});
+  const prevIndexRef = useRef<number>(0);
 
   // Load quiz details
   useEffect(() => {
@@ -47,13 +56,37 @@ export default function QuizTakePage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Reveal answer when navigating away in instant mode
+  useEffect(() => {
+    if (feedbackMode !== 'instant' || !quiz) return;
+    const questions = quiz.questions || [];
+    const prevQ = questions[prevIndexRef.current];
+    if (prevQ && prevIndexRef.current !== currentIndex) {
+      const ans = answers[prevQ.id];
+      if (ans?.selectedOptionId && !revealed[prevQ.id]) {
+        quizzesApi
+          .checkAnswer(prevQ.id, ans.selectedOptionId)
+          .then((res) => {
+            setRevealed((prev) => ({
+              ...prev,
+              [prevQ.id]: {
+                correctOptionId: res.data.correctOptionId,
+                isCorrect: res.data.isCorrect,
+              },
+            }));
+          })
+          .catch(() => {});
+      }
+    }
+    prevIndexRef.current = currentIndex;
+  }, [currentIndex, feedbackMode, quiz, answers, revealed]);
+
   const startQuiz = useCallback(async () => {
     if (!id) return;
     setStarting(true);
     try {
       const { data } = await quizzesApi.startAttempt(id);
       setAttempt(data);
-      // Initialize answers map
       const questions: QuizQuestion[] = data.quiz?.questions || [];
       const initial: AnswerMap = {};
       questions.forEach((q) => {
@@ -69,6 +102,8 @@ export default function QuizTakePage() {
   }, [id, quiz]);
 
   const setAnswer = (questionId: string, value: { selectedOptionId?: string; textAnswer?: string }) => {
+    // Don't allow changing answer if already revealed
+    if (revealed[questionId]) return;
     setAnswers((prev) => ({
       ...prev,
       [questionId]: { ...prev[questionId], ...value },
@@ -138,7 +173,7 @@ export default function QuizTakePage() {
             <CardTitle className="text-lg sm:text-2xl">{quiz.title}</CardTitle>
             {quiz.description && <CardDescription className="text-xs sm:text-sm">{quiz.description}</CardDescription>}
           </CardHeader>
-          <CardContent className="space-y-4 text-center px-4 sm:px-6 pb-4 sm:pb-6">
+          <CardContent className="space-y-5 text-center px-4 sm:px-6 pb-4 sm:pb-6">
             <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-500">
               <span className="flex items-center gap-1">
                 <ClipboardList size={13} />
@@ -149,6 +184,54 @@ export default function QuizTakePage() {
                 {t('quiz.minutes')}
               </span>
             </div>
+
+            {/* Feedback mode selector */}
+            <div className="mx-auto max-w-sm space-y-2">
+              <p className="text-xs sm:text-sm font-medium text-gray-700">{t('quiz.feedbackModeLabel')}</p>
+              <div className="grid grid-cols-1 gap-2">
+                <button
+                  onClick={() => setFeedbackMode('instant')}
+                  className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer ${
+                    feedbackMode === 'instant'
+                      ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full shrink-0 ${
+                    feedbackMode === 'instant' ? 'bg-blue-100' : 'bg-gray-100'
+                  }`}>
+                    <Eye size={16} className={feedbackMode === 'instant' ? 'text-blue-600' : 'text-gray-400'} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-xs sm:text-sm font-medium ${feedbackMode === 'instant' ? 'text-blue-900' : 'text-gray-700'}`}>
+                      {t('quiz.instantFeedback')}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">{t('quiz.instantFeedbackDesc')}</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setFeedbackMode('end')}
+                  className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer ${
+                    feedbackMode === 'end'
+                      ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full shrink-0 ${
+                    feedbackMode === 'end' ? 'bg-blue-100' : 'bg-gray-100'
+                  }`}>
+                    <EyeOff size={16} className={feedbackMode === 'end' ? 'text-blue-600' : 'text-gray-400'} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-xs sm:text-sm font-medium ${feedbackMode === 'end' ? 'text-blue-900' : 'text-gray-700'}`}>
+                      {t('quiz.reviewAtEnd')}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">{t('quiz.reviewAtEndDesc')}</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             <Button size="lg" onClick={startQuiz} loading={starting} className="px-6 sm:px-8">
               {t('quiz.startQuiz')}
             </Button>
@@ -163,6 +246,7 @@ export default function QuizTakePage() {
   const answeredCount = Object.values(answers).filter(
     (a) => a.selectedOptionId || a.textAnswer,
   ).length;
+  const isCurrentRevealed = currentQ ? !!revealed[currentQ.id] : false;
 
   return (
     <div className="max-w-3xl mx-auto flex flex-col min-h-[calc(100dvh-8rem)] sm:min-h-0 sm:block space-y-3 sm:space-y-6">
@@ -189,14 +273,31 @@ export default function QuizTakePage() {
 
       {/* Current question — grows to fill available space on mobile */}
       {currentQ && (
-        <Card className="mt-3 sm:mt-0 flex-1 sm:flex-none flex flex-col">
+        <Card className={`mt-3 sm:mt-0 flex-1 sm:flex-none flex flex-col ${
+          isCurrentRevealed
+            ? revealed[currentQ.id].isCorrect
+              ? 'border-green-200 bg-green-50/30'
+              : 'border-red-200 bg-red-50/30'
+            : ''
+        }`}>
           <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-4">
             <div className="flex items-start gap-2 sm:gap-3">
-              <span className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-blue-100 text-xs sm:text-sm font-bold text-blue-600 shrink-0">
+              <span className={`flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-bold shrink-0 ${
+                isCurrentRevealed
+                  ? revealed[currentQ.id].isCorrect
+                    ? 'bg-green-100 text-green-600'
+                    : 'bg-red-100 text-red-600'
+                  : 'bg-blue-100 text-blue-600'
+              }`}>
                 {currentIndex + 1}
               </span>
               <div className="min-w-0 flex-1">
                 <CardTitle className="text-sm sm:text-lg leading-snug break-words">{currentQ.questionText}</CardTitle>
+                {isCurrentRevealed && (
+                  <Badge variant={revealed[currentQ.id].isCorrect ? 'success' : 'destructive'} className="mt-1 text-xs">
+                    {revealed[currentQ.id].isCorrect ? t('quiz.correct') : t('quiz.incorrect')}
+                  </Badge>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -206,31 +307,80 @@ export default function QuizTakePage() {
                 placeholder={t('quiz.selectAnswer')}
                 value={answers[currentQ.id]?.textAnswer || ''}
                 onChange={(e) => setAnswer(currentQ.id, { textAnswer: e.target.value })}
+                disabled={isCurrentRevealed}
               />
             ) : (
               currentQ.options.map((opt) => {
                 const isSelected = answers[currentQ.id]?.selectedOptionId === opt.id;
+                const revealData = revealed[currentQ.id];
+                const isRevealed = !!revealData;
+                const isCorrectOption = isRevealed && revealData.correctOptionId === opt.id;
+                const isWrongSelected = isRevealed && isSelected && !revealData.isCorrect;
+
+                let optionClass = '';
+                let iconElement: React.ReactNode = null;
+
+                if (isRevealed) {
+                  if (isCorrectOption) {
+                    optionClass = 'border-green-500 bg-green-50 ring-1 ring-green-500';
+                    iconElement = <CheckCircle2 size={18} className="text-green-600 shrink-0" />;
+                  } else if (isWrongSelected) {
+                    optionClass = 'border-red-500 bg-red-50 ring-1 ring-red-500';
+                    iconElement = <XCircle size={18} className="text-red-500 shrink-0" />;
+                  } else {
+                    optionClass = 'border-gray-200 opacity-60';
+                    iconElement = <Circle size={18} className="text-gray-300 shrink-0" />;
+                  }
+                } else {
+                  optionClass = isSelected
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50';
+                  iconElement = isSelected
+                    ? <CheckCircle2 size={18} className="text-blue-600 shrink-0" />
+                    : <Circle size={18} className="text-gray-300 shrink-0" />;
+                }
+
                 return (
                   <button
                     key={opt.id}
-                    onClick={() => setAnswer(currentQ.id, { selectedOptionId: opt.id })}
-                    className={`flex w-full items-center gap-2.5 sm:gap-3 rounded-lg border p-2.5 sm:p-4 text-left transition-colors cursor-pointer ${
-                      isSelected
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
+                    onClick={() => !isRevealed && setAnswer(currentQ.id, { selectedOptionId: opt.id })}
+                    disabled={isRevealed}
+                    className={`flex w-full items-center gap-2.5 sm:gap-3 rounded-lg border p-2.5 sm:p-4 text-left transition-colors ${
+                      isRevealed ? 'cursor-default' : 'cursor-pointer'
+                    } ${optionClass}`}
                   >
-                    {isSelected ? (
-                      <CheckCircle2 size={18} className="text-blue-600 shrink-0" />
-                    ) : (
-                      <Circle size={18} className="text-gray-300 shrink-0" />
-                    )}
-                    <span className={`text-xs sm:text-sm break-words min-w-0 leading-snug ${isSelected ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
+                    {iconElement}
+                    <span className={`text-xs sm:text-sm break-words min-w-0 leading-snug ${
+                      isRevealed
+                        ? isCorrectOption
+                          ? 'text-green-900 font-medium'
+                          : isWrongSelected
+                          ? 'text-red-900 font-medium'
+                          : 'text-gray-500'
+                        : isSelected
+                        ? 'text-blue-900 font-medium'
+                        : 'text-gray-700'
+                    }`}>
                       {opt.optionText}
                     </span>
+                    {isRevealed && isCorrectOption && (
+                      <Badge variant="success" className="ml-auto text-[10px] shrink-0">
+                        {t('quiz.correctAnswer')}
+                      </Badge>
+                    )}
+                    {isRevealed && isWrongSelected && (
+                      <Badge variant="destructive" className="ml-auto text-[10px] shrink-0">
+                        {t('quiz.yourAnswer')}
+                      </Badge>
+                    )}
                   </button>
                 );
               })
+            )}
+            {isCurrentRevealed && currentQ.explanation && (
+              <div className="mt-2 rounded-md bg-blue-50 px-3 py-2 text-xs sm:text-sm text-blue-800">
+                <strong>{t('quiz.explanation')}:</strong> {currentQ.explanation}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -244,17 +394,24 @@ export default function QuizTakePage() {
           {questions.map((_, i) => {
             const q = questions[i];
             const answered = answers[q.id]?.selectedOptionId || answers[q.id]?.textAnswer;
+            const revealData = revealed[q.id];
+            let dotClass = '';
+            if (i === currentIndex) {
+              dotClass = 'bg-blue-600 text-white';
+            } else if (revealData) {
+              dotClass = revealData.isCorrect
+                ? 'bg-green-500 text-white'
+                : 'bg-red-500 text-white';
+            } else if (answered) {
+              dotClass = 'bg-green-100 text-green-700';
+            } else {
+              dotClass = 'bg-gray-100 text-gray-500 hover:bg-gray-200';
+            }
             return (
               <button
                 key={q.id}
                 onClick={() => setCurrentIndex(i)}
-                className={`h-6 w-6 sm:h-8 sm:w-8 rounded-full text-[10px] sm:text-xs font-medium transition-colors cursor-pointer shrink-0 ${
-                  i === currentIndex
-                    ? 'bg-blue-600 text-white'
-                    : answered
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                }`}
+                className={`h-6 w-6 sm:h-8 sm:w-8 rounded-full text-[10px] sm:text-xs font-medium transition-colors cursor-pointer shrink-0 ${dotClass}`}
               >
                 {i + 1}
               </button>

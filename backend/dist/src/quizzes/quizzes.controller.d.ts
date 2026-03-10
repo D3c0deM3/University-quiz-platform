@@ -1,6 +1,7 @@
 import { QuizzesService } from './quizzes.service.js';
 import { Role } from '@prisma/client';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
+import { CheckAnswerDto } from './dto/check-answer.dto.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 export declare class QuizzesController {
     private quizzesService;
@@ -93,6 +94,12 @@ export declare class QuizzesController {
         gradableQuestions: number;
         totalQuestions: number;
         completedAt: Date | null;
+    }>;
+    checkAnswer(dto: CheckAnswerDto): Promise<{
+        questionId: string;
+        selectedOptionId: string;
+        correctOptionId: string | null;
+        isCorrect: boolean;
     }>;
     getAttemptResults(attemptId: string, userId: string): Promise<{
         id: string;
