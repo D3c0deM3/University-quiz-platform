@@ -1,2 +1,2 @@
-web: node dist/main.js
+web: node dist/src/main.js
 release: npx prisma db push
