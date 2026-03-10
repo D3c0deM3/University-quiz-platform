@@ -41,9 +41,9 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         {onMenuClick && (
           <button
             onClick={onMenuClick}
-            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 lg:hidden cursor-pointer"
+            className="rounded-lg p-2.5 text-gray-500 hover:bg-gray-100 lg:hidden cursor-pointer active:scale-95 transition-transform"
           >
-            <Menu size={20} />
+            <Menu size={22} />
           </button>
         )}
         <div>

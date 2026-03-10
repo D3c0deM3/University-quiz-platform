@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Mobile overlay */}
         {mobileOpen && (
           <div
-            className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+            className="fixed inset-0 z-40 bg-black/30 lg:hidden backdrop-blur-[2px] transition-opacity duration-200"
             onClick={() => setMobileOpen(false)}
           />
         )}
@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             mobileOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-          <Sidebar />
+          <Sidebar onNavClick={() => setMobileOpen(false)} />
         </div>
 
         <div className="flex flex-1 flex-col overflow-hidden">

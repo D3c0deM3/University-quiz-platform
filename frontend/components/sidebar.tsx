@@ -48,7 +48,7 @@ const navItems: NavItem[] = [
   { href: '/admin/subscriptions', labelKey: 'sidebar.subscriptions', icon: <CreditCard size={20} />, roles: ['ADMIN'], section: 'admin' },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onNavClick }: { onNavClick?: () => void } = {}) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const { t } = useTranslation();
@@ -94,8 +94,9 @@ export function Sidebar() {
               )}
               <Link
                 href={item.href}
+                onClick={onNavClick}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors active:scale-[0.98]',
                   isActive
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
