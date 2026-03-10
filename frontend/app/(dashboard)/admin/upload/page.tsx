@@ -147,12 +147,11 @@ export default function UploadPage() {
           <Input
             type="number"
             min={1}
-            max={50}
             value={numQuestions}
-            onChange={(e) => setNumQuestions(Math.min(50, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+            onChange={(e) => setNumQuestions(Math.max(1, parseInt(e.target.value, 10) || 1))}
             placeholder="10"
           />
-          <p className="text-xs text-gray-400 mt-2">{t('adminUpload.numQuestionsHint') || 'Min: 1, Max: 50. Default: 10'}</p>
+          <p className="text-xs text-gray-400 mt-2">{t('adminUpload.numQuestionsHint') || 'Min: 1. Default: 10'}</p>
         </CardContent>
       </Card>
 

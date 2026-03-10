@@ -509,7 +509,7 @@ const ru: Record<string, string> = {
   'adminUpload.changeFile': 'Изменить',
   'adminUpload.numQuestions': 'Количество вопросов',
   'adminUpload.numQuestionsDesc': 'Сколько вопросов ИИ должен сгенерировать из этого материала?',
-  'adminUpload.numQuestionsHint': 'Мин: 1, Макс: 50. По умолчанию: 10',
+  'adminUpload.numQuestionsHint': 'Мин: 1. По умолчанию: 10',
 
   // ───── Подписки (админ) ─────
   'adminSubs.title': 'Подписки',

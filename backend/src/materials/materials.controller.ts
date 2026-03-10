@@ -80,7 +80,7 @@ export class MaterialsController {
       throw new BadRequestException('subjectId is required');
     }
 
-    const numQuestions = Math.min(Math.max(parseInt(numQuestionsRaw, 10) || 10, 1), 50);
+    const numQuestions = Math.max(parseInt(numQuestionsRaw, 10) || 10, 1);
 
     const material = await this.materialsService.upload(file, subjectId, userId);
 

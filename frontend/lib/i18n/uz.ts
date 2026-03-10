@@ -509,7 +509,7 @@ const uz: Record<string, string> = {
   'adminUpload.changeFile': 'O\'zgartirish',
   'adminUpload.numQuestions': 'Savollar soni',
   'adminUpload.numQuestionsDesc': 'AI ushbu materialdan nechta test savoli yaratsin?',
-  'adminUpload.numQuestionsHint': 'Min: 1, Maks: 50. Standart: 10',
+  'adminUpload.numQuestionsHint': 'Min: 1. Standart: 10',
 
   // ───── Admin obunalar ─────
   'adminSubs.title': 'Obunalar',
