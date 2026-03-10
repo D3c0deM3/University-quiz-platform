@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { questionsApi, subjectsApi } from '@/lib/api';
+import { useDebounce } from '@/lib/useDebounce';
 import type { ManualQuestion, Subject, QuestionStatus, QuestionStatusCounts } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,6 +70,8 @@ export default function AdminQuestionsPage() {
   const [editSubjectId, setEditSubjectId] = useState('');
   const [editSaving, setEditSaving] = useState(false);
 
+  const debouncedSearch = useDebounce(search, 350);
+
   useEffect(() => {
     subjectsApi.list(1, 100).then((res) => {
       setSubjects(res.data.data || res.data || []);
@@ -90,7 +93,7 @@ export default function AdminQuestionsPage() {
       const params: Record<string, string | number> = { page: p, limit: 20 };
       if (subjectId) params.subjectId = subjectId;
       if (status) params.status = status;
-      if (search.trim()) params.search = search.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
       const { data } = await questionsApi.list(params);
       setQuestions(data.data || []);
       setTotal(data.meta?.total || 0);
@@ -99,7 +102,7 @@ export default function AdminQuestionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [subjectId, status, search]);
+  }, [subjectId, status, debouncedSearch]);
 
   useEffect(() => {
     load();
@@ -345,8 +348,8 @@ export default function AdminQuestionsPage() {
         />
       ) : (
         <div className="space-y-3">
-          {questions.map((q) => (
-            <Card key={q.id} className="transition-shadow hover:shadow-md">
+          {questions.map((q, i) => (
+            <Card key={q.id} className="transition-shadow hover:shadow-md animate-item-in" style={{ animationDelay: `${i * 40}ms` }}>
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 shrink-0">

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { questionsApi, subjectsApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTranslation } from '@/lib/i18n';
+import { useDebounce } from '@/lib/useDebounce';
 import type { ManualQuestion, Subject } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,8 @@ export default function SubjectQuestionsPage() {
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'TEACHER';
 
+  const debouncedSearch = useDebounce(search, 350);
+
   // Load subject info
   useEffect(() => {
     if (!subjectId) return;
@@ -78,7 +81,7 @@ export default function SubjectQuestionsPage() {
           subjectId,
           status: 'APPROVED',
         };
-        if (search.trim()) params.search = search.trim();
+        if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
         if (showMine) params.mine = 'true';
         const { data } = await questionsApi.list(params);
         setQuestions(data.data || []);
@@ -89,7 +92,7 @@ export default function SubjectQuestionsPage() {
         setLoading(false);
       }
     },
-    [subjectId, search, showMine],
+    [subjectId, debouncedSearch, showMine],
   );
 
   useEffect(() => {
@@ -232,7 +235,8 @@ export default function SubjectQuestionsPage() {
             return (
               <Card
                 key={q.id}
-                className="overflow-hidden transition-all hover:shadow-md border-gray-200"
+                className="overflow-hidden transition-all hover:shadow-md border-gray-200 animate-item-in"
+                style={{ animationDelay: `${idx * 40}ms` }}
               >
                 <CardContent className="p-0">
                   {/* Question header row */}

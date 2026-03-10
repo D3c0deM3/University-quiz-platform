@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth-store';
 import { searchApi, quizzesApi, subjectsApi } from '@/lib/api';
+import { useDebounce } from '@/lib/useDebounce';
 import type { Material, QuizStats, Subject } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,14 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<QuizStats | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Live search state
+  const [searchResults, setSearchResults] = useState<Material[]>([]);
+  const [searchSubjects, setSearchSubjects] = useState<Subject[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const debouncedQuery = useDebounce(searchQuery, 350);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     async function load() {
       try {
@@ -48,6 +57,47 @@ export default function DashboardPage() {
       }
     }
     load();
+  }, []);
+
+  // Live search: fetch results as user types
+  useEffect(() => {
+    if (!debouncedQuery.trim()) {
+      setSearchResults([]);
+      setSearchSubjects([]);
+      setShowDropdown(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setSearchLoading(true);
+      try {
+        const [materialsRes, subjectsRes] = await Promise.all([
+          searchApi.search({ q: debouncedQuery.trim(), limit: 5 }),
+          subjectsApi.list(1, 5, debouncedQuery.trim()),
+        ]);
+        if (!cancelled) {
+          setSearchResults(materialsRes.data.data || []);
+          setSearchSubjects(subjectsRes.data.data || subjectsRes.data || []);
+          setShowDropdown(true);
+        }
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [debouncedQuery]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -69,18 +119,101 @@ export default function DashboardPage() {
       {/* Quick Search */}
       <Card>
         <CardContent className="p-3 sm:py-6 sm:p-6">
-          <form onSubmit={handleSearch} className="flex gap-2 sm:gap-3">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <Input
-                placeholder={t('dashboard.searchPlaceholder')}
-                className="pl-9 sm:pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button type="submit" size="sm" className="shrink-0 sm:size-default">{t('common.search')}</Button>
-          </form>
+          <div ref={dropdownRef} className="relative">
+            <form onSubmit={handleSearch} className="flex gap-2 sm:gap-3">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <Input
+                  placeholder={t('dashboard.searchPlaceholder')}
+                  className="pl-9 sm:pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => { if (searchResults.length > 0 || searchSubjects.length > 0) setShowDropdown(true); }}
+                />
+              </div>
+              <Button type="submit" size="sm" className="shrink-0 sm:size-default">{t('common.search')}</Button>
+            </form>
+
+            {/* Live search dropdown */}
+            {showDropdown && (searchResults.length > 0 || searchSubjects.length > 0 || searchLoading) && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border bg-white shadow-lg overflow-hidden animate-dropdown-in">
+                {searchLoading && searchResults.length === 0 && searchSubjects.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-gray-400">{t('common.loading')}...</div>
+                ) : (
+                  <>
+                    {/* Subject results */}
+                    {searchSubjects.length > 0 && (
+                      <div>
+                        <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider bg-gray-50">
+                          {t('subjects.title')}
+                        </div>
+                        {searchSubjects.map((s, i) => (
+                          <Link
+                            key={s.id}
+                            href={`/subjects/${s.id}`}
+                            onClick={() => setShowDropdown(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors border-b last:border-b-0 animate-item-in"
+                            style={{ animationDelay: `${i * 40}ms` }}
+                          >
+                            <BookOpen size={16} className="text-blue-500 shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">{s.name}</p>
+                              {s.description && (
+                                <p className="text-xs text-gray-500 truncate">{s.description}</p>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="shrink-0 text-[10px]">
+                              {t('subjects.title')}
+                            </Badge>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    {/* Material results */}
+                    {searchResults.length > 0 && (
+                      <div>
+                        {searchSubjects.length > 0 && (
+                          <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider bg-gray-50">
+                            {t('sidebar.materials')}
+                          </div>
+                        )}
+                        {searchResults.map((m, i) => (
+                          <Link
+                            key={m.id}
+                            href={`/materials/${m.id}`}
+                            onClick={() => setShowDropdown(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors border-b last:border-b-0 animate-item-in"
+                            style={{ animationDelay: `${(searchSubjects.length + i) * 40}ms` }}
+                          >
+                            <FileText size={16} className="text-gray-400 shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {m.metadata?.title || m.originalName}
+                              </p>
+                              {m.subject?.name && (
+                                <p className="text-xs text-gray-500">{m.subject.name}</p>
+                              )}
+                            </div>
+                            <Badge variant="secondary" className="shrink-0 text-[10px]">
+                              {m.fileType?.toUpperCase()}
+                            </Badge>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    <Link
+                      href={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
+                      onClick={() => setShowDropdown(false)}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors font-medium border-t"
+                    >
+                      {t('common.search')} &quot;{searchQuery.trim()}&quot;
+                      <ArrowRight size={14} />
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

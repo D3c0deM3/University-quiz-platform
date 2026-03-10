@@ -61,8 +61,8 @@ export const authApi = {
 
 // ─── Subjects ─────────────────────────────────────────
 export const subjectsApi = {
-  list: (page = 1, limit = 50) =>
-    api.get('/subjects', { params: { page, limit } }),
+  list: (page = 1, limit = 50, search?: string) =>
+    api.get('/subjects', { params: { page, limit, ...(search ? { search } : {}) } }),
   get: (id: string) => api.get(`/subjects/${id}`),
   create: (data: { name: string; description?: string; code?: string }) =>
     api.post('/subjects', data),

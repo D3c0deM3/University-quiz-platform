@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { usersApi } from '@/lib/api';
 import type { User, Role } from '@/lib/types';
 import { useTranslation } from '@/lib/i18n';
+import { useDebounce } from '@/lib/useDebounce';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,12 +48,15 @@ export default function UsersPage() {
   const [deleting, setDeleting] = useState(false);
   const confirmInputRef = useRef<HTMLInputElement>(null);
 
-  const load = async (p = 1) => {
+  const debouncedSearch = useDebounce(search, 350);
+  const debouncedRole = useDebounce(roleFilter, 350);
+
+  const load = useCallback(async (p = 1) => {
     setLoading(true);
     try {
       const params: Record<string, string | number | undefined> = { page: p, limit: 20 };
-      if (search) params.search = search;
-      if (roleFilter) params.role = roleFilter;
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (debouncedRole) params.role = debouncedRole;
       const { data } = await usersApi.list(params as { page?: number; limit?: number; role?: string; search?: string });
       setUsers(data.data || []);
       setTotal(data.meta?.total || 0);
@@ -60,12 +64,11 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearch, debouncedRole]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,8 +174,8 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-gray-100">
-              {users.map((u) => (
-                <div key={u.id} className="flex items-center gap-4 p-4">
+              {users.map((u, i) => (
+                <div key={u.id} className="flex items-center gap-4 p-4 animate-item-in" style={{ animationDelay: `${i * 40}ms` }}>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 shrink-0">
                     {roleIcon(u.role)}
                   </div>

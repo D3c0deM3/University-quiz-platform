@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { searchApi, subjectsApi } from '@/lib/api';
+import { useDebounce } from '@/lib/useDebounce';
 import type { Material, Subject } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
-import { Search as SearchIcon, FileText, X, SlidersHorizontal } from 'lucide-react';
+import { Search as SearchIcon, FileText, X, SlidersHorizontal, BookOpen } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 
 function SearchContent() {
@@ -28,6 +29,7 @@ function SearchContent() {
   const [showFilters, setShowFilters] = useState(false);
 
   const [results, setResults] = useState<Material[]>([]);
+  const [subjectResults, setSubjectResults] = useState<Subject[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -54,10 +56,24 @@ function SearchContent() {
         if (difficulty) params.difficulty = difficulty;
         if (fileType) params.type = fileType;
 
-        const { data } = await searchApi.search(params);
-        setResults(data.data || []);
-        setTotal(data.meta?.total || 0);
+        // Search materials and subjects in parallel
+        const searchPromises: [Promise<any>, Promise<any>?] = [
+          searchApi.search(params),
+        ];
+        // Only search subjects when there's a text query and no subject filter
+        if (query.trim() && !subject && p === 1) {
+          searchPromises.push(subjectsApi.list(1, 5, query.trim()));
+        }
+
+        const [materialsRes, subjectsRes] = await Promise.all(searchPromises);
+        setResults(materialsRes.data.data || []);
+        setTotal(materialsRes.data.meta?.total || 0);
         setPage(p);
+        if (subjectsRes) {
+          setSubjectResults(subjectsRes.data.data || subjectsRes.data || []);
+        } else if (p === 1) {
+          setSubjectResults([]);
+        }
       } catch {
         // silent
       } finally {
@@ -67,13 +83,35 @@ function SearchContent() {
     [query, subject, difficulty, fileType, sort],
   );
 
+  // Debounce the query for live search
+  const debouncedQuery = useDebounce(query, 350);
+  const debouncedSubject = useDebounce(subject, 350);
+  const debouncedDifficulty = useDebounce(difficulty, 350);
+  const debouncedFileType = useDebounce(fileType, 350);
+  const debouncedSort = useDebounce(sort, 350);
+  const hasInitialized = useRef(false);
+
   // Auto-search on mount if query params exist
   useEffect(() => {
     if (searchParams.get('q')) {
       doSearch(1);
+      hasInitialized.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Live search: auto-trigger when debounced values change
+  useEffect(() => {
+    // Skip the initial render (handled by the mount effect above)
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      return;
+    }
+    if (debouncedQuery.trim() || debouncedSubject || debouncedDifficulty || debouncedFileType) {
+      doSearch(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, debouncedSubject, debouncedDifficulty, debouncedFileType, debouncedSort]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,13 +234,13 @@ function SearchContent() {
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
         </div>
-      ) : results.length === 0 && (query || hasFilters) ? (
+      ) : results.length === 0 && subjectResults.length === 0 && (query || hasFilters) ? (
         <EmptyState
           icon={<SearchIcon size={48} />}
           title={t('search.noResults')}
           description={t('search.noResultsDesc')}
         />
-      ) : results.length === 0 ? (
+      ) : results.length === 0 && subjectResults.length === 0 ? (
         <EmptyState
           icon={<SearchIcon size={48} />}
           title={t('search.typeToSearch')}
@@ -211,12 +249,45 @@ function SearchContent() {
       ) : (
         <>
           <p className="text-sm text-gray-500">
-            {total} {t('search.results')}
+            {total + subjectResults.length} {t('search.results')}
           </p>
-          <div className="space-y-3">
-            {results.map((m) => (
+
+          {/* Subject results */}
+          {subjectResults.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('subjects.title')}</h3>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {subjectResults.map((s, i) => (
+                  <Link key={s.id} href={`/subjects/${s.id}`}>
+                    <Card className="transition-all hover:shadow-md cursor-pointer animate-item-in" style={{ animationDelay: `${i * 50}ms` }}>
+                      <CardContent className="flex items-center gap-3 p-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 shrink-0">
+                          <BookOpen size={18} className="text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-gray-900 text-sm truncate">{s.name}</h3>
+                          {s.description && (
+                            <p className="text-xs text-gray-500 truncate">{s.description}</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Material results */}
+          {results.length > 0 && (
+            <div className="space-y-2">
+              {subjectResults.length > 0 && (
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('sidebar.materials')}</h3>
+              )}
+              <div className="space-y-3">
+                {results.map((m, i) => (
               <Link key={m.id} href={`/materials/${m.id}`}>
-                <Card className="transition-shadow hover:shadow-md cursor-pointer">
+                <Card className="transition-all hover:shadow-md cursor-pointer animate-item-in" style={{ animationDelay: `${(subjectResults.length + i) * 50}ms` }}>
                   <CardContent className="flex gap-4 p-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 shrink-0">
                       <FileText size={20} className="text-gray-500" />
@@ -257,7 +328,9 @@ function SearchContent() {
                 </Card>
               </Link>
             ))}
-          </div>
+              </div>
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (
