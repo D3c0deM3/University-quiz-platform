@@ -23,6 +23,7 @@ const materials_module_js_1 = require("./materials/materials.module.js");
 const search_module_js_1 = require("./search/search.module.js");
 const quizzes_module_js_1 = require("./quizzes/quizzes.module.js");
 const questions_module_js_1 = require("./questions/questions.module.js");
+const subscriptions_module_js_1 = require("./subscriptions/subscriptions.module.js");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -57,6 +58,7 @@ exports.AppModule = AppModule = __decorate([
             search_module_js_1.SearchModule,
             quizzes_module_js_1.QuizzesModule,
             questions_module_js_1.QuestionsModule,
+            subscriptions_module_js_1.SubscriptionsModule,
         ],
         controllers: [app_controller_js_1.AppController],
         providers: [

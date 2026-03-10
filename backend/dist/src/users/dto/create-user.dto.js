@@ -14,6 +14,7 @@ const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
 class CreateUserDto {
     email;
+    phone;
     password;
     firstName;
     lastName;
@@ -22,9 +23,15 @@ class CreateUserDto {
 exports.CreateUserDto = CreateUserDto;
 __decorate([
     (0, class_validator_1.IsEmail)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "email", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Matches)(/^\+?[0-9]{9,15}$/, { message: 'Phone number must be 9-15 digits' }),
+    __metadata("design:type", String)
+], CreateUserDto.prototype, "phone", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),

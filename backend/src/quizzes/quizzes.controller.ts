@@ -15,11 +15,16 @@ import { JwtAuthGuard, RolesGuard } from '../auth/guards/index.js';
 import { CurrentUser, Roles } from '../auth/decorators/index.js';
 import { Role } from '@prisma/client';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
+import { ForbiddenException } from '@nestjs/common';
 
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class QuizzesController {
-  constructor(private quizzesService: QuizzesService) {}
+  constructor(
+    private quizzesService: QuizzesService,
+    private subscriptionsService: SubscriptionsService,
+  ) {}
 
   // ────── Quiz Delivery (Step 17) ──────
 
@@ -29,9 +34,15 @@ export class QuizzesController {
   @Get('subjects/:id/quizzes')
   async findBySubject(
     @Param('id') subjectId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
+    if (role === Role.STUDENT) {
+      const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
+      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+    }
     return this.quizzesService.findBySubject(subjectId, page, limit);
   }
 
@@ -39,8 +50,17 @@ export class QuizzesController {
    * GET /quizzes/:id — get quiz details with questions (without answers)
    */
   @Get('quizzes/:id')
-  async findOne(@Param('id') quizId: string) {
-    return this.quizzesService.findOne(quizId);
+  async findOne(
+    @Param('id') quizId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    const quiz = await this.quizzesService.findOne(quizId);
+    if (role === Role.STUDENT && quiz.subjectId) {
+      const hasAccess = await this.subscriptionsService.hasAccess(userId, quiz.subjectId);
+      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+    }
+    return quiz;
   }
 
   /**
@@ -50,7 +70,15 @@ export class QuizzesController {
   async startAttempt(
     @Param('id') quizId: string,
     @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
+    if (role === Role.STUDENT) {
+      const quiz = await this.quizzesService.findOne(quizId);
+      if (quiz.subjectId) {
+        const hasAccess = await this.subscriptionsService.hasAccess(userId, quiz.subjectId);
+        if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+      }
+    }
     return this.quizzesService.startAttempt(quizId, userId);
   }
 

@@ -14,6 +14,7 @@ const config_1 = require("@nestjs/config");
 const auth_service_js_1 = require("./auth.service.js");
 const auth_controller_js_1 = require("./auth.controller.js");
 const jwt_strategy_js_1 = require("./strategies/jwt.strategy.js");
+const telegram_module_js_1 = require("../telegram/telegram.module.js");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -31,6 +32,7 @@ exports.AuthModule = AuthModule = __decorate([
                     },
                 }),
             }),
+            telegram_module_js_1.TelegramModule,
         ],
         controllers: [auth_controller_js_1.AuthController],
         providers: [auth_service_js_1.AuthService, jwt_strategy_js_1.JwtStrategy],

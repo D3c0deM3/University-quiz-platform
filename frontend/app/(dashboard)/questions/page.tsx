@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { questionsApi } from '@/lib/api';
+import { questionsApi, subscriptionsApi } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth-store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +14,7 @@ import {
   BookOpen,
   MessageSquare,
   ArrowRight,
+  Lock,
 } from 'lucide-react';
 
 interface SubjectCount {
@@ -35,16 +37,37 @@ const CARD_COLORS = [
 ];
 
 export default function QuestionsPage() {
+  const { user } = useAuthStore();
   const [subjectCounts, setSubjectCounts] = useState<SubjectCount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    questionsApi
-      .subjectCounts()
-      .then((res) => setSubjectCounts(res.data || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    async function load() {
+      try {
+        const res = await questionsApi.subjectCounts();
+        setSubjectCounts(res.data || []);
+
+        if (user?.role === 'STUDENT') {
+          try {
+            const subRes = await subscriptionsApi.my();
+            setSubscribedIds(new Set(subRes.data.subjectIds || []));
+          } catch {
+            // no subs
+          }
+        } else {
+          // admin/teacher see all
+          const ids = (res.data || []).map((sc: SubjectCount) => sc.subjectId);
+          setSubscribedIds(new Set(ids));
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [user]);
 
   const totalQuestions = subjectCounts.reduce((sum, sc) => sum + sc.questionCount, 0);
 
@@ -101,6 +124,33 @@ export default function QuestionsPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {subjectCounts.map((sc, idx) => {
             const colors = CARD_COLORS[idx % CARD_COLORS.length];
+            const hasAccess = subscribedIds.has(sc.subjectId);
+            const isLocked = user?.role === 'STUDENT' && !hasAccess;
+
+            if (isLocked) {
+              return (
+                <div key={sc.subjectId}>
+                  <Card className="relative overflow-hidden border-2 border-gray-200 opacity-70 h-full">
+                    <CardContent className="p-6 flex flex-col h-full">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-400 mb-4">
+                        <Lock size={22} />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">{sc.subjectName}</h3>
+                      {sc.subjectDescription && (
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">{sc.subjectDescription}</p>
+                      )}
+                      {!sc.subjectDescription && <div className="flex-1" />}
+                      <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
+                        <span className="text-sm text-gray-400 flex items-center gap-1">
+                          <Lock size={12} /> Subscribe to access
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            }
+
             return (
               <Link key={sc.subjectId} href={`/questions/${sc.subjectId}`}>
                 <Card

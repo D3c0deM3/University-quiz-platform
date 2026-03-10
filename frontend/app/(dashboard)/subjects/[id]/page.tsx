@@ -3,34 +3,44 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { subjectsApi, materialsApi, quizzesApi } from '@/lib/api';
+import { subjectsApi, materialsApi, quizzesApi, subscriptionsApi } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth-store';
 import type { Subject, Material, Quiz } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
-import { BookOpen, FileText, ClipboardList, ArrowLeft } from 'lucide-react';
+import { BookOpen, FileText, ClipboardList, ArrowLeft, Lock, Phone, MessageCircle } from 'lucide-react';
 
 export default function SubjectDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuthStore();
   const [subject, setSubject] = useState<Subject | null>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!id) return;
     async function load() {
       try {
-        const [subjectRes, materialsRes, quizzesRes] = await Promise.all([
-          subjectsApi.get(id),
-          materialsApi.list({ subjectId: id, status: 'PUBLISHED', limit: 50 }),
-          quizzesApi.listBySubject(id, 1, 50),
-        ]);
+        // Always load subject info
+        const subjectRes = await subjectsApi.get(id);
         setSubject(subjectRes.data);
-        setMaterials(materialsRes.data.data || []);
-        setQuizzes(quizzesRes.data.data || []);
+
+        // Check access for students
+        if (user?.role === 'STUDENT') {
+          try {
+            const checkRes = await subscriptionsApi.check(id);
+            setHasAccess(checkRes.data.hasAccess === true);
+          } catch {
+            setHasAccess(false);
+          }
+        } else {
+          setHasAccess(true);
+        }
       } catch {
         // handle error
       } finally {
@@ -38,7 +48,25 @@ export default function SubjectDetailPage() {
       }
     }
     load();
-  }, [id]);
+  }, [id, user]);
+
+  // Load content only when access confirmed
+  useEffect(() => {
+    if (!id || hasAccess !== true) return;
+    async function loadContent() {
+      try {
+        const [materialsRes, quizzesRes] = await Promise.all([
+          materialsApi.list({ subjectId: id, status: 'PUBLISHED', limit: 50 }),
+          quizzesApi.listBySubject(id, 1, 50),
+        ]);
+        setMaterials(materialsRes.data.data || []);
+        setQuizzes(quizzesRes.data.data || []);
+      } catch {
+        // may fail if no content yet
+      }
+    }
+    loadContent();
+  }, [id, hasAccess]);
 
   if (loading) {
     return (
@@ -65,6 +93,95 @@ export default function SubjectDetailPage() {
           </Link>
         }
       />
+    );
+  }
+
+  // Paywall for students without access
+  if (hasAccess === false) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Link
+            href="/subjects"
+            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2"
+          >
+            <ArrowLeft size={14} /> Back to Subjects
+          </Link>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">{subject.name}</h1>
+            {subject.code && <Badge variant="outline">{subject.code}</Badge>}
+          </div>
+          {subject.description && (
+            <p className="mt-1 text-gray-500">{subject.description}</p>
+          )}
+        </div>
+
+        <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50">
+          <CardContent className="py-12 text-center space-y-6">
+            <div className="flex justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+                <Lock size={28} className="text-amber-600" />
+              </div>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Subscription Required</h2>
+              <p className="mt-2 text-gray-600 max-w-md mx-auto">
+                To access quizzes, Q&amp;A questions, and study materials for <strong>{subject.name}</strong>,
+                you need an active subscription.
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-white border border-amber-200 p-6 max-w-sm mx-auto space-y-4">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-gray-900">$1</p>
+                <p className="text-sm text-gray-500">or 10,000 UZS per subject</p>
+              </div>
+              <ul className="text-sm text-gray-600 space-y-2 text-left">
+                <li className="flex items-center gap-2">
+                  <span className="text-green-500">&#10003;</span> All quizzes for this subject
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-500">&#10003;</span> Q&amp;A question bank
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-500">&#10003;</span> Study materials &amp; documents
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-500">&#10003;</span> Continuous content additions
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-700">Contact us to subscribe:</p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <a
+                  href="tel:+998915817711"
+                  className="inline-flex items-center gap-2 rounded-lg bg-gray-900 text-white px-4 py-2.5 text-sm font-medium hover:bg-gray-800 transition-colors"
+                >
+                  <Phone size={16} /> +998 91 581 77 11
+                </a>
+                <a
+                  href="https://t.me/D3c0de_M3"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-500 text-white px-4 py-2.5 text-sm font-medium hover:bg-blue-600 transition-colors"
+                >
+                  <MessageCircle size={16} /> @D3c0de_M3
+                </a>
+                <a
+                  href="https://t.me/cdimock_test"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-500 text-white px-4 py-2.5 text-sm font-medium hover:bg-blue-600 transition-colors"
+                >
+                  <MessageCircle size={16} /> @cdimock_test
+                </a>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 

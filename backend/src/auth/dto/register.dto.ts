@@ -1,10 +1,15 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, MaxLength, Matches } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(255)
-  email: string;
+  email?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\+?[0-9]{9,15}$/, { message: 'Phone number must be 9-15 digits' })
+  phone: string;
 
   @IsString()
   @IsNotEmpty()

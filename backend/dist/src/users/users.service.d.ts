@@ -7,6 +7,7 @@ export declare class UsersService {
     create(dto: CreateUserDto): Promise<{
         id: string;
         email: string;
+        phone: string | null;
         firstName: string;
         lastName: string;
         role: import("@prisma/client").$Enums.Role;
@@ -17,6 +18,7 @@ export declare class UsersService {
         data: {
             id: string;
             email: string;
+            phone: string | null;
             firstName: string;
             lastName: string;
             role: import("@prisma/client").$Enums.Role;
@@ -33,6 +35,7 @@ export declare class UsersService {
     findOne(id: string): Promise<{
         id: string;
         email: string;
+        phone: string | null;
         firstName: string;
         lastName: string;
         role: import("@prisma/client").$Enums.Role;
@@ -43,6 +46,7 @@ export declare class UsersService {
     update(id: string, dto: UpdateUserDto): Promise<{
         id: string;
         email: string;
+        phone: string | null;
         firstName: string;
         lastName: string;
         role: import("@prisma/client").$Enums.Role;
@@ -56,6 +60,7 @@ export declare class UsersService {
     assignRole(id: string, dto: AssignRoleDto): Promise<{
         id: string;
         email: string;
+        phone: string | null;
         firstName: string;
         lastName: string;
         role: import("@prisma/client").$Enums.Role;

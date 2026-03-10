@@ -55,6 +55,8 @@ services:
       MAX_FILE_SIZE: 52428800
       FRONTEND_URL: http://localhost:3001
       AI_API_KEY: ${AI_API_KEY:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
     ports:
       - '3000:3000'
     volumes:

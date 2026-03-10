@@ -25,6 +25,8 @@ import { MaterialsService } from './materials.service.js';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards/index.js';
 import { Roles, CurrentUser } from '../auth/decorators/index.js';
 import { Role, MaterialStatus } from '@prisma/client';
+import { ForbiddenException } from '@nestjs/common';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { UpdateMetadataDto } from './dto/update-metadata.dto.js';
 import { UpdateQuizDto } from './dto/update-quiz.dto.js';
 import { CreateQuizQuestionDto, UpdateSingleQuestionDto } from './dto/quiz-question.dto.js';
@@ -58,6 +60,7 @@ export class MaterialsController {
   constructor(
     private materialsService: MaterialsService,
     @InjectQueue('material-processing') private processingQueue: Queue,
+    private subscriptionsService: SubscriptionsService,
   ) {}
 
   @Post('upload')
@@ -106,13 +109,28 @@ export class MaterialsController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query('status') status?: MaterialStatus,
     @Query('subjectId') subjectId?: string,
+    @CurrentUser('id') userId?: string,
+    @CurrentUser('role') role?: Role,
   ) {
+    if (role === Role.STUDENT && subjectId) {
+      const hasAccess = await this.subscriptionsService.hasAccess(userId!, subjectId);
+      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+    }
     return this.materialsService.findAll(page, limit, status, subjectId);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.materialsService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    const material = await this.materialsService.findOne(id);
+    if (role === Role.STUDENT && material.subjectId) {
+      const hasAccess = await this.subscriptionsService.hasAccess(userId, material.subjectId);
+      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+    }
+    return material;
   }
 
   @Delete(':id')

@@ -48,26 +48,31 @@ const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
 const bcrypt = __importStar(require("bcrypt"));
 const prisma_service_js_1 = require("../prisma/prisma.service.js");
+const telegram_service_js_1 = require("../telegram/telegram.service.js");
 let AuthService = class AuthService {
     prisma;
     jwtService;
     configService;
-    constructor(prisma, jwtService, configService) {
+    telegramService;
+    constructor(prisma, jwtService, configService, telegramService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
         this.configService = configService;
+        this.telegramService = telegramService;
     }
     async register(dto) {
         const existing = await this.prisma.user.findUnique({
-            where: { email: dto.email },
+            where: { phone: dto.phone },
         });
         if (existing) {
-            throw new common_1.ConflictException('Email already registered');
+            throw new common_1.ConflictException('Phone number already registered');
         }
         const hashedPassword = await bcrypt.hash(dto.password, 10);
+        const email = dto.email || `${dto.phone.replace(/\+/g, '')}@phone.local`;
         const user = await this.prisma.user.create({
             data: {
-                email: dto.email,
+                email,
+                phone: dto.phone,
                 password: hashedPassword,
                 firstName: dto.firstName,
                 lastName: dto.lastName,
@@ -82,6 +87,68 @@ let AuthService = class AuthService {
             user: {
                 id: user.id,
                 email: user.email,
+                phone: user.phone,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+            },
+            ...tokens,
+        };
+    }
+    async getOtpLink(phone) {
+        const existing = await this.prisma.user.findUnique({
+            where: { phone },
+        });
+        if (existing) {
+            throw new common_1.ConflictException('Phone number already registered');
+        }
+        const deepLink = this.telegramService.getDeepLink(phone);
+        const botUsername = this.telegramService.getBotUsername();
+        return {
+            deepLink,
+            botUsername,
+            message: 'Open the Telegram link to receive your verification code.',
+        };
+    }
+    async verifyOtp(phone, code) {
+        const result = await this.telegramService.verifyOtp(phone, code);
+        if (!result.valid) {
+            throw new common_1.BadRequestException(result.message);
+        }
+        return { verified: true, message: result.message };
+    }
+    async registerWithOtp(dto) {
+        const otpResult = await this.telegramService.verifyOtp(dto.phone, dto.otpCode);
+        if (!otpResult.valid) {
+            throw new common_1.BadRequestException(otpResult.message);
+        }
+        const existing = await this.prisma.user.findUnique({
+            where: { phone: dto.phone },
+        });
+        if (existing) {
+            throw new common_1.ConflictException('Phone number already registered');
+        }
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
+        const email = dto.email || `${dto.phone.replace(/\+/g, '')}@phone.local`;
+        const user = await this.prisma.user.create({
+            data: {
+                email,
+                phone: dto.phone,
+                password: hashedPassword,
+                firstName: dto.firstName,
+                lastName: dto.lastName,
+            },
+        });
+        const tokens = await this.generateTokens({
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        });
+        return {
+            user: {
+                id: user.id,
+                email: user.email,
+                phone: user.phone,
                 firstName: user.firstName,
                 lastName: user.lastName,
                 role: user.role,
@@ -91,7 +158,7 @@ let AuthService = class AuthService {
     }
     async login(dto) {
         const user = await this.prisma.user.findUnique({
-            where: { email: dto.email },
+            where: { phone: dto.phone },
         });
         if (!user) {
             throw new common_1.UnauthorizedException('Invalid credentials');
@@ -112,6 +179,7 @@ let AuthService = class AuthService {
             user: {
                 id: user.id,
                 email: user.email,
+                phone: user.phone,
                 firstName: user.firstName,
                 lastName: user.lastName,
                 role: user.role,
@@ -125,6 +193,7 @@ let AuthService = class AuthService {
             select: {
                 id: true,
                 email: true,
+                phone: true,
                 firstName: true,
                 lastName: true,
                 role: true,
@@ -173,6 +242,7 @@ exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_js_1.PrismaService,
         jwt_1.JwtService,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        telegram_service_js_1.TelegramService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

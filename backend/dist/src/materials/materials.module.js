@@ -12,6 +12,7 @@ const bullmq_1 = require("@nestjs/bullmq");
 const materials_service_js_1 = require("./materials.service.js");
 const materials_controller_js_1 = require("./materials.controller.js");
 const material_processing_processor_js_1 = require("./processors/material-processing.processor.js");
+const subscriptions_module_js_1 = require("../subscriptions/subscriptions.module.js");
 let MaterialsModule = class MaterialsModule {
 };
 exports.MaterialsModule = MaterialsModule;
@@ -21,6 +22,7 @@ exports.MaterialsModule = MaterialsModule = __decorate([
             bullmq_1.BullModule.registerQueue({
                 name: 'material-processing',
             }),
+            subscriptions_module_js_1.SubscriptionsModule,
         ],
         controllers: [materials_controller_js_1.MaterialsController],
         providers: [materials_service_js_1.MaterialsService, material_processing_processor_js_1.MaterialProcessingProcessor],

@@ -20,13 +20,13 @@ export declare class QuestionsService {
         };
     } & {
         id: string;
-        questionText: string;
-        answerText: string;
-        imagePath: string | null;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        answerText: string;
+        imagePath: string | null;
         createdById: string;
     }>;
     findAll(page?: number, limit?: number, filters?: {
@@ -48,13 +48,13 @@ export declare class QuestionsService {
             };
         } & {
             id: string;
-            questionText: string;
-            answerText: string;
-            imagePath: string | null;
-            status: import("@prisma/client").$Enums.QuestionStatus;
             createdAt: Date;
             updatedAt: Date;
+            questionText: string;
+            status: import("@prisma/client").$Enums.QuestionStatus;
             subjectId: string;
+            answerText: string;
+            imagePath: string | null;
             createdById: string;
         })[];
         meta: {
@@ -77,13 +77,13 @@ export declare class QuestionsService {
         };
     } & {
         id: string;
-        questionText: string;
-        answerText: string;
-        imagePath: string | null;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        answerText: string;
+        imagePath: string | null;
         createdById: string;
     }>;
     update(id: string, dto: UpdateQuestionDto, userId: string, userRole: Role, imagePath?: string): Promise<{
@@ -99,13 +99,13 @@ export declare class QuestionsService {
         };
     } & {
         id: string;
-        questionText: string;
-        answerText: string;
-        imagePath: string | null;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        answerText: string;
+        imagePath: string | null;
         createdById: string;
     }>;
     remove(id: string, userId: string, userRole: Role): Promise<{
@@ -124,13 +124,13 @@ export declare class QuestionsService {
         };
     } & {
         id: string;
-        questionText: string;
-        answerText: string;
-        imagePath: string | null;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        answerText: string;
+        imagePath: string | null;
         createdById: string;
     }>;
     generateQuizFromQA(dto: GenerateQuizFromQADto): Promise<{
@@ -147,11 +147,11 @@ export declare class QuestionsService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            subjectId: string;
-            description: string | null;
             title: string;
-            materialId: string | null;
+            description: string | null;
             isPublished: boolean;
+            subjectId: string;
+            materialId: string | null;
         }) | null;
     }>;
     private callGeminiForMCQs;

@@ -3,12 +3,14 @@ import { BullModule } from '@nestjs/bullmq';
 import { MaterialsService } from './materials.service.js';
 import { MaterialsController } from './materials.controller.js';
 import { MaterialProcessingProcessor } from './processors/material-processing.processor.js';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
 
 @Module({
   imports: [
     BullModule.registerQueue({
       name: 'material-processing',
     }),
+    SubscriptionsModule,
   ],
   controllers: [MaterialsController],
   providers: [MaterialsService, MaterialProcessingProcessor],

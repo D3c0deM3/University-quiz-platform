@@ -23,6 +23,8 @@ import { QuestionsService } from './questions.service.js';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards/index.js';
 import { Roles, CurrentUser } from '../auth/decorators/index.js';
 import { Role, QuestionStatus } from '@prisma/client';
+import { ForbiddenException } from '@nestjs/common';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { CreateQuestionDto, UpdateQuestionDto, ReviewQuestionDto, GenerateQuizFromQADto } from './dto/index.js';
 
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
@@ -59,7 +61,10 @@ const imageMulterOptions = {
 @Controller('questions')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class QuestionsController {
-  constructor(private questionsService: QuestionsService) {}
+  constructor(
+    private questionsService: QuestionsService,
+    private subscriptionsService: SubscriptionsService,
+  ) {}
 
   /**
    * POST /questions — Create a new Q&A entry (with optional image)
@@ -96,6 +101,12 @@ export class QuestionsController {
     const filters: any = {};
     if (subjectId) filters.subjectId = subjectId;
     if (search) filters.search = search;
+
+    // Subscription check for students accessing a specific subject
+    if (userRole === Role.STUDENT && subjectId) {
+      const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
+      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+    }
 
     if (userRole === Role.ADMIN || userRole === Role.TEACHER) {
       // Admin/teacher can filter by status
@@ -134,8 +145,17 @@ export class QuestionsController {
    * GET /questions/:id — Get a single question
    */
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.questionsService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    const question = await this.questionsService.findOne(id);
+    if (role === Role.STUDENT && question.subjectId) {
+      const hasAccess = await this.subscriptionsService.hasAccess(userId, question.subjectId);
+      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+    }
+    return question;
   }
 
   /**

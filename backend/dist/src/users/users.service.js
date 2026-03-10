@@ -53,16 +53,22 @@ let UsersService = class UsersService {
         this.prisma = prisma;
     }
     async create(dto) {
-        const existing = await this.prisma.user.findUnique({
-            where: { email: dto.email },
-        });
-        if (existing) {
-            throw new common_1.ConflictException('Email already registered');
+        if (dto.phone) {
+            const existingByPhone = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
+            if (existingByPhone)
+                throw new common_1.ConflictException('Phone number already registered');
+        }
+        if (dto.email) {
+            const existingByEmail = await this.prisma.user.findUnique({ where: { email: dto.email } });
+            if (existingByEmail)
+                throw new common_1.ConflictException('Email already registered');
         }
         const hashedPassword = await bcrypt.hash(dto.password, 10);
+        const email = dto.email || `${(dto.phone || Date.now().toString()).replace(/\+/g, '')}@phone.local`;
         const user = await this.prisma.user.create({
             data: {
-                email: dto.email,
+                email,
+                phone: dto.phone || null,
                 password: hashedPassword,
                 firstName: dto.firstName,
                 lastName: dto.lastName,
@@ -71,6 +77,7 @@ let UsersService = class UsersService {
             select: {
                 id: true,
                 email: true,
+                phone: true,
                 firstName: true,
                 lastName: true,
                 role: true,
@@ -88,6 +95,7 @@ let UsersService = class UsersService {
         if (search) {
             where.OR = [
                 { email: { contains: search, mode: 'insensitive' } },
+                { phone: { contains: search, mode: 'insensitive' } },
                 { firstName: { contains: search, mode: 'insensitive' } },
                 { lastName: { contains: search, mode: 'insensitive' } },
             ];
@@ -101,6 +109,7 @@ let UsersService = class UsersService {
                 select: {
                     id: true,
                     email: true,
+                    phone: true,
                     firstName: true,
                     lastName: true,
                     role: true,
@@ -126,6 +135,7 @@ let UsersService = class UsersService {
             select: {
                 id: true,
                 email: true,
+                phone: true,
                 firstName: true,
                 lastName: true,
                 role: true,
@@ -151,6 +161,7 @@ let UsersService = class UsersService {
             select: {
                 id: true,
                 email: true,
+                phone: true,
                 firstName: true,
                 lastName: true,
                 role: true,
@@ -174,6 +185,7 @@ let UsersService = class UsersService {
             select: {
                 id: true,
                 email: true,
+                phone: true,
                 firstName: true,
                 lastName: true,
                 role: true,

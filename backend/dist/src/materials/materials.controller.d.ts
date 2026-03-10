@@ -1,13 +1,15 @@
 import { Queue } from 'bullmq';
 import { MaterialsService } from './materials.service.js';
-import { MaterialStatus } from '@prisma/client';
+import { Role, MaterialStatus } from '@prisma/client';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { UpdateMetadataDto } from './dto/update-metadata.dto.js';
 import { UpdateQuizDto } from './dto/update-quiz.dto.js';
 import { CreateQuizQuestionDto, UpdateSingleQuestionDto } from './dto/quiz-question.dto.js';
 export declare class MaterialsController {
     private materialsService;
     private processingQueue;
-    constructor(materialsService: MaterialsService, processingQueue: Queue);
+    private subscriptionsService;
+    constructor(materialsService: MaterialsService, processingQueue: Queue, subscriptionsService: SubscriptionsService);
     upload(file: Express.Multer.File, subjectId: string, userId: string): Promise<{
         message: string;
         material: {
@@ -36,7 +38,7 @@ export declare class MaterialsController {
             uploadedById: string;
         };
     }>;
-    findAll(page: number, limit: number, status?: MaterialStatus, subjectId?: string): Promise<{
+    findAll(page: number, limit: number, status?: MaterialStatus, subjectId?: string, userId?: string, role?: Role): Promise<{
         data: ({
             subject: {
                 id: string;
@@ -75,14 +77,14 @@ export declare class MaterialsController {
             totalPages: number;
         };
     }>;
-    findOne(id: string): Promise<{
+    findOne(id: string, userId: string, role: Role): Promise<{
         subject: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            description: string | null;
             code: string | null;
+            description: string | null;
         };
         uploadedBy: {
             id: string;
@@ -155,8 +157,8 @@ export declare class MaterialsController {
     }>;
     getQuizzes(id: string): Promise<({
         _count: {
-            questions: number;
             attempts: number;
+            questions: number;
         };
         questions: ({
             options: {
@@ -171,18 +173,18 @@ export declare class MaterialsController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            explanation: string | null;
             orderIndex: number;
             questionText: string;
             questionType: import("@prisma/client").$Enums.QuestionType;
-            explanation: string | null;
             quizId: string;
         })[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
         title: string;
+        description: string | null;
         isPublished: boolean;
         subjectId: string;
         materialId: string | null;
@@ -201,18 +203,18 @@ export declare class MaterialsController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            explanation: string | null;
             orderIndex: number;
             questionText: string;
             questionType: import("@prisma/client").$Enums.QuestionType;
-            explanation: string | null;
             quizId: string;
         })[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
         title: string;
+        description: string | null;
         isPublished: boolean;
         subjectId: string;
         materialId: string | null;
@@ -311,10 +313,10 @@ export declare class MaterialsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        explanation: string | null;
         orderIndex: number;
         questionText: string;
         questionType: import("@prisma/client").$Enums.QuestionType;
-        explanation: string | null;
         quizId: string;
     }) | null>;
     updateQuizQuestion(questionId: string, dto: UpdateSingleQuestionDto): Promise<({
@@ -330,10 +332,10 @@ export declare class MaterialsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        explanation: string | null;
         orderIndex: number;
         questionText: string;
         questionType: import("@prisma/client").$Enums.QuestionType;
-        explanation: string | null;
         quizId: string;
     }) | null>;
     deleteQuizQuestion(questionId: string): Promise<{

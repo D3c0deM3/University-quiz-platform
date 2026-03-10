@@ -9,8 +9,16 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
 
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<void>;
+  login: (phone: string, password: string) => Promise<void>;
+  register: (data: { phone: string; password: string; firstName: string; lastName: string; email?: string }) => Promise<void>;
+  registerWithOtp: (data: {
+    phone: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    otpCode: string;
+  }) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
 }
@@ -20,8 +28,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
   isAuthenticated: false,
 
-  login: async (email, password) => {
-    const { data } = await authApi.login(email, password);
+  login: async (phone, password) => {
+    const { data } = await authApi.login(phone, password);
     localStorage.setItem('accessToken', data.accessToken);
     if (data.refreshToken) {
       localStorage.setItem('refreshToken', data.refreshToken);
@@ -32,6 +40,16 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   register: async (formData) => {
     const { data } = await authApi.register(formData);
+    localStorage.setItem('accessToken', data.accessToken);
+    if (data.refreshToken) {
+      localStorage.setItem('refreshToken', data.refreshToken);
+    }
+    const { data: profile } = await authApi.profile();
+    set({ user: profile, isAuthenticated: true, isLoading: false });
+  },
+
+  registerWithOtp: async (formData) => {
+    const { data } = await authApi.registerWithOtp(formData);
     localStorage.setItem('accessToken', data.accessToken);
     if (data.refreshToken) {
       localStorage.setItem('refreshToken', data.refreshToken);

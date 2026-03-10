@@ -10,11 +10,13 @@ exports.QuizzesModule = void 0;
 const common_1 = require("@nestjs/common");
 const quizzes_service_js_1 = require("./quizzes.service.js");
 const quizzes_controller_js_1 = require("./quizzes.controller.js");
+const subscriptions_module_js_1 = require("../subscriptions/subscriptions.module.js");
 let QuizzesModule = class QuizzesModule {
 };
 exports.QuizzesModule = QuizzesModule;
 exports.QuizzesModule = QuizzesModule = __decorate([
     (0, common_1.Module)({
+        imports: [subscriptions_module_js_1.SubscriptionsModule],
         controllers: [quizzes_controller_js_1.QuizzesController],
         providers: [quizzes_service_js_1.QuizzesService],
         exports: [quizzes_service_js_1.QuizzesService],

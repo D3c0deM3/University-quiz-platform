@@ -24,6 +24,8 @@ const materials_service_js_1 = require("./materials.service.js");
 const index_js_1 = require("../auth/guards/index.js");
 const index_js_2 = require("../auth/decorators/index.js");
 const client_1 = require("@prisma/client");
+const common_2 = require("@nestjs/common");
+const subscriptions_service_js_1 = require("../subscriptions/subscriptions.service.js");
 const update_metadata_dto_js_1 = require("./dto/update-metadata.dto.js");
 const update_quiz_dto_js_1 = require("./dto/update-quiz.dto.js");
 const quiz_question_dto_js_1 = require("./dto/quiz-question.dto.js");
@@ -48,9 +50,11 @@ const multerOptions = {
 let MaterialsController = class MaterialsController {
     materialsService;
     processingQueue;
-    constructor(materialsService, processingQueue) {
+    subscriptionsService;
+    constructor(materialsService, processingQueue, subscriptionsService) {
         this.materialsService = materialsService;
         this.processingQueue = processingQueue;
+        this.subscriptionsService = subscriptionsService;
     }
     async upload(file, subjectId, userId) {
         if (!file) {
@@ -76,11 +80,22 @@ let MaterialsController = class MaterialsController {
             material,
         };
     }
-    async findAll(page, limit, status, subjectId) {
+    async findAll(page, limit, status, subjectId, userId, role) {
+        if (role === client_1.Role.STUDENT && subjectId) {
+            const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
+            if (!hasAccess)
+                throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+        }
         return this.materialsService.findAll(page, limit, status, subjectId);
     }
-    async findOne(id) {
-        return this.materialsService.findOne(id);
+    async findOne(id, userId, role) {
+        const material = await this.materialsService.findOne(id);
+        if (role === client_1.Role.STUDENT && material.subjectId) {
+            const hasAccess = await this.subscriptionsService.hasAccess(userId, material.subjectId);
+            if (!hasAccess)
+                throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+        }
+        return material;
     }
     async remove(id) {
         return this.materialsService.remove(id);
@@ -164,15 +179,19 @@ __decorate([
     __param(1, (0, common_1.Query)('limit', new common_1.DefaultValuePipe(20), common_1.ParseIntPipe)),
     __param(2, (0, common_1.Query)('status')),
     __param(3, (0, common_1.Query)('subjectId')),
+    __param(4, (0, index_js_2.CurrentUser)('id')),
+    __param(5, (0, index_js_2.CurrentUser)('role')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Number, String, String]),
+    __metadata("design:paramtypes", [Number, Number, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], MaterialsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, index_js_2.CurrentUser)('id')),
+    __param(2, (0, index_js_2.CurrentUser)('role')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], MaterialsController.prototype, "findOne", null);
 __decorate([
@@ -289,6 +308,7 @@ exports.MaterialsController = MaterialsController = __decorate([
     (0, common_1.UseGuards)(index_js_1.JwtAuthGuard, index_js_1.RolesGuard),
     __param(1, (0, bullmq_1.InjectQueue)('material-processing')),
     __metadata("design:paramtypes", [materials_service_js_1.MaterialsService,
-        bullmq_2.Queue])
+        bullmq_2.Queue,
+        subscriptions_service_js_1.SubscriptionsService])
 ], MaterialsController);
 //# sourceMappingURL=materials.controller.js.map

@@ -19,18 +19,41 @@ const index_js_1 = require("../auth/guards/index.js");
 const index_js_2 = require("../auth/decorators/index.js");
 const client_1 = require("@prisma/client");
 const submit_quiz_dto_js_1 = require("./dto/submit-quiz.dto.js");
+const subscriptions_service_js_1 = require("../subscriptions/subscriptions.service.js");
+const common_2 = require("@nestjs/common");
 let QuizzesController = class QuizzesController {
     quizzesService;
-    constructor(quizzesService) {
+    subscriptionsService;
+    constructor(quizzesService, subscriptionsService) {
         this.quizzesService = quizzesService;
+        this.subscriptionsService = subscriptionsService;
     }
-    async findBySubject(subjectId, page, limit) {
+    async findBySubject(subjectId, userId, role, page, limit) {
+        if (role === client_1.Role.STUDENT) {
+            const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
+            if (!hasAccess)
+                throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+        }
         return this.quizzesService.findBySubject(subjectId, page, limit);
     }
-    async findOne(quizId) {
-        return this.quizzesService.findOne(quizId);
+    async findOne(quizId, userId, role) {
+        const quiz = await this.quizzesService.findOne(quizId);
+        if (role === client_1.Role.STUDENT && quiz.subjectId) {
+            const hasAccess = await this.subscriptionsService.hasAccess(userId, quiz.subjectId);
+            if (!hasAccess)
+                throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+        }
+        return quiz;
     }
-    async startAttempt(quizId, userId) {
+    async startAttempt(quizId, userId, role) {
+        if (role === client_1.Role.STUDENT) {
+            const quiz = await this.quizzesService.findOne(quizId);
+            if (quiz.subjectId) {
+                const hasAccess = await this.subscriptionsService.hasAccess(userId, quiz.subjectId);
+                if (!hasAccess)
+                    throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+            }
+        }
         return this.quizzesService.startAttempt(quizId, userId);
     }
     async submitAttempt(attemptId, userId, dto) {
@@ -56,25 +79,30 @@ exports.QuizzesController = QuizzesController;
 __decorate([
     (0, common_1.Get)('subjects/:id/quizzes'),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Query)('page', new common_1.DefaultValuePipe(1), common_1.ParseIntPipe)),
-    __param(2, (0, common_1.Query)('limit', new common_1.DefaultValuePipe(20), common_1.ParseIntPipe)),
+    __param(1, (0, index_js_2.CurrentUser)('id')),
+    __param(2, (0, index_js_2.CurrentUser)('role')),
+    __param(3, (0, common_1.Query)('page', new common_1.DefaultValuePipe(1), common_1.ParseIntPipe)),
+    __param(4, (0, common_1.Query)('limit', new common_1.DefaultValuePipe(20), common_1.ParseIntPipe)),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Number, Number]),
+    __metadata("design:paramtypes", [String, String, String, Number, Number]),
     __metadata("design:returntype", Promise)
 ], QuizzesController.prototype, "findBySubject", null);
 __decorate([
     (0, common_1.Get)('quizzes/:id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, index_js_2.CurrentUser)('id')),
+    __param(2, (0, index_js_2.CurrentUser)('role')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], QuizzesController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)('quizzes/:id/attempts'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, index_js_2.CurrentUser)('id')),
+    __param(2, (0, index_js_2.CurrentUser)('role')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], QuizzesController.prototype, "startAttempt", null);
 __decorate([
@@ -129,6 +157,7 @@ __decorate([
 exports.QuizzesController = QuizzesController = __decorate([
     (0, common_1.Controller)(),
     (0, common_1.UseGuards)(index_js_1.JwtAuthGuard, index_js_1.RolesGuard),
-    __metadata("design:paramtypes", [quizzes_service_js_1.QuizzesService])
+    __metadata("design:paramtypes", [quizzes_service_js_1.QuizzesService,
+        subscriptions_service_js_1.SubscriptionsService])
 ], QuizzesController);
 //# sourceMappingURL=quizzes.controller.js.map

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { usersApi } from '@/lib/api';
 import type { User, Role } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
 import { toast } from 'sonner';
-import { Users, Search, Shield, GraduationCap, BookOpen } from 'lucide-react';
+import { Users, Search, Shield, GraduationCap, BookOpen, Trash2, AlertTriangle, X } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 const roleVariant = (role: Role) => {
@@ -37,6 +37,13 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Delete confirmation state
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1); // 1 = first confirm, 2 = type name
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const confirmInputRef = useRef<HTMLInputElement>(null);
 
   const load = async (p = 1) => {
     setLoading(true);
@@ -72,6 +79,44 @@ export default function UsersPage() {
       toast.error('Failed to update role');
     }
   };
+
+  const openDeleteDialog = (user: User) => {
+    setDeleteTarget(user);
+    setDeleteStep(1);
+    setDeleteConfirmName('');
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteTarget(null);
+    setDeleteStep(1);
+    setDeleteConfirmName('');
+  };
+
+  const proceedToStep2 = () => {
+    setDeleteStep(2);
+    setDeleteConfirmName('');
+    setTimeout(() => confirmInputRef.current?.focus(), 100);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await usersApi.delete(deleteTarget.id);
+      toast.success(`User "${deleteTarget.firstName} ${deleteTarget.lastName}" has been deleted`);
+      closeDeleteDialog();
+      load(page);
+    } catch {
+      toast.error('Failed to delete user');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const expectedName = deleteTarget
+    ? `${deleteTarget.firstName} ${deleteTarget.lastName}`
+    : '';
+  const nameMatches = deleteConfirmName.trim() === expectedName;
 
   const totalPages = Math.ceil(total / 20);
 
@@ -146,6 +191,15 @@ export default function UsersPage() {
                       <option value="TEACHER">Teacher</option>
                       <option value="ADMIN">Admin</option>
                     </Select>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => openDeleteDialog(u)}
+                      title="Delete user"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -163,6 +217,110 @@ export default function UsersPage() {
           <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => load(page + 1)}>
             Next
           </Button>
+        </div>
+      )}
+
+      {/* ── Delete Confirmation Modal ──────────────────────── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closeDeleteDialog}
+          />
+
+          {/* Dialog */}
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 animate-fade-in">
+            <button
+              onClick={closeDeleteDialog}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            {deleteStep === 1 ? (
+              /* ── Step 1: First confirmation ── */
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 shrink-0">
+                    <AlertTriangle size={20} className="text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Delete User</h3>
+                    <p className="text-sm text-gray-500">This action cannot be undone</p>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-red-50 border border-red-100 p-4">
+                  <p className="text-sm text-red-800">
+                    You are about to permanently delete{' '}
+                    <strong>{deleteTarget.firstName} {deleteTarget.lastName}</strong>{' '}
+                    ({deleteTarget.email}).
+                    All their data, quiz attempts, and subscriptions will be removed.
+                  </p>
+                </div>
+
+                <p className="text-sm text-gray-600">
+                  Are you sure you want to proceed?
+                </p>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <Button variant="outline" onClick={closeDeleteDialog}>
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" onClick={proceedToStep2}>
+                    Yes, continue
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* ── Step 2: Type name to confirm ── */
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 shrink-0">
+                    <Trash2 size={20} className="text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Final Confirmation</h3>
+                    <p className="text-sm text-gray-500">Type the user&apos;s full name to confirm</p>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+                  <p className="text-sm text-gray-700">
+                    To confirm deletion, type:{' '}
+                    <strong className="text-gray-900 select-all">{expectedName}</strong>
+                  </p>
+                </div>
+
+                <Input
+                  ref={confirmInputRef}
+                  placeholder={expectedName}
+                  value={deleteConfirmName}
+                  onChange={(e) => setDeleteConfirmName(e.target.value)}
+                  className={
+                    deleteConfirmName.length > 0 && !nameMatches
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
+                      : ''
+                  }
+                />
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <Button variant="outline" onClick={() => setDeleteStep(1)}>
+                    Go back
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    disabled={!nameMatches || deleting}
+                    loading={deleting}
+                    onClick={handleDelete}
+                  >
+                    Delete permanently
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

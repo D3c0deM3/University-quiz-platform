@@ -27,6 +27,15 @@ let AuthController = class AuthController {
     async register(dto) {
         return this.authService.register(dto);
     }
+    async registerWithOtp(dto) {
+        return this.authService.registerWithOtp(dto);
+    }
+    async getOtpLink(dto) {
+        return this.authService.getOtpLink(dto.phone);
+    }
+    async verifyOtp(dto) {
+        return this.authService.verifyOtp(dto.phone, dto.code);
+    }
     async login(dto) {
         return this.authService.login(dto);
     }
@@ -46,6 +55,32 @@ __decorate([
     __metadata("design:paramtypes", [index_js_1.RegisterDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
+__decorate([
+    (0, common_1.Post)('register-with-otp'),
+    (0, throttler_1.Throttle)({ default: { ttl: 60000, limit: 5 } }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [index_js_1.RegisterWithOtpDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "registerWithOtp", null);
+__decorate([
+    (0, common_1.Post)('otp-link'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, throttler_1.Throttle)({ default: { ttl: 60000, limit: 5 } }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [index_js_1.GetOtpLinkDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "getOtpLink", null);
+__decorate([
+    (0, common_1.Post)('verify-otp'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, throttler_1.Throttle)({ default: { ttl: 60000, limit: 10 } }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [index_js_1.VerifyOtpDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "verifyOtp", null);
 __decorate([
     (0, common_1.Post)('login'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

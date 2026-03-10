@@ -39,10 +39,22 @@ export default api;
 
 // ─── Auth ─────────────────────────────────────────────
 export const authApi = {
-  login: (email: string, password: string) =>
-    api.post('/auth/login', { email, password }),
-  register: (data: { email: string; password: string; firstName: string; lastName: string }) =>
+  login: (phone: string, password: string) =>
+    api.post('/auth/login', { phone, password }),
+  register: (data: { phone: string; password: string; firstName: string; lastName: string; email?: string }) =>
     api.post('/auth/register', data),
+  registerWithOtp: (data: {
+    phone: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    otpCode: string;
+  }) => api.post('/auth/register-with-otp', data),
+  getOtpLink: (phone: string) =>
+    api.post('/auth/otp-link', { phone }),
+  verifyOtp: (phone: string, code: string) =>
+    api.post('/auth/verify-otp', { phone, code }),
   profile: () => api.get('/auth/profile'),
   refresh: () => api.post('/auth/refresh'),
 };
@@ -129,6 +141,22 @@ export const usersApi = {
   update: (id: string, data: Record<string, unknown>) => api.put(`/users/${id}`, data),
   delete: (id: string) => api.delete(`/users/${id}`),
   assignRole: (id: string, role: string) => api.patch(`/users/${id}/role`, { role }),
+};
+
+// ─── Subscriptions ────────────────────────────────────
+export const subscriptionsApi = {
+  my: () => api.get('/subscriptions/my'),
+  check: (subjectId: string) => api.get(`/subscriptions/check/${subjectId}`),
+  list: (params?: { page?: number; limit?: number; status?: string; userId?: string; subjectId?: string }) =>
+    api.get('/subscriptions', { params }),
+  byUser: (userId: string) => api.get(`/subscriptions/user/${userId}`),
+  assign: (data: { userId: string; subjectId: string; expiresAt?: string }) =>
+    api.post('/subscriptions/assign', data),
+  bulkAssign: (data: { userId: string; subjectIds: string[]; expiresAt?: string }) =>
+    api.post('/subscriptions/bulk-assign', data),
+  update: (id: string, data: { status?: string; expiresAt?: string }) =>
+    api.put(`/subscriptions/${id}`, data),
+  revoke: (id: string) => api.delete(`/subscriptions/${id}`),
 };
 
 // ─── Manual Questions (Q&A) ──────────────────────────

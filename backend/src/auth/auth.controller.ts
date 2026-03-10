@@ -9,7 +9,13 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
-import { RegisterDto, LoginDto } from './dto/index.js';
+import {
+  RegisterDto,
+  LoginDto,
+  RegisterWithOtpDto,
+  VerifyOtpDto,
+  GetOtpLinkDto,
+} from './dto/index.js';
 import { JwtAuthGuard } from './guards/index.js';
 import { CurrentUser } from './decorators/index.js';
 
@@ -21,6 +27,26 @@ export class AuthController {
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
+  }
+
+  @Post('register-with-otp')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  async registerWithOtp(@Body() dto: RegisterWithOtpDto) {
+    return this.authService.registerWithOtp(dto);
+  }
+
+  @Post('otp-link')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  async getOtpLink(@Body() dto: GetOtpLinkDto) {
+    return this.authService.getOtpLink(dto.phone);
+  }
+
+  @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  async verifyOtp(@Body() dto: VerifyOtpDto) {
+    return this.authService.verifyOtp(dto.phone, dto.code);
   }
 
   @Post('login')

@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   HelpCircle,
+  CreditCard,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -43,6 +44,7 @@ const navItems: NavItem[] = [
   { href: '/admin/upload', label: 'Upload', icon: <Upload size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
   { href: '/admin/subjects', label: 'Subjects', icon: <BookOpen size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
   { href: '/admin/users', label: 'Users', icon: <Users size={20} />, roles: ['ADMIN'], section: 'admin' },
+  { href: '/admin/subscriptions', label: 'Subscriptions', icon: <CreditCard size={20} />, roles: ['ADMIN'], section: 'admin' },
 ];
 
 export function Sidebar() {

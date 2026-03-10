@@ -15,7 +15,7 @@ import { GraduationCap } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  phone: z.string().min(9, 'Phone number is required').regex(/^\+?[0-9]{9,15}$/, 'Enter a valid phone number'),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -46,7 +46,7 @@ function LoginContent() {
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
-      await login(data.email, data.password);
+      await login(data.phone, data.password);
       toast.success('Logged in successfully');
       const redirect = searchParams.get('redirect') || '/dashboard';
       router.push(redirect);
@@ -72,17 +72,17 @@ function LoginContent() {
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-gray-700">
-              Email
+            <label htmlFor="phone" className="text-sm font-medium text-gray-700">
+              Phone number
             </label>
             <Input
-              id="email"
-              type="email"
-              placeholder="you@university.com"
-              {...register('email')}
+              id="phone"
+              type="tel"
+              placeholder="+998901234567"
+              {...register('phone')}
             />
-            {errors.email && (
-              <p className="text-xs text-red-500">{errors.email.message}</p>
+            {errors.phone && (
+              <p className="text-xs text-red-500">{errors.phone.message}</p>
             )}
           </div>
           <div className="space-y-2">

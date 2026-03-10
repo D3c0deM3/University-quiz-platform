@@ -1,9 +1,11 @@
 import { QuestionsService } from './questions.service.js';
 import { Role, QuestionStatus } from '@prisma/client';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { CreateQuestionDto, UpdateQuestionDto, ReviewQuestionDto, GenerateQuizFromQADto } from './dto/index.js';
 export declare class QuestionsController {
     private questionsService;
-    constructor(questionsService: QuestionsService);
+    private subscriptionsService;
+    constructor(questionsService: QuestionsService, subscriptionsService: SubscriptionsService);
     create(dto: CreateQuestionDto, userId: string, userRole: Role, image?: Express.Multer.File): Promise<{
         subject: {
             id: string;
@@ -17,13 +19,13 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        questionText: string;
-        answerText: string;
-        imagePath: string | null;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        answerText: string;
+        imagePath: string | null;
         createdById: string;
     }>;
     findAll(userId: string, userRole: Role, page: number, limit: number, subjectId?: string, status?: QuestionStatus, search?: string, mine?: string): Promise<{
@@ -40,13 +42,13 @@ export declare class QuestionsController {
             };
         } & {
             id: string;
-            questionText: string;
-            answerText: string;
-            imagePath: string | null;
-            status: import("@prisma/client").$Enums.QuestionStatus;
             createdAt: Date;
             updatedAt: Date;
+            questionText: string;
+            status: import("@prisma/client").$Enums.QuestionStatus;
             subjectId: string;
+            answerText: string;
+            imagePath: string | null;
             createdById: string;
         })[];
         meta: {
@@ -68,7 +70,7 @@ export declare class QuestionsController {
         subjectDescription: string | null;
         questionCount: number;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string, userId: string, role: Role): Promise<{
         subject: {
             id: string;
             name: string;
@@ -81,13 +83,13 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        questionText: string;
-        answerText: string;
-        imagePath: string | null;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        answerText: string;
+        imagePath: string | null;
         createdById: string;
     }>;
     update(id: string, dto: UpdateQuestionDto, userId: string, userRole: Role, image?: Express.Multer.File): Promise<{
@@ -103,13 +105,13 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        questionText: string;
-        answerText: string;
-        imagePath: string | null;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        answerText: string;
+        imagePath: string | null;
         createdById: string;
     }>;
     remove(id: string, userId: string, userRole: Role): Promise<{
@@ -128,13 +130,13 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        questionText: string;
-        answerText: string;
-        imagePath: string | null;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        questionText: string;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         subjectId: string;
+        answerText: string;
+        imagePath: string | null;
         createdById: string;
     }>;
     generateQuiz(dto: GenerateQuizFromQADto): Promise<{
@@ -151,11 +153,11 @@ export declare class QuestionsController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            subjectId: string;
-            description: string | null;
             title: string;
-            materialId: string | null;
+            description: string | null;
             isPublished: boolean;
+            subjectId: string;
+            materialId: string | null;
         }) | null;
     }>;
 }

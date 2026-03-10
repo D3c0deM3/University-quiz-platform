@@ -14,6 +14,7 @@ import { MaterialsModule } from './materials/materials.module.js';
 import { SearchModule } from './search/search.module.js';
 import { QuizzesModule } from './quizzes/quizzes.module.js';
 import { QuestionsModule } from './questions/questions.module.js';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { QuestionsModule } from './questions/questions.module.js';
     SearchModule,
     QuizzesModule,
     QuestionsModule,
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [

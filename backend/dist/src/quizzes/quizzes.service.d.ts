@@ -6,18 +6,18 @@ export declare class QuizzesService {
     findBySubject(subjectId: string, page?: number, limit?: number): Promise<{
         data: ({
             _count: {
-                questions: number;
                 attempts: number;
+                questions: number;
             };
         } & {
             id: string;
-            title: string;
-            description: string | null;
-            subjectId: string;
-            materialId: string | null;
-            isPublished: boolean;
             createdAt: Date;
             updatedAt: Date;
+            title: string;
+            description: string | null;
+            isPublished: boolean;
+            subjectId: string;
+            materialId: string | null;
         })[];
         meta: {
             total: number;
@@ -31,29 +31,29 @@ export declare class QuizzesService {
             id: string;
             name: string;
         };
-        questions: {
-            id: string;
-            orderIndex: number;
-            questionText: string;
-            questionType: import("@prisma/client").$Enums.QuestionType;
-            options: {
-                id: string;
-                orderIndex: number;
-                optionText: string;
-            }[];
-        }[];
         _count: {
             questions: number;
         };
+        questions: {
+            id: string;
+            options: {
+                id: string;
+                optionText: string;
+                orderIndex: number;
+            }[];
+            orderIndex: number;
+            questionText: string;
+            questionType: import("@prisma/client").$Enums.QuestionType;
+        }[];
     } & {
         id: string;
-        title: string;
-        description: string | null;
-        subjectId: string;
-        materialId: string | null;
-        isPublished: boolean;
         createdAt: Date;
         updatedAt: Date;
+        title: string;
+        description: string | null;
+        isPublished: boolean;
+        subjectId: string;
+        materialId: string | null;
     }>;
     startAttempt(quizId: string, userId: string): Promise<{
         quiz: {
@@ -61,25 +61,25 @@ export declare class QuizzesService {
             title: string;
             questions: {
                 id: string;
+                options: {
+                    id: string;
+                    optionText: string;
+                    orderIndex: number;
+                }[];
                 orderIndex: number;
                 questionText: string;
                 questionType: import("@prisma/client").$Enums.QuestionType;
-                options: {
-                    id: string;
-                    orderIndex: number;
-                    optionText: string;
-                }[];
             }[];
         };
     } & {
         id: string;
         createdAt: Date;
         quizId: string;
+        userId: string;
         score: number | null;
         totalPoints: number | null;
         startedAt: Date;
         completedAt: Date | null;
-        userId: string;
     }>;
     submitAttempt(attemptId: string, userId: string, dto: SubmitQuizDto): Promise<{
         attemptId: string;

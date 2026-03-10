@@ -22,6 +22,8 @@ const questions_service_js_1 = require("./questions.service.js");
 const index_js_1 = require("../auth/guards/index.js");
 const index_js_2 = require("../auth/decorators/index.js");
 const client_1 = require("@prisma/client");
+const common_2 = require("@nestjs/common");
+const subscriptions_service_js_1 = require("../subscriptions/subscriptions.service.js");
 const index_js_3 = require("./dto/index.js");
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
 const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
@@ -49,8 +51,10 @@ const imageMulterOptions = {
 };
 let QuestionsController = class QuestionsController {
     questionsService;
-    constructor(questionsService) {
+    subscriptionsService;
+    constructor(questionsService, subscriptionsService) {
         this.questionsService = questionsService;
+        this.subscriptionsService = subscriptionsService;
     }
     async create(dto, userId, userRole, image) {
         const imagePath = image ? image.path : undefined;
@@ -62,6 +66,11 @@ let QuestionsController = class QuestionsController {
             filters.subjectId = subjectId;
         if (search)
             filters.search = search;
+        if (userRole === client_1.Role.STUDENT && subjectId) {
+            const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
+            if (!hasAccess)
+                throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+        }
         if (userRole === client_1.Role.ADMIN || userRole === client_1.Role.TEACHER) {
             if (status)
                 filters.status = status;
@@ -84,8 +93,14 @@ let QuestionsController = class QuestionsController {
     async getSubjectCounts() {
         return this.questionsService.getSubjectCounts();
     }
-    async findOne(id) {
-        return this.questionsService.findOne(id);
+    async findOne(id, userId, role) {
+        const question = await this.questionsService.findOne(id);
+        if (role === client_1.Role.STUDENT && question.subjectId) {
+            const hasAccess = await this.subscriptionsService.hasAccess(userId, question.subjectId);
+            if (!hasAccess)
+                throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+        }
+        return question;
     }
     async update(id, dto, userId, userRole, image) {
         const imagePath = image ? image.path : undefined;
@@ -144,8 +159,10 @@ __decorate([
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, index_js_2.CurrentUser)('id')),
+    __param(2, (0, index_js_2.CurrentUser)('role')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], QuestionsController.prototype, "findOne", null);
 __decorate([
@@ -189,6 +206,7 @@ __decorate([
 exports.QuestionsController = QuestionsController = __decorate([
     (0, common_1.Controller)('questions'),
     (0, common_1.UseGuards)(index_js_1.JwtAuthGuard, index_js_1.RolesGuard),
-    __metadata("design:paramtypes", [questions_service_js_1.QuestionsService])
+    __metadata("design:paramtypes", [questions_service_js_1.QuestionsService,
+        subscriptions_service_js_1.SubscriptionsService])
 ], QuestionsController);
 //# sourceMappingURL=questions.controller.js.map

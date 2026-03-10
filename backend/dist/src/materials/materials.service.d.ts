@@ -79,8 +79,8 @@ export declare class MaterialsService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            description: string | null;
             code: string | null;
+            description: string | null;
         };
         uploadedBy: {
             id: string;
@@ -167,8 +167,8 @@ export declare class MaterialsService {
     }>;
     getQuizzes(materialId: string): Promise<({
         _count: {
-            questions: number;
             attempts: number;
+            questions: number;
         };
         questions: ({
             options: {
@@ -183,18 +183,18 @@ export declare class MaterialsService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            explanation: string | null;
             orderIndex: number;
             questionText: string;
             questionType: import("@prisma/client").$Enums.QuestionType;
-            explanation: string | null;
             quizId: string;
         })[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
         title: string;
+        description: string | null;
         isPublished: boolean;
         subjectId: string;
         materialId: string | null;
@@ -213,18 +213,18 @@ export declare class MaterialsService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            explanation: string | null;
             orderIndex: number;
             questionText: string;
             questionType: import("@prisma/client").$Enums.QuestionType;
-            explanation: string | null;
             quizId: string;
         })[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
         title: string;
+        description: string | null;
         isPublished: boolean;
         subjectId: string;
         materialId: string | null;
@@ -312,10 +312,10 @@ export declare class MaterialsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        explanation: string | null;
         orderIndex: number;
         questionText: string;
         questionType: import("@prisma/client").$Enums.QuestionType;
-        explanation: string | null;
         quizId: string;
     })[]>;
     createQuizQuestion(dto: CreateQuizQuestionDto): Promise<({
@@ -331,10 +331,10 @@ export declare class MaterialsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        explanation: string | null;
         orderIndex: number;
         questionText: string;
         questionType: import("@prisma/client").$Enums.QuestionType;
-        explanation: string | null;
         quizId: string;
     }) | null>;
     updateQuizQuestion(questionId: string, dto: UpdateSingleQuestionDto): Promise<({
@@ -350,10 +350,10 @@ export declare class MaterialsService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        explanation: string | null;
         orderIndex: number;
         questionText: string;
         questionType: import("@prisma/client").$Enums.QuestionType;
-        explanation: string | null;
         quizId: string;
     }) | null>;
     deleteQuizQuestion(questionId: string): Promise<{
