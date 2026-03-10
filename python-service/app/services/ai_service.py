@@ -53,31 +53,46 @@ Rules:
 TEXT TO ANALYZE:
 """
 
-QUIZ_PROMPT = """You are an expert educational quiz creator. Generate quiz questions from the following educational material.
+QUIZ_PROMPT = """You are an expert educational quiz creator. Analyze the following material and create quiz questions.
 
-Return ONLY valid JSON (no markdown, no code fences) as an array of question objects:
-[
-  {
-    "question_text": "The question",
-    "question_type": "MCQ",
-    "options": [
-      {"text": "Option A", "is_correct": false},
-      {"text": "Option B", "is_correct": true},
-      {"text": "Option C", "is_correct": false},
-      {"text": "Option D", "is_correct": false}
-    ],
-    "explanation": "Why the correct answer is correct"
-  }
-]
+IMPORTANT: First, determine the type of material:
 
-Rules:
-- Generate exactly {num_questions} questions
-- All questions must be MCQ (multiple choice) with exactly 4 options and exactly 1 correct answer
-- question_type must always be "MCQ"
+**Case A - Material already contains questions:**
+If the text contains existing questions (e.g., exam papers, question banks, test sheets), extract those questions exactly as they are.
+- Preserve the original question text word-for-word
+- If the material provides answer options, use them as-is
+- If the material does NOT provide answer options, create 4 plausible MCQ options yourself and mark the correct one
+- Use your knowledge to determine the correct answer for each question
+- Provide an explanation for why the answer is correct
+- Extract ALL questions found in the material (up to {num_questions})
+
+**Case B - Material is educational content (textbook, lecture notes, articles, etc.):**
+Generate original quiz questions based on the content.
+- Create exactly {num_questions} questions from the material
 - Questions must be directly answerable from the provided text
 - Vary difficulty: some easy, some medium, some challenging
 
-TEXT TO CREATE QUESTIONS FROM:
+For BOTH cases, return ONLY valid JSON (no markdown, no code fences) as an array of question objects:
+[
+  {{
+    "question_text": "The question",
+    "question_type": "MCQ",
+    "options": [
+      {{"text": "Option A", "is_correct": false}},
+      {{"text": "Option B", "is_correct": true}},
+      {{"text": "Option C", "is_correct": false}},
+      {{"text": "Option D", "is_correct": false}}
+    ],
+    "explanation": "Why the correct answer is correct"
+  }}
+]
+
+Rules for ALL questions:
+- All questions must be MCQ (multiple choice) with exactly 4 options and exactly 1 correct answer
+- question_type must always be "MCQ"
+- Generate up to {num_questions} questions
+
+TEXT TO ANALYZE:
 """
 
 
@@ -200,7 +215,7 @@ async def generate_quiz_questions(text: str, num_questions: int = 10) -> list:
     logger.info(f"Generating {num_questions} quiz questions")
 
     try:
-        raw = await _call_gemini_with_fallback(prompt, temperature=0.7, max_output_tokens=4096)
+        raw = await _call_gemini_with_fallback(prompt, temperature=0.7, max_output_tokens=min(65536, max(4096, num_questions * 200)))
         cleaned = _clean_json_response(raw)
         questions = json.loads(cleaned)
 
