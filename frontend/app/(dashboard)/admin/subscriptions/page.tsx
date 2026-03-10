@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/empty-state';
 import { toast } from 'sonner';
 import { CreditCard, Search, UserPlus, Trash2, BookOpen, CheckCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 
 interface Subscription {
   id: string;
@@ -37,6 +38,7 @@ const statusVariant = (status: string) => {
 };
 
 export default function AdminSubscriptionsPage() {
+  const { t } = useTranslation();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,7 @@ export default function AdminSubscriptionsPage() {
       const { data } = await subscriptionsApi.list(params as { page?: number; limit?: number; status?: string });
       setSubscriptions(data.data || data || []);
     } catch {
-      toast.error('Failed to load subscriptions');
+      toast.error(t('adminSubs.noSubs'));
     }
   }, [statusFilter]);
 
@@ -90,10 +92,10 @@ export default function AdminSubscriptionsPage() {
       const { data } = await usersApi.list({ search: phoneSearch.trim(), role: 'STUDENT', limit: 10 });
       setPhoneResults(data.data || []);
       if ((data.data || []).length === 0) {
-        toast.error('No student found with that number');
+        toast.error(t('adminSubs.noSubs'));
       }
     } catch {
-      toast.error('Search failed');
+      toast.error(t('common.search'));
     } finally {
       setPhoneSearching(false);
     }
@@ -108,7 +110,7 @@ export default function AdminSubscriptionsPage() {
 
   const handleAssign = async () => {
     if (!selectedUserId || selectedSubjectIds.length === 0) {
-      toast.error('Select a student and at least one subject');
+      toast.error(t('adminSubs.selectSubjects'));
       return;
     }
     setAssigning(true);
@@ -117,7 +119,7 @@ export default function AdminSubscriptionsPage() {
         userId: selectedUserId,
         subjectIds: selectedSubjectIds,
       });
-      toast.success(`Assigned ${selectedSubjectIds.length} subject(s) successfully`);
+      toast.success(t('adminSubs.assign'));
       setSelectedUserId('');
       setSelectedSubjectIds([]);
       setSelectedUser(null);
@@ -126,7 +128,7 @@ export default function AdminSubscriptionsPage() {
       setShowAssignForm(false);
       await loadSubscriptions();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to assign';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('adminSubs.assign');
       toast.error(msg);
     } finally {
       setAssigning(false);
@@ -134,13 +136,13 @@ export default function AdminSubscriptionsPage() {
   };
 
   const handleRevoke = async (sub: Subscription) => {
-    if (!confirm(`Revoke ${sub.subject?.name || 'subscription'} for ${sub.user?.firstName || 'user'}?`)) return;
+    if (!confirm(`${t('adminSubs.revoke')} ${sub.subject?.name || t('adminSubs.subject')} - ${sub.user?.firstName || t('adminSubs.user')}?`)) return;
     try {
       await subscriptionsApi.revoke(sub.id);
-      toast.success('Subscription revoked');
+      toast.success(t('adminSubs.revoke'));
       await loadSubscriptions();
     } catch {
-      toast.error('Failed to revoke');
+      toast.error(t('adminSubs.revoke'));
     }
   };
 
@@ -182,12 +184,12 @@ export default function AdminSubscriptionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Subscriptions</h1>
-          <p className="text-gray-500">Manage student subject access</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('adminSubs.title')}</h1>
+          <p className="text-gray-500">{t('adminSubs.subtitle')}</p>
         </div>
         <Button onClick={() => setShowAssignForm(!showAssignForm)}>
           <UserPlus size={16} className="mr-2" />
-          Assign Subscription
+          {t('adminSubs.assignSubjects')}
         </Button>
       </div>
 
@@ -195,12 +197,12 @@ export default function AdminSubscriptionsPage() {
       {showAssignForm && (
         <Card className="border-blue-200 bg-blue-50/30">
           <CardHeader>
-            <CardTitle className="text-base">Assign Subject Access</CardTitle>
+            <CardTitle className="text-base">{t('adminSubs.assignSubjects')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Phone search */}
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Search Student by Phone</label>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">{t('adminSubs.selectUser')}</label>
               <div className="flex gap-2">
                 <Input
                   type="tel"
@@ -216,7 +218,7 @@ export default function AdminSubscriptionsPage() {
                   onKeyDown={(e) => e.key === 'Enter' && handlePhoneSearch()}
                 />
                 <Button type="button" variant="outline" onClick={handlePhoneSearch} disabled={phoneSearching}>
-                  {phoneSearching ? 'Searching…' : 'Search'}
+                  {phoneSearching ? `${t('common.search')}…` : t('common.search')}
                 </Button>
               </div>
               {/* Search results */}
@@ -255,7 +257,7 @@ export default function AdminSubscriptionsPage() {
             {/* Subject checkboxes */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Subjects ({selectedSubjectIds.length} selected)
+                {t('adminSubs.selectSubjects')} ({selectedSubjectIds.length})
               </label>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {subjects.map((s) => {
@@ -289,7 +291,7 @@ export default function AdminSubscriptionsPage() {
 
             <div className="flex gap-2">
               <Button onClick={handleAssign} disabled={assigning}>
-                {assigning ? 'Assigning…' : 'Assign Access'}
+                {assigning ? `${t('adminSubs.assign')}…` : t('adminSubs.assign')}
               </Button>
               <Button
                 variant="outline"
@@ -302,7 +304,7 @@ export default function AdminSubscriptionsPage() {
                   setPhoneResults([]);
                 }}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </CardContent>
@@ -314,18 +316,18 @@ export default function AdminSubscriptionsPage() {
         <div className="relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <Input
-            placeholder="Search user or subject…"
+            placeholder={t('adminSubs.searchPlaceholder')}
             className="pl-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-40">
-          <option value="">All Statuses</option>
-          <option value="ACTIVE">Active</option>
-          <option value="PENDING">Pending</option>
-          <option value="EXPIRED">Expired</option>
-          <option value="REVOKED">Revoked</option>
+          <option value="">{t('adminSubs.allStatuses')}</option>
+          <option value="ACTIVE">{t('adminSubs.active')}</option>
+          <option value="PENDING">{t('common.pending')}</option>
+          <option value="EXPIRED">{t('adminSubs.expired')}</option>
+          <option value="REVOKED">{t('adminSubs.revoked')}</option>
         </Select>
       </div>
 
@@ -333,8 +335,8 @@ export default function AdminSubscriptionsPage() {
       {filtered.length === 0 ? (
         <EmptyState
           icon={<CreditCard size={48} />}
-          title="No subscriptions found"
-          description="Assign subjects to students using the button above"
+          title={t('adminSubs.noSubs')}
+          description={t('adminSubs.subtitle')}
         />
       ) : (
         <Card>
@@ -362,7 +364,7 @@ export default function AdminSubscriptionsPage() {
                       <button
                         onClick={() => handleRevoke(sub)}
                         className="text-red-400 hover:text-red-600 transition-colors cursor-pointer"
-                        title="Revoke"
+                        title={t('adminSubs.revoke')}
                       >
                         <Trash2 size={16} />
                       </button>

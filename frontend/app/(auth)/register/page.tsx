@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth-store';
 import { authApi } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -20,31 +21,27 @@ import {
 } from '@/components/ui/card';
 import { GraduationCap, ArrowLeft, MessageCircle, ShieldCheck } from 'lucide-react';
 
-// ─── Step 1: Registration form schema ─────────────────
-const registerSchema = z
-  .object({
-    firstName: z.string().min(1, 'First name is required'),
-    lastName: z.string().min(1, 'Last name is required'),
-    phone: z
-      .string()
-      .min(9, 'Phone number is required')
-      .regex(/^\+?[0-9]{9,15}$/, 'Enter a valid phone number'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
-
-type RegisterForm = z.infer<typeof registerSchema>;
-
 // ─── OTP Input length ─────────────────────────────────
 const OTP_LENGTH = 6;
 
 export default function RegisterPage() {
   const router = useRouter();
   const { registerWithOtp } = useAuthStore();
+  const { t } = useTranslation();
+
+  // ─── Step 1: Registration form schema ─────────────────
+  const registerSchema = useMemo(() => z.object({
+    firstName: z.string().min(1, t('register.firstNameRequired')),
+    lastName: z.string().min(1, t('register.lastNameRequired')),
+    phone: z.string().min(9, t('register.phoneRequired')).regex(/^\+?[0-9]{9,15}$/, t('register.phoneInvalid')),
+    password: z.string().min(6, t('register.passwordMin')),
+    confirmPassword: z.string(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: t('register.passwordsMismatch'),
+    path: ['confirmPassword'],
+  }), [t]);
+
+  type RegisterForm = z.infer<typeof registerSchema>;
 
   // Steps: 1 = registration form, 2 = OTP verification
   const [step, setStep] = useState<1 | 2>(1);
@@ -166,7 +163,7 @@ export default function RegisterPage() {
         lastName: formData.lastName,
         otpCode,
       });
-      toast.success('Account created successfully!');
+      toast.success(t('register.success'));
       router.push('/dashboard');
     } catch (err: unknown) {
       const message =
@@ -196,8 +193,8 @@ export default function RegisterPage() {
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
             <GraduationCap size={24} className="text-blue-600" />
           </div>
-          <CardTitle className="text-2xl">Create an account</CardTitle>
-          <CardDescription>Register as a student on UniTest</CardDescription>
+          <CardTitle className="text-2xl">{t('register.title')}</CardTitle>
+          <CardDescription>{t('register.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onStep1Submit)} className="space-y-4">
@@ -207,7 +204,7 @@ export default function RegisterPage() {
                   htmlFor="firstName"
                   className="text-sm font-medium text-gray-700"
                 >
-                  First name
+                  {t('register.firstName')}
                 </label>
                 <Input
                   id="firstName"
@@ -225,7 +222,7 @@ export default function RegisterPage() {
                   htmlFor="lastName"
                   className="text-sm font-medium text-gray-700"
                 >
-                  Last name
+                  {t('register.lastName')}
                 </label>
                 <Input
                   id="lastName"
@@ -244,7 +241,7 @@ export default function RegisterPage() {
                 htmlFor="phone"
                 className="text-sm font-medium text-gray-700"
               >
-                Phone number
+                {t('register.phone')}
               </label>
               <Input
                 id="phone"
@@ -261,7 +258,7 @@ export default function RegisterPage() {
                 htmlFor="password"
                 className="text-sm font-medium text-gray-700"
               >
-                Password
+                {t('register.password')}
               </label>
               <Input
                 id="password"
@@ -280,7 +277,7 @@ export default function RegisterPage() {
                 htmlFor="confirmPassword"
                 className="text-sm font-medium text-gray-700"
               >
-                Confirm password
+                {t('register.confirmPassword')}
               </label>
               <Input
                 id="confirmPassword"
@@ -295,16 +292,16 @@ export default function RegisterPage() {
               )}
             </div>
             <Button type="submit" className="w-full" loading={loading}>
-              Create account
+              {t('register.submit')}
             </Button>
           </form>
           <p className="mt-4 text-center text-sm text-gray-500">
-            Already have an account?{' '}
+            {t('register.hasAccount')}{' '}
             <Link
               href="/login"
               className="font-medium text-blue-600 hover:underline"
             >
-              Sign in
+              {t('register.signIn')}
             </Link>
           </p>
         </CardContent>
@@ -319,9 +316,9 @@ export default function RegisterPage() {
         <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
           <ShieldCheck size={24} className="text-blue-600" />
         </div>
-        <CardTitle className="text-2xl">Verify your phone</CardTitle>
+        <CardTitle className="text-2xl">{t('register.otpTitle')}</CardTitle>
         <CardDescription>
-          Enter the 6-digit code from our Telegram bot to verify{' '}
+          {t('register.otpSubtitle')}{' '}
           <span className="font-medium text-gray-700">{formData?.phone}</span>
         </CardDescription>
       </CardHeader>
@@ -330,7 +327,7 @@ export default function RegisterPage() {
           {/* OTP Input */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 block text-center">
-              Verification code
+              {t('register.verifyCode')}
             </label>
             <div
               className="flex justify-center gap-2"
@@ -361,8 +358,7 @@ export default function RegisterPage() {
           {!otpSent && (
             <div className="rounded-lg bg-blue-50 p-3 text-center">
               <p className="text-sm text-blue-700">
-                Click <strong>&quot;Get OTP Code&quot;</strong> below to open our Telegram
-                bot. Start the bot and it will send you the verification code.
+                {t('register.getOtp')}
               </p>
             </div>
           )}
@@ -387,7 +383,7 @@ export default function RegisterPage() {
               disabled={verifyLoading}
             >
               <MessageCircle size={18} />
-              {otpSent ? 'Reopen Telegram Bot' : 'Get OTP Code'}
+              {t('register.getOtp')}
             </Button>
 
             <Button
@@ -398,7 +394,7 @@ export default function RegisterPage() {
               disabled={!isOtpComplete || otpLoading}
             >
               <ShieldCheck size={18} />
-              Verify Code
+              {t('register.verifyCode')}
             </Button>
           </div>
 
@@ -414,7 +410,7 @@ export default function RegisterPage() {
             className="flex items-center justify-center gap-1 text-sm text-gray-500 hover:text-gray-700 w-full transition-colors cursor-pointer"
           >
             <ArrowLeft size={14} />
-            Back to registration
+            {t('register.back')}
           </button>
         </div>
       </CardContent>

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { quizzesApi } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import type { Quiz, QuizAttempt, QuizQuestion } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ type AnswerMap = Record<string, { selectedOptionId?: string; textAnswer?: string
 export default function QuizTakePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [attempt, setAttempt] = useState<QuizAttempt | null>(null);
@@ -41,7 +43,7 @@ export default function QuizTakePage() {
     quizzesApi
       .get(id)
       .then((res) => setQuiz(res.data))
-      .catch(() => toast.error('Failed to load quiz'))
+      .catch(() => toast.error(t('common.error')))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -60,7 +62,7 @@ export default function QuizTakePage() {
       setAnswers(initial);
       setQuiz(data.quiz || quiz);
     } catch {
-      toast.error('Failed to start quiz');
+      toast.error(t('common.error'));
     } finally {
       setStarting(false);
     }
@@ -83,10 +85,10 @@ export default function QuizTakePage() {
         textAnswer: ans.textAnswer || undefined,
       }));
       await quizzesApi.submitAttempt(attempt.id, answerArray);
-      toast.success('Quiz submitted!');
+      toast.success(t('common.success'));
       router.push(`/quizzes/${id}/results/${attempt.id}`);
     } catch {
-      toast.error('Failed to submit quiz');
+      toast.error(t('common.error'));
     } finally {
       setSubmitting(false);
     }
@@ -105,10 +107,10 @@ export default function QuizTakePage() {
     return (
       <EmptyState
         icon={<ClipboardList size={48} />}
-        title="Quiz not found"
+        title={t('quiz.notFound')}
         action={
           <Link href="/subjects">
-            <Button variant="outline">Browse Subjects</Button>
+            <Button variant="outline">{t('quizHistory.browseSubjects')}</Button>
           </Link>
         }
       />
@@ -125,7 +127,7 @@ export default function QuizTakePage() {
           href={`/subjects/${quiz.subjectId}`}
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
         >
-          <ArrowLeft size={14} /> Back to Subject
+          <ArrowLeft size={14} /> {t('quiz.backToSubject')}
         </Link>
 
         <Card>
@@ -140,15 +142,15 @@ export default function QuizTakePage() {
             <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
               <span className="flex items-center gap-1">
                 <ClipboardList size={14} />
-                {questions.length} questions
+                {questions.length} {t('quiz.questions').toLowerCase()}
               </span>
               <span className="flex items-center gap-1">
                 <Clock size={14} />
-                No time limit
+                {t('quiz.minutes')}
               </span>
             </div>
             <Button size="lg" onClick={startQuiz} loading={starting} className="px-8">
-              Start Quiz
+              {t('quiz.startQuiz')}
             </Button>
           </CardContent>
         </Card>
@@ -169,7 +171,7 @@ export default function QuizTakePage() {
         <div>
           <h1 className="text-lg font-bold text-gray-900">{quiz.title}</h1>
           <p className="text-sm text-gray-500">
-            Question {currentIndex + 1} of {questions.length} • {answeredCount} answered
+            {t('quiz.question')} {currentIndex + 1} {t('quiz.of')} {questions.length} • {answeredCount} {t('quiz.answered')}
           </p>
         </div>
         <Badge variant="default">
@@ -197,10 +199,10 @@ export default function QuizTakePage() {
                 <CardTitle className="text-lg">{currentQ.questionText}</CardTitle>
                 <Badge variant="secondary" className="mt-2">
                   {currentQ.questionType === 'MCQ'
-                    ? 'Multiple Choice'
+                    ? t('createQuestion.multipleChoice')
                     : currentQ.questionType === 'TRUE_FALSE'
-                    ? 'True/False'
-                    : 'Short Answer'}
+                    ? t('createQuestion.trueFalse')
+                    : t('createQuestion.shortAnswer')}
                 </Badge>
               </div>
             </div>
@@ -208,7 +210,7 @@ export default function QuizTakePage() {
           <CardContent className="space-y-3">
             {currentQ.questionType === 'SHORT_ANSWER' ? (
               <Input
-                placeholder="Type your answer…"
+                placeholder={t('quiz.selectAnswer')}
                 value={answers[currentQ.id]?.textAnswer || ''}
                 onChange={(e) => setAnswer(currentQ.id, { textAnswer: e.target.value })}
               />
@@ -248,7 +250,7 @@ export default function QuizTakePage() {
           disabled={currentIndex === 0}
           onClick={() => setCurrentIndex((i) => i - 1)}
         >
-          Previous
+          {t('common.previous')}
         </Button>
         <div className="flex gap-2">
           {questions.map((_, i) => {
@@ -272,10 +274,10 @@ export default function QuizTakePage() {
           })}
         </div>
         {currentIndex < questions.length - 1 ? (
-          <Button onClick={() => setCurrentIndex((i) => i + 1)}>Next</Button>
+          <Button onClick={() => setCurrentIndex((i) => i + 1)}>{t('common.next')}</Button>
         ) : (
           <Button onClick={submitQuiz} loading={submitting} className="gap-2">
-            <Send size={16} /> Submit Quiz
+            <Send size={16} /> {t('quiz.submit')}
           </Button>
         )}
       </div>

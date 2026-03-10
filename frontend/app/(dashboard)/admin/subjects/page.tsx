@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { subjectsApi } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ interface SubjectForm {
 const emptyForm: SubjectForm = { name: '', description: '', code: '' };
 
 export default function AdminSubjectsPage() {
+  const { t } = useTranslation();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -44,7 +46,7 @@ export default function AdminSubjectsPage() {
       const res = await subjectsApi.list(1, 200);
       setSubjects(res.data.data ?? res.data ?? []);
     } catch {
-      toast.error('Failed to load subjects');
+      toast.error(t('adminSubjects.noSubjects'));
     } finally {
       setLoading(false);
     }
@@ -79,7 +81,7 @@ export default function AdminSubjectsPage() {
 
   const handleCreate = async () => {
     if (!form.name.trim()) {
-      toast.error('Subject name is required');
+      toast.error(t('adminSubjects.name'));
       return;
     }
     setSaving(true);
@@ -89,11 +91,11 @@ export default function AdminSubjectsPage() {
         description: form.description.trim() || undefined,
         code: form.code.trim() || undefined,
       });
-      toast.success('Subject created');
+      toast.success(t('adminSubjects.createSubject'));
       cancelEdit();
       load();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to create subject');
+      toast.error(err.response?.data?.message || t('adminSubjects.createSubject'));
     } finally {
       setSaving(false);
     }
@@ -101,7 +103,7 @@ export default function AdminSubjectsPage() {
 
   const handleUpdate = async () => {
     if (!editingId || !form.name.trim()) {
-      toast.error('Subject name is required');
+      toast.error(t('adminSubjects.name'));
       return;
     }
     setSaving(true);
@@ -111,11 +113,11 @@ export default function AdminSubjectsPage() {
         description: form.description.trim() || undefined,
         code: form.code.trim() || undefined,
       });
-      toast.success('Subject updated');
+      toast.success(t('adminSubjects.editSubject'));
       cancelEdit();
       load();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to update subject');
+      toast.error(err.response?.data?.message || t('adminSubjects.editSubject'));
     } finally {
       setSaving(false);
     }
@@ -125,10 +127,10 @@ export default function AdminSubjectsPage() {
     setDeletingId(id);
     try {
       await subjectsApi.delete(id);
-      toast.success('Subject deleted');
+      toast.success(t('adminSubjects.deleteSubject'));
       load();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to delete subject');
+      toast.error(err.response?.data?.message || t('adminSubjects.deleteSubject'));
     } finally {
       setDeletingId(null);
     }
@@ -153,8 +155,8 @@ export default function AdminSubjectsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Subjects</h1>
-          <p className="text-gray-500 mt-1">Manage subjects and course categories</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('adminSubjects.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('adminSubjects.subtitle')}</p>
         </div>
         <Button
           onClick={() => {
@@ -165,7 +167,7 @@ export default function AdminSubjectsPage() {
           disabled={showCreate}
         >
           <Plus size={16} />
-          New Subject
+          {t('adminSubjects.createSubject')}
         </Button>
       </div>
 
@@ -173,7 +175,7 @@ export default function AdminSubjectsPage() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
         <Input
-          placeholder="Search subjects…"
+          placeholder={t('adminSubjects.searchPlaceholder')}
           className="pl-10"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -186,33 +188,33 @@ export default function AdminSubjectsPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Plus size={16} className="text-blue-600" />
-              Create New Subject
+              {t('adminSubjects.createSubject')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Name <span className="text-red-500">*</span>
+                  {t('adminSubjects.name')} <span className="text-red-500">*</span>
                 </label>
                 <Input
-                  placeholder="e.g. Data Structures"
+                  placeholder={t('adminSubjects.namePlaceholder')}
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Code</label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">{t('adminSubjects.code')}</label>
                 <Input
-                  placeholder="e.g. CS201"
+                  placeholder={t('adminSubjects.codePlaceholder')}
                   value={form.code}
                   onChange={(e) => setForm({ ...form, code: e.target.value })}
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Description</label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">{t('adminSubjects.description')}</label>
                 <Input
-                  placeholder="Brief description"
+                  placeholder={t('adminSubjects.descPlaceholder')}
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                 />
@@ -221,11 +223,11 @@ export default function AdminSubjectsPage() {
             <div className="flex items-center gap-2 mt-4">
               <Button onClick={handleCreate} loading={saving} size="sm">
                 <Save size={14} />
-                Create
+                {t('common.save')}
               </Button>
               <Button variant="ghost" size="sm" onClick={cancelEdit}>
                 <X size={14} />
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </CardContent>
@@ -236,17 +238,17 @@ export default function AdminSubjectsPage() {
       {filteredSubjects.length === 0 ? (
         <EmptyState
           icon={<BookOpen size={48} />}
-          title="No subjects found"
+          title={t('adminSubjects.noSubjects')}
           description={
             search
-              ? 'No subjects match your search. Try a different query.'
-              : 'Create your first subject to get started.'
+              ? t('subjects.noSubjectsSearch')
+              : t('adminSubjects.noSubjects')
           }
           action={
             !search ? (
               <Button onClick={() => { setShowCreate(true); setForm(emptyForm); }}>
                 <Plus size={16} />
-                Create Subject
+                {t('adminSubjects.createSubject')}
               </Button>
             ) : undefined
           }
@@ -261,14 +263,14 @@ export default function AdminSubjectsPage() {
                   <div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-1 block">Name</label>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">{t('adminSubjects.name')}</label>
                         <Input
                           value={form.name}
                           onChange={(e) => setForm({ ...form, name: e.target.value })}
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-1 block">Code</label>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">{t('adminSubjects.code')}</label>
                         <Input
                           value={form.code}
                           onChange={(e) => setForm({ ...form, code: e.target.value })}
@@ -276,7 +278,7 @@ export default function AdminSubjectsPage() {
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-700 mb-1 block">
-                          Description
+                          {t('adminSubjects.description')}
                         </label>
                         <Input
                           value={form.description}
@@ -287,11 +289,11 @@ export default function AdminSubjectsPage() {
                     <div className="flex items-center gap-2 mt-3">
                       <Button onClick={handleUpdate} loading={saving} size="sm">
                         <Save size={14} />
-                        Save
+                        {t('common.save')}
                       </Button>
                       <Button variant="ghost" size="sm" onClick={cancelEdit}>
                         <X size={14} />
-                        Cancel
+                        {t('common.cancel')}
                       </Button>
                     </div>
                   </div>
@@ -314,7 +316,7 @@ export default function AdminSubjectsPage() {
                         <p className="text-sm text-gray-500 mt-0.5">{subject.description}</p>
                       )}
                       <p className="text-xs text-gray-400 mt-1">
-                        Created {formatDate(subject.createdAt)}
+                        {t('materials.created')} {formatDate(subject.createdAt)}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -322,7 +324,7 @@ export default function AdminSubjectsPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => startEdit(subject)}
-                        title="Edit"
+                        title={t('adminSubjects.editSubject')}
                       >
                         <Pencil size={16} className="text-gray-500" />
                       </Button>
@@ -331,7 +333,7 @@ export default function AdminSubjectsPage() {
                         size="icon"
                         onClick={() => handleDelete(subject.id)}
                         loading={deletingId === subject.id}
-                        title="Delete"
+                        title={t('adminSubjects.deleteSubject')}
                       >
                         <Trash2 size={16} className="text-red-500" />
                       </Button>

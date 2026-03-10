@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { subjectsApi, subscriptionsApi } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { useAuthStore } from '@/stores/auth-store';
 import type { Subject } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +15,7 @@ import { BookOpen, Search, ArrowRight, Lock, MessageCircle, Phone, X, Sparkles, 
 import { Badge } from '@/components/ui/badge';
 
 export default function SubjectsPage() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [filtered, setFiltered] = useState<Subject[]>([]);
@@ -67,8 +69,8 @@ export default function SubjectsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Subjects</h1>
-          <p className="text-gray-500">Browse all available subjects</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('subjects.title')}</h1>
+          <p className="text-gray-500">{t('subjects.subtitle')}</p>
         </div>
       </div>
 
@@ -76,7 +78,7 @@ export default function SubjectsPage() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
         <Input
-          placeholder="Filter subjects…"
+          placeholder={t('subjects.searchPlaceholder')}
           className="pl-10"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -93,8 +95,8 @@ export default function SubjectsPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<BookOpen size={48} />}
-          title="No subjects found"
-          description={search ? 'Try a different search term' : 'No subjects have been created yet'}
+          title={t('subjects.noSubjects')}
+          description={search ? t('subjects.noSubjectsSearch') : t('subjects.noDescription')}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -162,7 +164,7 @@ export default function SubjectsPage() {
                       )}
                     </div>
                     <div className="mt-auto flex items-center text-sm text-blue-600 font-medium">
-                      View materials <ArrowRight size={14} className="ml-1" />
+                      {t('subjects.viewSubject')} <ArrowRight size={14} className="ml-1" />
                     </div>
                   </CardContent>
                 </Card>

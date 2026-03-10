@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { questionsApi, subjectsApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
+import { useTranslation } from '@/lib/i18n';
 import type { ManualQuestion, Subject } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ const API_BASE =
 export default function SubjectQuestionsPage() {
   const { subjectId } = useParams<{ subjectId: string }>();
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [subject, setSubject] = useState<Subject | null>(null);
   const [questions, setQuestions] = useState<ManualQuestion[]>([]);
   const [search, setSearch] = useState('');
@@ -117,7 +119,7 @@ export default function SubjectQuestionsPage() {
 
   const handleSaveEdit = async () => {
     if (!editingId || !editQuestion.trim() || !editAnswer.trim()) {
-      toast.error('Question and answer are required');
+      toast.error(t('questions.questionAndAnswerRequired'));
       return;
     }
     setEditSaving(true);
@@ -127,24 +129,24 @@ export default function SubjectQuestionsPage() {
         answerText: editAnswer.trim(),
         subjectId,
       });
-      toast.success('Question updated');
+      toast.success(t('questions.questionUpdated'));
       cancelEdit();
       load(page);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to update');
+      toast.error(err.response?.data?.message || t('questions.failedToUpdate'));
     } finally {
       setEditSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this question?')) return;
+    if (!confirm(t('questions.confirmDelete'))) return;
     try {
       await questionsApi.delete(id);
-      toast.success('Question deleted');
+      toast.success(t('questions.questionDeleted'));
       load(page);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to delete');
+      toast.error(err.response?.data?.message || t('questions.failedToDelete'));
     }
   };
 
@@ -155,21 +157,21 @@ export default function SubjectQuestionsPage() {
         href="/questions"
         className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
       >
-        <ArrowLeft size={14} /> Back to Q&A Bank
+        <ArrowLeft size={14} /> {t('questions.backToQABank')}
       </Link>
 
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {subject?.name || 'Subject'} — Q&A
+            {subject?.name || t('subjects.title')} — {t('questions.qa')}
           </h1>
           <p className="text-gray-500 mt-1">
-            {subject?.description || 'Browse questions and answers for this subject'}
+            {subject?.description || t('questions.browseQA')}
           </p>
         </div>
         <Link href="/questions/create">
           <Button>
-            <Plus size={16} className="mr-2" /> Add Question
+            <Plus size={16} className="mr-2" /> {t('questions.addQuestion')}
           </Button>
         </Link>
       </div>
@@ -179,7 +181,7 @@ export default function SubjectQuestionsPage() {
         <form onSubmit={handleSearch} className="relative flex-1 min-w-[200px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <Input
-            placeholder="Search questions…"
+            placeholder={t('questions.searchPlaceholder')}
             className="pl-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -190,9 +192,9 @@ export default function SubjectQuestionsPage() {
           size="sm"
           onClick={() => setShowMine(!showMine)}
         >
-          <User size={14} className="mr-1" /> My Questions
+          <User size={14} className="mr-1" /> {t('questions.myQuestions')}
         </Button>
-        <span className="text-sm text-gray-500">{total} questions</span>
+        <span className="text-sm text-gray-500">{total} {t('questions.count')}</span>
       </div>
 
       {/* Questions */}
@@ -205,15 +207,15 @@ export default function SubjectQuestionsPage() {
       ) : questions.length === 0 ? (
         <EmptyState
           icon={<HelpCircle size={48} />}
-          title="No questions yet"
+          title={t('questions.noQuestionsYet')}
           description={
             showMine
-              ? "You haven't created any questions in this subject"
-              : 'Be the first to contribute a question!'
+              ? t('questions.noQuestionsInSubject')
+              : t('questions.beFirstQuestion')
           }
           action={
             <Link href="/questions/create">
-              <Button>Add Question</Button>
+              <Button>{t('questions.addQuestion')}</Button>
             </Link>
           }
         />
@@ -257,7 +259,7 @@ export default function SubjectQuestionsPage() {
                         </span>
                         {q.imagePath && (
                           <span className="flex items-center gap-1 text-blue-500">
-                            <Image size={12} /> Has image
+                            <Image size={12} /> {t('questions.hasImage')}
                           </span>
                         )}
                       </div>
@@ -275,7 +277,7 @@ export default function SubjectQuestionsPage() {
                               e.stopPropagation();
                               startEdit(q);
                             }}
-                            title="Edit"
+                            title={t('common.edit')}
                           >
                             <Pencil size={14} />
                           </Button>
@@ -287,7 +289,7 @@ export default function SubjectQuestionsPage() {
                               e.stopPropagation();
                               handleDelete(q.id);
                             }}
-                            title="Delete"
+                            title={t('common.delete')}
                           >
                             <Trash2 size={14} />
                           </Button>
@@ -309,7 +311,7 @@ export default function SubjectQuestionsPage() {
                         <div className="flex items-center gap-2 mb-2">
                           <MessageSquare size={14} className="text-green-600" />
                           <p className="text-xs font-semibold text-green-700 uppercase tracking-wider">
-                            Answer
+                            {t('questions.answer')}
                           </p>
                         </div>
                         <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">
@@ -319,7 +321,7 @@ export default function SubjectQuestionsPage() {
                       {q.imagePath && (
                         <div>
                           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                            Attached Image
+                            {t('questions.attachedImage')}
                           </p>
                           <img
                             src={`${API_BASE}/uploads/question-images/${q.imagePath.split('/').pop()}`}
@@ -339,7 +341,7 @@ export default function SubjectQuestionsPage() {
                     >
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                          Question
+                          {t('questions.question')}
                         </label>
                         <Textarea
                           value={editQuestion}
@@ -349,7 +351,7 @@ export default function SubjectQuestionsPage() {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                          Answer
+                          {t('questions.answer')}
                         </label>
                         <Textarea
                           value={editAnswer}
@@ -360,10 +362,10 @@ export default function SubjectQuestionsPage() {
                       <div className="flex items-center gap-2">
                         <Button size="sm" onClick={handleSaveEdit} disabled={editSaving}>
                           <Save size={14} className="mr-1" />{' '}
-                          {editSaving ? 'Saving…' : 'Save'}
+                          {editSaving ? t('questions.saving') : t('common.save')}
                         </Button>
                         <Button size="sm" variant="outline" onClick={cancelEdit}>
-                          <X size={14} className="mr-1" /> Cancel
+                          <X size={14} className="mr-1" /> {t('common.cancel')}
                         </Button>
                       </div>
                     </div>
@@ -384,10 +386,10 @@ export default function SubjectQuestionsPage() {
             disabled={page <= 1}
             onClick={() => load(page - 1)}
           >
-            <ChevronLeft size={14} className="mr-1" /> Previous
+            <ChevronLeft size={14} className="mr-1" /> {t('common.previous')}
           </Button>
           <span className="text-sm text-gray-600">
-            Page {page} of {totalPages}
+            {t('common.page')} {page} {t('common.of')} {totalPages}
           </span>
           <Button
             variant="outline"
@@ -395,7 +397,7 @@ export default function SubjectQuestionsPage() {
             disabled={page >= totalPages}
             onClick={() => load(page + 1)}
           >
-            Next <ChevronRight size={14} className="ml-1" />
+            {t('common.next')} <ChevronRight size={14} className="ml-1" />
           </Button>
         </div>
       )}

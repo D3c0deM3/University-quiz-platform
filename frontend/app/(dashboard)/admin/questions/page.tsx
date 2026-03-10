@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from '@/lib/i18n';
 import { questionsApi, subjectsApi } from '@/lib/api';
 import type { ManualQuestion, Subject, QuestionStatus, QuestionStatusCounts } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,23 +30,24 @@ import { toast } from 'sonner';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
 
-const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Statuses' },
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'APPROVED', label: 'Approved' },
-  { value: 'REJECTED', label: 'Rejected' },
-];
-
-const statusBadge = (status: QuestionStatus) => {
-  switch (status) {
-    case 'APPROVED': return <Badge variant="success">Approved</Badge>;
-    case 'PENDING': return <Badge variant="warning">Pending</Badge>;
-    case 'REJECTED': return <Badge variant="destructive">Rejected</Badge>;
-    default: return <Badge variant="outline">{status}</Badge>;
-  }
-};
-
 export default function AdminQuestionsPage() {
+  const { t } = useTranslation();
+
+  const STATUS_OPTIONS: { value: string; label: string }[] = [
+    { value: '', label: t('adminQuestions.allStatuses') },
+    { value: 'PENDING', label: t('common.pending') },
+    { value: 'APPROVED', label: t('common.approved') },
+    { value: 'REJECTED', label: t('common.rejected') },
+  ];
+
+  const statusBadge = (status: QuestionStatus) => {
+    switch (status) {
+      case 'APPROVED': return <Badge variant="success">{t('common.approved')}</Badge>;
+      case 'PENDING': return <Badge variant="warning">{t('common.pending')}</Badge>;
+      case 'REJECTED': return <Badge variant="destructive">{t('common.rejected')}</Badge>;
+      default: return <Badge variant="outline">{status}</Badge>;
+    }
+  };
   const [questions, setQuestions] = useState<ManualQuestion[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [counts, setCounts] = useState<QuestionStatusCounts | null>(null);
@@ -112,23 +114,23 @@ export default function AdminQuestionsPage() {
   const handleReview = async (id: string, newStatus: 'APPROVED' | 'REJECTED') => {
     try {
       await questionsApi.review(id, newStatus);
-      toast.success(`Question ${newStatus.toLowerCase()}`);
+      toast.success(t('adminQuestions.questionStatus', { status: newStatus.toLowerCase() }));
       load(page);
       loadCounts();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to update status');
+      toast.error(err.response?.data?.message || t('adminQuestions.failedUpdateStatus'));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this question?')) return;
+    if (!confirm(t('adminQuestions.confirmDelete'))) return;
     try {
       await questionsApi.delete(id);
-      toast.success('Question deleted');
+      toast.success(t('adminQuestions.questionDeleted'));
       load(page);
       loadCounts();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to delete');
+      toast.error(err.response?.data?.message || t('adminQuestions.failedDelete'));
     }
   };
 
@@ -149,7 +151,7 @@ export default function AdminQuestionsPage() {
 
   const handleSaveEdit = async () => {
     if (!editingId || !editQuestion.trim() || !editAnswer.trim()) {
-      toast.error('Question and answer are required');
+      toast.error(t('adminQuestions.questionAnswerRequired'));
       return;
     }
     setEditSaving(true);
@@ -159,12 +161,12 @@ export default function AdminQuestionsPage() {
         answerText: editAnswer.trim(),
         subjectId: editSubjectId,
       });
-      toast.success('Question updated');
+      toast.success(t('adminQuestions.questionUpdated'));
       cancelEdit();
       load(page);
       loadCounts();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to update');
+      toast.error(err.response?.data?.message || t('adminQuestions.failedUpdate'));
     } finally {
       setEditSaving(false);
     }
@@ -172,7 +174,7 @@ export default function AdminQuestionsPage() {
 
   const handleGenerateQuiz = async () => {
     if (!subjectId) {
-      toast.error('Please select a subject first');
+      toast.error(t('adminQuestions.selectSubjectFirst'));
       return;
     }
 
@@ -182,10 +184,10 @@ export default function AdminQuestionsPage() {
         subjectId,
         quizTitle.trim() || undefined,
       );
-      toast.success(data.message || 'Quiz generated successfully!');
+      toast.success(data.message || t('adminQuestions.quizGenerated'));
       setQuizTitle('');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to generate quiz');
+      toast.error(err.response?.data?.message || t('adminQuestions.failedGenerateQuiz'));
     } finally {
       setGeneratingQuiz(false);
     }
@@ -195,8 +197,8 @@ export default function AdminQuestionsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Manage Q&A</h1>
-        <p className="text-gray-500">Review student questions and generate AI quizzes</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('adminQuestions.title')}</h1>
+        <p className="text-gray-500">{t('adminQuestions.subtitle')}</p>
       </div>
 
       {/* Stats */}
@@ -209,7 +211,7 @@ export default function AdminQuestionsPage() {
               </div>
               <div>
                 <p className="text-xl font-bold text-gray-900">{counts.total}</p>
-                <p className="text-xs text-gray-500">Total</p>
+                <p className="text-xs text-gray-500">{t('adminQuestions.total')}</p>
               </div>
             </CardContent>
           </Card>
@@ -220,7 +222,7 @@ export default function AdminQuestionsPage() {
               </div>
               <div>
                 <p className="text-xl font-bold text-amber-600">{counts.pending}</p>
-                <p className="text-xs text-gray-500">Pending</p>
+                <p className="text-xs text-gray-500">{t('common.pending')}</p>
               </div>
             </CardContent>
           </Card>
@@ -231,7 +233,7 @@ export default function AdminQuestionsPage() {
               </div>
               <div>
                 <p className="text-xl font-bold text-green-600">{counts.approved}</p>
-                <p className="text-xs text-gray-500">Approved</p>
+                <p className="text-xs text-gray-500">{t('common.approved')}</p>
               </div>
             </CardContent>
           </Card>
@@ -242,7 +244,7 @@ export default function AdminQuestionsPage() {
               </div>
               <div>
                 <p className="text-xl font-bold text-red-600">{counts.rejected}</p>
-                <p className="text-xs text-gray-500">Rejected</p>
+                <p className="text-xs text-gray-500">{t('common.rejected')}</p>
               </div>
             </CardContent>
           </Card>
@@ -254,32 +256,31 @@ export default function AdminQuestionsPage() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-blue-900">
             <Sparkles size={20} className="text-blue-600" />
-            Generate AI Quiz
+            {t('adminQuestions.generateAIQuiz')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-blue-800 mb-4">
-            Select a subject and generate a multiple-choice quiz from all approved Q&A pairs using AI.
-            You need at least 3 approved questions in the selected subject.
+            {t('adminQuestions.generateAIQuizDesc')}
           </p>
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-medium text-blue-700 mb-1">Subject</label>
+              <label className="block text-xs font-medium text-blue-700 mb-1">{t('adminQuestions.subject')}</label>
               <Select
                 value={subjectId}
                 onChange={(e) => setSubjectId(e.target.value)}
                 className="bg-white"
               >
-                <option value="">Select a subject</option>
+                <option value="">{t('adminQuestions.selectSubject')}</option>
                 {subjects.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </Select>
             </div>
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-medium text-blue-700 mb-1">Quiz Title (optional)</label>
+              <label className="block text-xs font-medium text-blue-700 mb-1">{t('adminQuestions.quizTitleOptional')}</label>
               <Input
-                placeholder="Auto-generated if empty"
+                placeholder={t('adminQuestions.autoGenerated')}
                 value={quizTitle}
                 onChange={(e) => setQuizTitle(e.target.value)}
                 className="bg-white"
@@ -293,12 +294,12 @@ export default function AdminQuestionsPage() {
               {generatingQuiz ? (
                 <>
                   <Loader2 size={16} className="mr-2 animate-spin" />
-                  Generating…
+                  {t('adminQuestions.generating')}
                 </>
               ) : (
                 <>
                   <Sparkles size={16} className="mr-2" />
-                  Generate Quiz
+                  {t('adminQuestions.generateQuiz')}
                 </>
               )}
             </Button>
@@ -311,7 +312,7 @@ export default function AdminQuestionsPage() {
         <form onSubmit={handleSearch} className="relative flex-1 min-w-[200px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <Input
-            placeholder="Search questions…"
+            placeholder={t('adminQuestions.searchPlaceholder')}
             className="pl-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -326,7 +327,7 @@ export default function AdminQuestionsPage() {
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </Select>
-        <span className="text-sm text-gray-500">{total} questions</span>
+        <span className="text-sm text-gray-500">{t('adminQuestions.questionsCount', { count: total })}</span>
       </div>
 
       {/* Questions List */}
@@ -339,8 +340,8 @@ export default function AdminQuestionsPage() {
       ) : questions.length === 0 ? (
         <EmptyState
           icon={<HelpCircle size={48} />}
-          title="No questions found"
-          description={status ? `No ${status.toLowerCase()} questions` : 'No questions have been submitted yet'}
+          title={t('adminQuestions.noQuestionsFound')}
+          description={status ? t('adminQuestions.noStatusQuestions', { status: status.toLowerCase() }) : t('adminQuestions.noQuestionsSubmitted')}
         />
       ) : (
         <div className="space-y-3">
@@ -359,9 +360,9 @@ export default function AdminQuestionsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       {statusBadge(q.status)}
-                      <Badge variant="outline">{q.subject?.name || 'Unknown'}</Badge>
+                      <Badge variant="outline">{q.subject?.name || t('adminQuestions.unknown')}</Badge>
                       <span className="text-xs text-gray-400">
-                        by {q.createdBy?.firstName} {q.createdBy?.lastName}
+                        {t('adminQuestions.submittedBy')} {q.createdBy?.firstName} {q.createdBy?.lastName}
                         ({q.createdBy?.role}) • {new Date(q.createdAt).toLocaleDateString()}
                       </span>
                     </div>
@@ -370,7 +371,7 @@ export default function AdminQuestionsPage() {
                     {editingId === q.id ? (
                       <div className="mt-2 space-y-3" onClick={(e) => e.stopPropagation()}>
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Subject</label>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">{t('adminQuestions.subject')}</label>
                           <Select value={editSubjectId} onChange={(e) => setEditSubjectId(e.target.value)}>
                             {subjects.map((s) => (
                               <option key={s.id} value={s.id}>{s.name}</option>
@@ -378,19 +379,19 @@ export default function AdminQuestionsPage() {
                           </Select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Question</label>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">{t('adminQuestions.question')}</label>
                           <Textarea value={editQuestion} onChange={(e) => setEditQuestion(e.target.value)} rows={2} />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Answer</label>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">{t('adminQuestions.answer')}</label>
                           <Textarea value={editAnswer} onChange={(e) => setEditAnswer(e.target.value)} rows={3} />
                         </div>
                         <div className="flex items-center gap-2">
                           <Button size="sm" onClick={handleSaveEdit} disabled={editSaving}>
-                            <Save size={14} className="mr-1" /> {editSaving ? 'Saving…' : 'Save'}
+                            <Save size={14} className="mr-1" /> {editSaving ? t('adminQuestions.saving') : t('common.save')}
                           </Button>
                           <Button size="sm" variant="outline" onClick={cancelEdit}>
-                            <X size={14} className="mr-1" /> Cancel
+                            <X size={14} className="mr-1" /> {t('common.cancel')}
                           </Button>
                         </div>
                       </div>
@@ -407,15 +408,15 @@ export default function AdminQuestionsPage() {
                         {expandedId === q.id && (
                           <div className="mt-3 space-y-3">
                             <div className="rounded-lg bg-green-50 border border-green-200 p-4">
-                              <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1">Answer</p>
+                              <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1">{t('adminQuestions.answer')}</p>
                               <p className="text-gray-800 whitespace-pre-wrap">{q.answerText}</p>
                             </div>
                             {q.imagePath && (
                               <div>
-                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Image</p>
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t('adminQuestions.image')}</p>
                                 <img
                                   src={`${API_BASE}/uploads/question-images/${q.imagePath.split('/').pop()}`}
-                                  alt="Question"
+                                  alt={t('adminQuestions.question')}
                                   className="max-w-full max-h-64 rounded-lg border"
                                 />
                               </div>
@@ -434,7 +435,7 @@ export default function AdminQuestionsPage() {
                         variant="ghost"
                         className="text-gray-500 hover:bg-blue-50 hover:text-blue-600"
                         onClick={() => startEdit(q)}
-                        title="Edit"
+                        title={t('common.edit')}
                       >
                         <Pencil size={15} />
                       </Button>
@@ -446,7 +447,7 @@ export default function AdminQuestionsPage() {
                           variant="ghost"
                           className="text-green-600 hover:bg-green-50 hover:text-green-700"
                           onClick={() => handleReview(q.id, 'APPROVED')}
-                          title="Approve"
+                          title={t('adminQuestions.approve')}
                         >
                           <Check size={16} />
                         </Button>
@@ -455,7 +456,7 @@ export default function AdminQuestionsPage() {
                           variant="ghost"
                           className="text-red-600 hover:bg-red-50 hover:text-red-700"
                           onClick={() => handleReview(q.id, 'REJECTED')}
-                          title="Reject"
+                          title={t('adminQuestions.reject')}
                         >
                           <X size={16} />
                         </Button>
@@ -467,10 +468,10 @@ export default function AdminQuestionsPage() {
                         variant="ghost"
                         className="text-green-600 hover:bg-green-50 hover:text-green-700"
                         onClick={() => handleReview(q.id, 'APPROVED')}
-                        title="Approve"
-                      >
-                        <Check size={16} />
-                      </Button>
+                      title={t('adminQuestions.approve')}
+                    >
+                      <Check size={16} />
+                    </Button>
                     )}
                     {q.status === 'APPROVED' && editingId !== q.id && (
                       <Button
@@ -478,7 +479,7 @@ export default function AdminQuestionsPage() {
                         variant="ghost"
                         className="text-red-600 hover:bg-red-50 hover:text-red-700"
                         onClick={() => handleReview(q.id, 'REJECTED')}
-                        title="Reject"
+                        title={t('adminQuestions.reject')}
                       >
                         <X size={16} />
                       </Button>
@@ -489,7 +490,7 @@ export default function AdminQuestionsPage() {
                         variant="ghost"
                         className="text-gray-400 hover:bg-red-50 hover:text-red-600"
                         onClick={() => handleDelete(q.id)}
-                        title="Delete"
+                        title={t('common.delete')}
                       >
                         <Trash2 size={16} />
                       </Button>
@@ -514,7 +515,7 @@ export default function AdminQuestionsPage() {
             <ChevronLeft size={14} />
           </Button>
           <span className="text-sm text-gray-600">
-            Page {page} of {totalPages}
+            {t('adminQuestions.pageOf', { page, totalPages })}
           </span>
           <Button
             variant="outline"

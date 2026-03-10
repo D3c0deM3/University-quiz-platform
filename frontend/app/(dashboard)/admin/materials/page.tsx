@@ -13,15 +13,16 @@ import { EmptyState } from '@/components/empty-state';
 import { FileText, Eye, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/i18n';
 
-const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Statuses' },
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'PROCESSING', label: 'Processing' },
-  { value: 'PROCESSED', label: 'Processed' },
-  { value: 'REVIEWED', label: 'Reviewed' },
-  { value: 'PUBLISHED', label: 'Published' },
-  { value: 'FAILED', label: 'Failed' },
+const STATUS_KEYS: { value: string; labelKey: string }[] = [
+  { value: '', labelKey: 'adminMaterials.allStatuses' },
+  { value: 'PENDING', labelKey: 'common.pending' },
+  { value: 'PROCESSING', labelKey: 'common.processing' },
+  { value: 'PROCESSED', labelKey: 'common.processed' },
+  { value: 'REVIEWED', labelKey: 'common.reviewed' },
+  { value: 'PUBLISHED', labelKey: 'common.published' },
+  { value: 'FAILED', labelKey: 'common.failed' },
 ];
 
 const statusVariant = (status: MaterialStatus) => {
@@ -35,7 +36,17 @@ const statusVariant = (status: MaterialStatus) => {
   }
 };
 
+const STATUS_LABEL_MAP: Record<string, string> = {
+  PENDING: 'common.pending',
+  PROCESSING: 'common.processing',
+  PROCESSED: 'common.processed',
+  REVIEWED: 'common.reviewed',
+  PUBLISHED: 'common.published',
+  FAILED: 'common.failed',
+};
+
 export default function AdminMaterialsPage() {
+  const { t } = useTranslation();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
@@ -69,13 +80,13 @@ export default function AdminMaterialsPage() {
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this material? This will also delete all associated quizzes.')) return;
+    if (!confirm(t('adminMaterials.confirmDelete'))) return;
     try {
       await materialsApi.delete(id);
-      toast.success('Material deleted');
+      toast.success(t('adminMaterials.materialDeleted'));
       load(page);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to delete material');
+      toast.error(err.response?.data?.message || t('adminMaterials.failedDelete'));
     }
   };
 
@@ -85,11 +96,11 @@ export default function AdminMaterialsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Materials</h1>
-          <p className="text-gray-500">Manage uploaded materials</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('adminMaterials.title')}</h1>
+          <p className="text-gray-500">{t('adminMaterials.subtitle')}</p>
         </div>
         <Link href="/admin/upload">
-          <Button>Upload Material</Button>
+          <Button>{t('adminMaterials.uploadMaterial')}</Button>
         </Link>
       </div>
 
@@ -99,11 +110,11 @@ export default function AdminMaterialsPage() {
           onChange={(e) => handleStatusChange(e.target.value)}
           className="w-48"
         >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+          {STATUS_KEYS.map((o) => (
+            <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
           ))}
         </Select>
-        <span className="text-sm text-gray-500">{total} materials</span>
+        <span className="text-sm text-gray-500">{t('adminMaterials.totalMaterials', { count: total })}</span>
       </div>
 
       {loading ? (
@@ -115,11 +126,11 @@ export default function AdminMaterialsPage() {
       ) : materials.length === 0 ? (
         <EmptyState
           icon={<FileText size={48} />}
-          title="No materials"
-          description={status ? 'No materials with this status' : 'Upload materials to get started'}
+          title={t('adminMaterials.noMaterials')}
+          description={status ? t('adminMaterials.noMaterialsWithStatus') : t('adminMaterials.getStarted')}
           action={
             <Link href="/admin/upload">
-              <Button>Upload Material</Button>
+              <Button>{t('adminMaterials.uploadMaterial')}</Button>
             </Link>
           }
         />
@@ -145,11 +156,11 @@ export default function AdminMaterialsPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <Badge variant={statusVariant(m.status)}>{m.status}</Badge>
+                    <Badge variant={statusVariant(m.status)}>{t(STATUS_LABEL_MAP[m.status] || m.status)}</Badge>
                     <button
                       onClick={(e) => handleDelete(m.id, e)}
                       className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                      title="Delete material"
+                      title={t('adminMaterials.deleteMaterial')}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -165,11 +176,11 @@ export default function AdminMaterialsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => load(page - 1)}>
-            Previous
+            {t('common.previous')}
           </Button>
-          <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+          <span className="text-sm text-gray-500">{t('common.page')} {page} {t('common.of')} {totalPages}</span>
           <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => load(page + 1)}>
-            Next
+            {t('common.next')}
           </Button>
         </div>
       )}

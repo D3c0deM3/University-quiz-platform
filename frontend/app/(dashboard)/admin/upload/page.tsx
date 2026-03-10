@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { materialsApi, subjectsApi } from '@/lib/api';
 import type { Subject } from '@/lib/types';
+import { useTranslation } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
@@ -13,6 +14,7 @@ import { cn } from '@/lib/utils';
 
 export default function UploadPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [subjectId, setSubjectId] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -35,18 +37,18 @@ export default function UploadPage() {
 
   const handleUpload = async () => {
     if (!file || !subjectId) {
-      toast.error('Please select a file and subject');
+      toast.error(t('adminUpload.error'));
       return;
     }
     setUploading(true);
     try {
       await materialsApi.upload(file, subjectId);
-      toast.success('Material uploaded! Processing will begin shortly.');
+      toast.success(t('adminUpload.success'));
       router.push('/admin/materials');
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Upload failed';
+        t('adminUpload.error');
       toast.error(message);
     } finally {
       setUploading(false);
@@ -56,18 +58,18 @@ export default function UploadPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Upload Material</h1>
-        <p className="text-gray-500">Upload a file to be processed and added to the system</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('adminUpload.title')}</h1>
+        <p className="text-gray-500">{t('adminUpload.subtitle')}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Select Subject</CardTitle>
-          <CardDescription>Choose which subject this material belongs to</CardDescription>
+          <CardTitle>{t('adminUpload.selectSubject')}</CardTitle>
+          <CardDescription>{t('adminUpload.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
-            <option value="">Select a subject…</option>
+            <option value="">{t('adminUpload.selectSubject')}…</option>
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name} {s.code ? `(${s.code})` : ''}
@@ -79,9 +81,9 @@ export default function UploadPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>File</CardTitle>
+          <CardTitle>{t('adminUpload.selectedFile')}</CardTitle>
           <CardDescription>
-            Supported formats: PDF, DOCX, PPTX, PNG, JPG (max 50MB)
+            {t('adminUpload.supported')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -100,9 +102,9 @@ export default function UploadPage() {
             >
               <Upload size={40} className="text-gray-400 mb-3" />
               <p className="text-sm font-medium text-gray-700">
-                Drop your file here, or click to browse
+                {t('adminUpload.chooseFile')}
               </p>
-              <p className="text-xs text-gray-400 mt-1">PDF, DOCX, PPTX, PNG, JPG</p>
+              <p className="text-xs text-gray-400 mt-1">{t('adminUpload.supported')}</p>
               <input
                 id="file-input"
                 type="file"
@@ -141,7 +143,7 @@ export default function UploadPage() {
         className="w-full"
         size="lg"
       >
-        <Upload size={18} /> Upload & Process
+        <Upload size={18} /> {uploading ? t('adminUpload.uploading') : t('adminUpload.submit')}
       </Button>
     </div>
   );

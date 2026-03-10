@@ -12,10 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
 import { BookOpen, FileText, ClipboardList, ArrowLeft, Lock, Phone, MessageCircle } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
 
 export default function SubjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [subject, setSubject] = useState<Subject | null>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -86,10 +88,10 @@ export default function SubjectDetailPage() {
     return (
       <EmptyState
         icon={<BookOpen size={48} />}
-        title="Subject not found"
+        title={t('subjectDetail.notFound')}
         action={
           <Link href="/subjects">
-            <Button variant="outline">Back to Subjects</Button>
+            <Button variant="outline">{t('subjectDetail.back')}</Button>
           </Link>
         }
       />
@@ -105,7 +107,7 @@ export default function SubjectDetailPage() {
             href="/subjects"
             className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2"
           >
-            <ArrowLeft size={14} /> Back to Subjects
+            <ArrowLeft size={14} /> {t('subjectDetail.back')}
           </Link>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900">{subject.name}</h1>
@@ -124,36 +126,35 @@ export default function SubjectDetailPage() {
               </div>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Subscription Required</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('subjectDetail.subscriptionRequired')}</h2>
               <p className="mt-2 text-gray-600 max-w-md mx-auto">
-                To access quizzes, Q&amp;A questions, and study materials for <strong>{subject.name}</strong>,
-                you need an active subscription.
+                {t('subjectDetail.subscriptionDesc', { name: subject.name })}
               </p>
             </div>
 
             <div className="rounded-xl bg-white border border-amber-200 p-6 max-w-sm mx-auto space-y-4">
               <div className="text-center">
-                <p className="text-3xl font-bold text-gray-900">$1</p>
-                <p className="text-sm text-gray-500">or 10,000 UZS per subject</p>
+                <p className="text-3xl font-bold text-gray-900">{t('subjectDetail.price')}</p>
+                <p className="text-sm text-gray-500">{t('subjectDetail.priceDesc')}</p>
               </div>
               <ul className="text-sm text-gray-600 space-y-2 text-left">
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">&#10003;</span> All quizzes for this subject
+                  <span className="text-green-500">&#10003;</span> {t('subjectDetail.allQuizzes')}
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">&#10003;</span> Q&amp;A question bank
+                  <span className="text-green-500">&#10003;</span> {t('subjectDetail.qaBank')}
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">&#10003;</span> Study materials &amp; documents
+                  <span className="text-green-500">&#10003;</span> {t('subjectDetail.studyMaterials')}
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">&#10003;</span> Continuous content additions
+                  <span className="text-green-500">&#10003;</span> {t('subjectDetail.continuousContent')}
                 </li>
               </ul>
             </div>
 
             <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-700">Contact us to subscribe:</p>
+              <p className="text-sm font-medium text-gray-700">{t('subjectDetail.contactUs')}</p>
               <div className="flex flex-wrap justify-center gap-4">
                 <a
                   href="tel:+998915817711"
@@ -192,7 +193,7 @@ export default function SubjectDetailPage() {
           href="/subjects"
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2"
         >
-          <ArrowLeft size={14} /> Back to Subjects
+          <ArrowLeft size={14} /> {t('subjectDetail.back')}
         </Link>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-gray-900">{subject.name}</h1>
@@ -208,14 +209,14 @@ export default function SubjectDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText size={18} />
-            Materials ({materials.length})
+            {t('subjectDetail.materials')} ({materials.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {materials.length === 0 ? (
             <EmptyState
-              title="No published materials"
-              description="Materials for this subject haven't been published yet"
+              title={t('subjectDetail.noMaterialsTitle')}
+              description={t('subjectDetail.noMaterialsDesc')}
               className="py-8"
             />
           ) : (
@@ -265,14 +266,14 @@ export default function SubjectDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ClipboardList size={18} />
-            Quizzes ({quizzes.length})
+            {t('subjectDetail.quizzes')} ({quizzes.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {quizzes.length === 0 ? (
             <EmptyState
-              title="No quizzes available"
-              description="Quizzes will appear here once published"
+              title={t('subjectDetail.noQuizzes')}
+              description={t('subjectDetail.noQuizzesDesc')}
               className="py-8"
             />
           ) : (
@@ -288,11 +289,11 @@ export default function SubjectDetailPage() {
                       <p className="text-sm text-gray-500 line-clamp-1">{q.description}</p>
                     )}
                     <p className="text-xs text-gray-400 mt-1">
-                      {q._count?.questions ?? 0} questions
+                      {q._count?.questions ?? 0} {t('subjectDetail.questionCount')}
                     </p>
                   </div>
                   <Link href={`/quizzes/${q.id}`}>
-                    <Button size="sm">Take Quiz</Button>
+                    <Button size="sm">{t('subjectDetail.takeQuiz')}</Button>
                   </Link>
                 </div>
               ))}

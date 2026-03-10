@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
+import { useTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -25,31 +26,32 @@ import { useState } from 'react';
 
 interface NavItem {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
   roles?: string[];
   section?: string;
 }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-  { href: '/subjects', label: 'Subjects', icon: <BookOpen size={20} /> },
-  { href: '/questions', label: 'Q&A Bank', icon: <HelpCircle size={20} /> },
-  { href: '/search', label: 'Search', icon: <Search size={20} /> },
-  { href: '/quiz-history', label: 'Quiz History', icon: <History size={20} /> },
+  { href: '/dashboard', labelKey: 'sidebar.dashboard', icon: <LayoutDashboard size={20} /> },
+  { href: '/subjects', labelKey: 'sidebar.subjects', icon: <BookOpen size={20} /> },
+  { href: '/questions', labelKey: 'sidebar.qaBank', icon: <HelpCircle size={20} /> },
+  { href: '/search', labelKey: 'sidebar.search', icon: <Search size={20} /> },
+  { href: '/quiz-history', labelKey: 'sidebar.quizHistory', icon: <History size={20} /> },
   // Admin/Teacher items
-  { href: '/admin/dashboard', label: 'Admin Panel', icon: <Settings size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
-  { href: '/admin/questions', label: 'Review Q&A', icon: <HelpCircle size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
-  { href: '/admin/materials', label: 'Materials', icon: <FileText size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
-  { href: '/admin/upload', label: 'Upload', icon: <Upload size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
-  { href: '/admin/subjects', label: 'Subjects', icon: <BookOpen size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
-  { href: '/admin/users', label: 'Users', icon: <Users size={20} />, roles: ['ADMIN'], section: 'admin' },
-  { href: '/admin/subscriptions', label: 'Subscriptions', icon: <CreditCard size={20} />, roles: ['ADMIN'], section: 'admin' },
+  { href: '/admin/dashboard', labelKey: 'sidebar.adminPanel', icon: <Settings size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
+  { href: '/admin/questions', labelKey: 'sidebar.reviewQA', icon: <HelpCircle size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
+  { href: '/admin/materials', labelKey: 'sidebar.materials', icon: <FileText size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
+  { href: '/admin/upload', labelKey: 'sidebar.upload', icon: <Upload size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
+  { href: '/admin/subjects', labelKey: 'sidebar.subjects2', icon: <BookOpen size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
+  { href: '/admin/users', labelKey: 'sidebar.users', icon: <Users size={20} />, roles: ['ADMIN'], section: 'admin' },
+  { href: '/admin/subscriptions', labelKey: 'sidebar.subscriptions', icon: <CreditCard size={20} />, roles: ['ADMIN'], section: 'admin' },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
 
   const filteredItems = navItems.filter(
@@ -77,6 +79,7 @@ export function Sidebar() {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           const prevItem = filteredItems[idx - 1];
           const showDivider = item.section === 'admin' && prevItem && prevItem.section !== 'admin';
+          const label = t(item.labelKey);
           return (
             <div key={item.href}>
               {showDivider && (
@@ -84,7 +87,7 @@ export function Sidebar() {
                   <div className="border-t border-gray-200" />
                   {!collapsed && (
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mt-3 mb-1 px-3">
-                      Administration
+                      {t('sidebar.administration')}
                     </p>
                   )}
                 </div>
@@ -98,10 +101,10 @@ export function Sidebar() {
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
                   collapsed && 'justify-center px-2',
                 )}
-                title={collapsed ? item.label : undefined}
+                title={collapsed ? label : undefined}
               >
                 {item.icon}
-                {!collapsed && <span>{item.label}</span>}
+                {!collapsed && <span>{label}</span>}
               </Link>
             </div>
           );
@@ -115,14 +118,14 @@ export function Sidebar() {
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 cursor-pointer"
         >
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-          {!collapsed && <span>Collapse</span>}
+          {!collapsed && <span>{collapsed ? '' : t('common.close')}</span>}
         </button>
         <button
           onClick={logout}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
         >
           <LogOut size={20} />
-          {!collapsed && <span>Logout</span>}
+          {!collapsed && <span>{t('sidebar.logout')}</span>}
         </button>
       </div>
     </aside>

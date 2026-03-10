@@ -13,10 +13,12 @@ import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
 import { Search as SearchIcon, FileText, X, SlidersHorizontal } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [subject, setSubject] = useState(searchParams.get('subject') || '');
@@ -98,8 +100,8 @@ function SearchContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Search</h1>
-        <p className="text-gray-500">Find materials across all subjects</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('search.title')}</h1>
+        <p className="text-gray-500">{t('search.typeToSearchDesc')}</p>
       </div>
 
       {/* Search bar */}
@@ -108,7 +110,7 @@ function SearchContent() {
           <div className="relative flex-1">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <Input
-              placeholder="Search by title, summary, keywords, topics…"
+              placeholder={t('search.placeholder')}
               className="pl-10"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -121,7 +123,7 @@ function SearchContent() {
             className="gap-2"
           >
             <SlidersHorizontal size={16} />
-            Filters
+            {t('search.subject')}
             {hasFilters && (
               <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs text-white">
                 {[subject, difficulty, fileType].filter(Boolean).length}
@@ -129,7 +131,7 @@ function SearchContent() {
             )}
           </Button>
           <Button type="submit" loading={loading}>
-            Search
+            {t('common.search')}
           </Button>
         </div>
 
@@ -138,9 +140,9 @@ function SearchContent() {
           <Card>
             <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">Subject</label>
+                <label className="text-xs font-medium text-gray-500">{t('search.subject')}</label>
                 <Select value={subject} onChange={(e) => setSubject(e.target.value)}>
-                  <option value="">All subjects</option>
+                  <option value="">{t('search.allSubjects')}</option>
                   {subjects.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -149,18 +151,18 @@ function SearchContent() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">Difficulty</label>
+                <label className="text-xs font-medium text-gray-500">{t('questions.difficulty')}</label>
                 <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-                  <option value="">Any difficulty</option>
-                  <option value="BEGINNER">Beginner</option>
-                  <option value="INTERMEDIATE">Intermediate</option>
-                  <option value="ADVANCED">Advanced</option>
+                  <option value="">{t('common.all')}</option>
+                  <option value="BEGINNER">{t('questions.easy')}</option>
+                  <option value="INTERMEDIATE">{t('questions.medium')}</option>
+                  <option value="ADVANCED">{t('questions.hard')}</option>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">File type</label>
+                <label className="text-xs font-medium text-gray-500">{t('common.type')}</label>
                 <Select value={fileType} onChange={(e) => setFileType(e.target.value)}>
-                  <option value="">Any type</option>
+                  <option value="">{t('common.all')}</option>
                   <option value="pdf">PDF</option>
                   <option value="docx">DOCX</option>
                   <option value="pptx">PPTX</option>
@@ -168,17 +170,17 @@ function SearchContent() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">Sort by</label>
+                <label className="text-xs font-medium text-gray-500">{t('search.sortBy')}</label>
                 <Select value={sort} onChange={(e) => setSort(e.target.value)}>
-                  <option value="relevance">Relevance</option>
-                  <option value="date">Date (newest)</option>
-                  <option value="title">Title (A-Z)</option>
+                  <option value="relevance">{t('search.relevance')}</option>
+                  <option value="date">{t('search.date')}</option>
+                  <option value="title">{t('search.titleSort')}</option>
                 </Select>
               </div>
               {hasFilters && (
                 <div className="sm:col-span-2 lg:col-span-4">
                   <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
-                    <X size={14} /> Clear filters
+                    <X size={14} /> {t('common.delete')}
                   </Button>
                 </div>
               )}
@@ -197,19 +199,19 @@ function SearchContent() {
       ) : results.length === 0 && (query || hasFilters) ? (
         <EmptyState
           icon={<SearchIcon size={48} />}
-          title="No results found"
-          description="Try adjusting your search or filters"
+          title={t('search.noResults')}
+          description={t('search.noResultsDesc')}
         />
       ) : results.length === 0 ? (
         <EmptyState
           icon={<SearchIcon size={48} />}
-          title="Start searching"
-          description="Enter a query or apply filters to find materials"
+          title={t('search.typeToSearch')}
+          description={t('search.typeToSearchDesc')}
         />
       ) : (
         <>
           <p className="text-sm text-gray-500">
-            {total} result{total !== 1 ? 's' : ''} found
+            {total} {t('search.results')}
           </p>
           <div className="space-y-3">
             {results.map((m) => (
@@ -266,10 +268,10 @@ function SearchContent() {
                 disabled={page <= 1}
                 onClick={() => doSearch(page - 1)}
               >
-                Previous
+                {t('common.previous')}
               </Button>
               <span className="text-sm text-gray-500">
-                Page {page} of {totalPages}
+                {t('common.page')} {page} {t('common.of')} {totalPages}
               </span>
               <Button
                 variant="outline"
@@ -277,7 +279,7 @@ function SearchContent() {
                 disabled={page >= totalPages}
                 onClick={() => doSearch(page + 1)}
               >
-                Next
+                {t('common.next')}
               </Button>
             </div>
           )}

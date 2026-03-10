@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { materialsApi, usersApi, subjectsApi } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,7 @@ interface DashboardStats {
 }
 
 export default function AdminDashboardPage() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentMaterials, setRecentMaterials] = useState<Material[]>([]);
   const [pendingMaterials, setPendingMaterials] = useState<Material[]>([]);
@@ -112,37 +114,37 @@ export default function AdminDashboardPage() {
 
   const statCards = [
     {
-      label: 'Total Materials',
+      label: t('adminDashboard.totalMaterials'),
       value: stats?.totalMaterials ?? 0,
       icon: <FileText size={20} />,
       color: 'text-blue-600 bg-blue-50',
     },
     {
-      label: 'Pending Review',
+      label: t('adminDashboard.pendingReview'),
       value: stats?.pendingReview ?? 0,
       icon: <Clock size={20} />,
       color: 'text-amber-600 bg-amber-50',
     },
     {
-      label: 'Published',
+      label: t('adminDashboard.published'),
       value: stats?.published ?? 0,
       icon: <CheckCircle2 size={20} />,
       color: 'text-green-600 bg-green-50',
     },
     {
-      label: 'Failed',
+      label: t('adminDashboard.failed'),
       value: stats?.failed ?? 0,
       icon: <AlertTriangle size={20} />,
       color: 'text-red-600 bg-red-50',
     },
     {
-      label: 'Total Users',
+      label: t('adminDashboard.totalUsers'),
       value: stats?.totalUsers ?? 0,
       icon: <Users size={20} />,
       color: 'text-violet-600 bg-violet-50',
     },
     {
-      label: 'Subjects',
+      label: t('adminDashboard.totalSubjects'),
       value: stats?.totalSubjects ?? 0,
       icon: <BookOpen size={20} />,
       color: 'text-cyan-600 bg-cyan-50',
@@ -154,14 +156,14 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-500 mt-1">Platform overview and quick actions</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('adminDashboard.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('adminDashboard.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/admin/upload">
             <Button>
               <Upload size={16} />
-              Upload Material
+              {t('adminDashboard.uploadMaterial')}
             </Button>
           </Link>
         </div>
@@ -191,11 +193,11 @@ export default function AdminDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Clock size={18} className="text-amber-500" />
-              Pending Review
+              {t('adminDashboard.pendingReview')}
             </CardTitle>
             <Link href="/admin/materials">
               <Button variant="ghost" size="sm">
-                View All <ArrowRight size={14} />
+                {t('common.viewAll')} <ArrowRight size={14} />
               </Button>
             </Link>
           </CardHeader>
@@ -238,11 +240,11 @@ export default function AdminDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <FileText size={18} className="text-blue-500" />
-              Recent Materials
+              {t('adminDashboard.recentMaterials')}
             </CardTitle>
             <Link href="/admin/materials">
               <Button variant="ghost" size="sm">
-                View All <ArrowRight size={14} />
+                {t('common.viewAll')} <ArrowRight size={14} />
               </Button>
             </Link>
           </CardHeader>
@@ -284,31 +286,31 @@ export default function AdminDashboardPage() {
         {/* Quick Actions */}
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>{t('adminDashboard.quickActions')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <Link href="/admin/upload" className="block">
               <Button variant="outline" className="w-full justify-start gap-3">
                 <Upload size={16} className="text-blue-600" />
-                Upload Material
+                {t('adminDashboard.uploadMaterial')}
               </Button>
             </Link>
             <Link href="/admin/subjects" className="block">
               <Button variant="outline" className="w-full justify-start gap-3">
                 <BookOpen size={16} className="text-green-600" />
-                Manage Subjects
+                {t('adminDashboard.manageSubjects')}
               </Button>
             </Link>
             <Link href="/admin/users" className="block">
               <Button variant="outline" className="w-full justify-start gap-3">
                 <Users size={16} className="text-violet-600" />
-                Manage Users
+                {t('adminDashboard.manageUsers')}
               </Button>
             </Link>
             <Link href="/admin/materials" className="block">
               <Button variant="outline" className="w-full justify-start gap-3">
                 <FileText size={16} className="text-amber-600" />
-                Review Materials
+                {t('adminDashboard.reviewQuestions')}
               </Button>
             </Link>
           </CardContent>
@@ -319,11 +321,11 @@ export default function AdminDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <BookOpen size={18} className="text-cyan-500" />
-              Subjects
+              {t('adminDashboard.totalSubjects')}
             </CardTitle>
             <Link href="/admin/subjects">
               <Button variant="ghost" size="sm">
-                Manage <ArrowRight size={14} />
+                {t('adminDashboard.manageSubjects')} <ArrowRight size={14} />
               </Button>
             </Link>
           </CardHeader>

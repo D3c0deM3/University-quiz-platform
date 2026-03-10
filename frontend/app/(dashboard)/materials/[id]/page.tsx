@@ -21,9 +21,11 @@ import {
   Calendar,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 
 export default function MaterialDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useTranslation();
   const [material, setMaterial] = useState<Material | null>(null);
   const [metadata, setMetadata] = useState<MaterialMetadata | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,10 +63,10 @@ export default function MaterialDetailPage() {
     return (
       <EmptyState
         icon={<FileText size={48} />}
-        title="Material not found"
+        title={t('materials.notFound')}
         action={
           <Link href="/search">
-            <Button variant="outline">Back to Search</Button>
+            <Button variant="outline">{t('materials.backToSearch')}</Button>
           </Link>
         }
       />
@@ -77,7 +79,7 @@ export default function MaterialDetailPage() {
         href="/search"
         className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
       >
-        <ArrowLeft size={14} /> Back to Search
+        <ArrowLeft size={14} /> {t('materials.backToSearch')}
       </Link>
 
       {/* Header */}
@@ -112,7 +114,7 @@ export default function MaterialDetailPage() {
                     : 'destructive'
                 }
               >
-                {metadata.difficultyLevel}
+                {metadata.difficultyLevel === 'BEGINNER' ? t('materials.beginner') : metadata.difficultyLevel === 'INTERMEDIATE' ? t('materials.intermediate') : t('materials.advanced')}
               </Badge>
             )}
           </div>
@@ -123,7 +125,7 @@ export default function MaterialDetailPage() {
           className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 h-10 px-4 py-2 shrink-0"
         >
           <Download size={16} />
-          Download
+          {t('materials.download')}
         </a>
       </div>
 
@@ -133,7 +135,7 @@ export default function MaterialDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BookOpen size={18} />
-              Summary
+              {t('materials.summary')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -151,32 +153,32 @@ export default function MaterialDetailPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <FileText size={16} />
-              File Information
+              {t('materials.fileInformation')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Original name</span>
+              <span className="text-gray-500">{t('materials.originalName')}</span>
               <span className="font-medium text-gray-900">{material.originalName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Type</span>
+              <span className="text-gray-500">{t('common.type')}</span>
               <span className="font-medium text-gray-900">{material.fileType.toUpperCase()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Size</span>
+              <span className="text-gray-500">{t('materials.size')}</span>
               <span className="font-medium text-gray-900">
                 {(material.fileSize / 1024).toFixed(1)} KB
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Subject</span>
+              <span className="text-gray-500">{t('materials.subject')}</span>
               <span className="font-medium text-gray-900">
                 {material.subject?.name || material.subjectId}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Uploaded</span>
+              <span className="text-gray-500">{t('materials.uploaded')}</span>
               <span className="font-medium text-gray-900">{formatDate(material.createdAt)}</span>
             </div>
           </CardContent>
@@ -187,20 +189,20 @@ export default function MaterialDetailPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <BarChart3 size={16} />
-              AI-Generated Metadata
+              {t('materials.aiMetadata')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {metadata?.contentType && (
               <div className="space-y-1">
-                <p className="text-xs font-medium text-gray-500">Content Type</p>
+                <p className="text-xs font-medium text-gray-500">{t('materials.contentType')}</p>
                 <p className="text-sm text-gray-900">{metadata.contentType}</p>
               </div>
             )}
             {metadata?.keywords && metadata.keywords.length > 0 && (
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-gray-500 flex items-center gap-1">
-                  <Hash size={12} /> Keywords
+                  <Hash size={12} /> {t('materials.keywords')}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {metadata.keywords.map((kw) => (
@@ -212,11 +214,11 @@ export default function MaterialDetailPage() {
             {metadata?.topics && metadata.topics.length > 0 && (
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-gray-500 flex items-center gap-1">
-                  <BookOpen size={12} /> Topics
+                  <BookOpen size={12} /> {t('materials.topics')}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {metadata.topics.map((t) => (
-                    <Badge key={t} variant="secondary">{t}</Badge>
+                  {metadata.topics.map((topic) => (
+                    <Badge key={topic} variant="secondary">{topic}</Badge>
                   ))}
                 </div>
               </div>
@@ -224,17 +226,17 @@ export default function MaterialDetailPage() {
             {metadata?.tags && metadata.tags.length > 0 && (
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-gray-500 flex items-center gap-1">
-                  <Tag size={12} /> Tags
+                  <Tag size={12} /> {t('materials.tags')}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {metadata.tags.map((t) => (
-                    <Badge key={t} variant="default">{t}</Badge>
+                  {metadata.tags.map((tag) => (
+                    <Badge key={tag} variant="default">{tag}</Badge>
                   ))}
                 </div>
               </div>
             )}
             {!metadata && (
-              <p className="text-sm text-gray-400">No metadata generated yet</p>
+              <p className="text-sm text-gray-400">{t('materials.noMetadata')}</p>
             )}
           </CardContent>
         </Card>
@@ -243,7 +245,7 @@ export default function MaterialDetailPage() {
       {/* Created date */}
       <div className="flex items-center gap-2 text-sm text-gray-400">
         <Calendar size={14} />
-        Created {formatDate(material.createdAt)}
+        {t('materials.created')} {formatDate(material.createdAt)}
       </div>
     </div>
   );

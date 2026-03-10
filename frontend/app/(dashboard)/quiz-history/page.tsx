@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from '@/lib/i18n';
 import { quizzesApi } from '@/lib/api';
 import type { QuizAttempt, QuizStats } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +21,7 @@ import {
 import { formatDate, formatScore } from '@/lib/utils';
 
 export default function QuizHistoryPage() {
+  const { t } = useTranslation();
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [stats, setStats] = useState<QuizStats | null>(null);
   const [total, setTotal] = useState(0);
@@ -53,8 +55,8 @@ export default function QuizHistoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Quiz History</h1>
-        <p className="text-gray-500">Your past quiz attempts and performance</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('quizHistory.title')}</h1>
+        <p className="text-gray-500">{t('quizHistory.subtitle')}</p>
       </div>
 
       {/* Stats */}
@@ -67,7 +69,7 @@ export default function QuizHistoryPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalAttempts}</p>
-                <p className="text-sm text-gray-500">Total Attempts</p>
+                <p className="text-sm text-gray-500">{t('quizHistory.totalAttempts')}</p>
               </div>
             </CardContent>
           </Card>
@@ -80,7 +82,7 @@ export default function QuizHistoryPage() {
                 <p className="text-2xl font-bold text-gray-900">
                   {Math.round(stats.averageScore)}%
                 </p>
-                <p className="text-sm text-gray-500">Average Score</p>
+                <p className="text-sm text-gray-500">{t('quizHistory.averageScore')}</p>
               </div>
             </CardContent>
           </Card>
@@ -93,7 +95,7 @@ export default function QuizHistoryPage() {
                 <p className="text-2xl font-bold text-gray-900">
                   {stats.subjectStats.length}
                 </p>
-                <p className="text-sm text-gray-500">Subjects Tested</p>
+                <p className="text-sm text-gray-500">{t('quizHistory.subjectsTested')}</p>
               </div>
             </CardContent>
           </Card>
@@ -104,7 +106,7 @@ export default function QuizHistoryPage() {
       {stats && stats.subjectStats.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Performance by Subject</CardTitle>
+            <CardTitle className="text-base">{t('quizHistory.performanceBySubject')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -121,7 +123,7 @@ export default function QuizHistoryPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold text-gray-900">{Math.round(ss.averageScore)}%</p>
-                    <p className="text-xs text-gray-400">{ss.totalAttempts} attempts</p>
+                    <p className="text-xs text-gray-400">{ss.totalAttempts} {t('quizHistory.attempts')}</p>
                   </div>
                 </div>
               ))}
@@ -135,7 +137,7 @@ export default function QuizHistoryPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <History size={18} />
-            Recent Attempts
+            {t('quizHistory.recentAttempts')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -148,11 +150,11 @@ export default function QuizHistoryPage() {
           ) : attempts.length === 0 ? (
             <EmptyState
               icon={<ClipboardList size={40} />}
-              title="No quiz attempts yet"
-              description="Take a quiz to see your history here"
+              title={t('quizHistory.noAttemptsYet')}
+              description={t('quizHistory.noAttemptsDesc')}
               action={
                 <Link href="/subjects">
-                  <Button>Browse Subjects</Button>
+                  <Button>{t('quizHistory.browseSubjects')}</Button>
                 </Link>
               }
               className="py-8"
@@ -179,7 +181,7 @@ export default function QuizHistoryPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900">
-                        {att.quiz?.title || att.quizTitle || 'Quiz'}
+                        {att.quiz?.title || att.quizTitle || t('quizHistory.quiz')}
                       </p>
                       <p className="text-sm text-gray-500">
                         {att.subjectName || att.quiz?.subject?.name
@@ -187,8 +189,8 @@ export default function QuizHistoryPage() {
                           : null}
                         {(att.subjectName || att.quiz?.subject?.name) ? ' • ' : ''}
                         {formatDate(att.startedAt)}
-                        {att.completedAt ? ' • Completed' : ' • In Progress'}
-                        {att.totalQuestions ? ` • ${att.totalQuestions} questions` : ''}
+                        {att.completedAt ? ` • ${t('quizHistory.completed')}` : ` • ${t('quizHistory.inProgress')}`}
+                        {att.totalQuestions ? ` • ${att.totalQuestions} ${t('quizHistory.questions')}` : ''}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
@@ -220,10 +222,10 @@ export default function QuizHistoryPage() {
                 disabled={page <= 1}
                 onClick={() => loadData(page - 1)}
               >
-                Previous
+                {t('common.previous')}
               </Button>
               <span className="text-sm text-gray-500">
-                Page {page} of {totalPages}
+                {t('quizHistory.pageOf', { page: String(page), totalPages: String(totalPages) })}
               </span>
               <Button
                 variant="outline"
@@ -231,7 +233,7 @@ export default function QuizHistoryPage() {
                 disabled={page >= totalPages}
                 onClick={() => loadData(page + 1)}
               >
-                Next
+                {t('common.next')}
               </Button>
             </div>
           )}

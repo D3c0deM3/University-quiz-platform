@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { usersApi } from '@/lib/api';
 import type { User, Role } from '@/lib/types';
+import { useTranslation } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ const roleIcon = (role: Role) => {
 };
 
 export default function UsersPage() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -73,10 +75,10 @@ export default function UsersPage() {
   const changeRole = async (userId: string, newRole: string) => {
     try {
       await usersApi.assignRole(userId, newRole);
-      toast.success('Role updated');
+      toast.success(t('adminUsers.roleUpdated'));
       load(page);
     } catch {
-      toast.error('Failed to update role');
+      toast.error(t('adminUsers.failedUpdateRole'));
     }
   };
 
@@ -103,11 +105,11 @@ export default function UsersPage() {
     setDeleting(true);
     try {
       await usersApi.delete(deleteTarget.id);
-      toast.success(`User "${deleteTarget.firstName} ${deleteTarget.lastName}" has been deleted`);
+      toast.success(t('adminUsers.userDeleted', { name: `${deleteTarget.firstName} ${deleteTarget.lastName}` }));
       closeDeleteDialog();
       load(page);
     } catch {
-      toast.error('Failed to delete user');
+      toast.error(t('adminUsers.failedDelete'));
     } finally {
       setDeleting(false);
     }
@@ -123,15 +125,15 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-        <p className="text-gray-500">Manage platform users and roles</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('adminUsers.title')}</h1>
+        <p className="text-gray-500">{t('adminUsers.subtitle')}</p>
       </div>
 
       <form onSubmit={handleSearch} className="flex items-center gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <Input
-            placeholder="Search by name or email…"
+            placeholder={t('adminUsers.searchPlaceholder')}
             className="pl-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -142,12 +144,12 @@ export default function UsersPage() {
           onChange={(e) => { setRoleFilter(e.target.value); }}
           className="w-40"
         >
-          <option value="">All Roles</option>
-          <option value="ADMIN">Admin</option>
-          <option value="TEACHER">Teacher</option>
-          <option value="STUDENT">Student</option>
+          <option value="">{t('adminUsers.allRoles')}</option>
+          <option value="ADMIN">{t('adminUsers.admin')}</option>
+          <option value="TEACHER">{t('adminUsers.teacher')}</option>
+          <option value="STUDENT">{t('adminUsers.student')}</option>
         </Select>
-        <Button type="submit">Search</Button>
+        <Button type="submit">{t('common.search')}</Button>
       </form>
 
       {loading ? (
@@ -159,13 +161,13 @@ export default function UsersPage() {
       ) : users.length === 0 ? (
         <EmptyState
           icon={<Users size={48} />}
-          title="No users found"
-          description="No users match your search criteria"
+          title={t('adminUsers.noUsers')}
+          description={t('adminUsers.noUsersDesc')}
         />
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{total} users</CardTitle>
+            <CardTitle className="text-base">{t('adminUsers.totalUsers', { count: total })}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-gray-100">
@@ -178,7 +180,7 @@ export default function UsersPage() {
                     <p className="font-medium text-gray-900">
                       {u.firstName} {u.lastName}
                     </p>
-                    <p className="text-sm text-gray-500">{u.phone} • Joined {formatDate(u.createdAt)}</p>
+                    <p className="text-sm text-gray-500">{u.phone} • {t('common.joined')} {formatDate(u.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <Badge variant={roleVariant(u.role)}>{u.role}</Badge>
@@ -187,16 +189,16 @@ export default function UsersPage() {
                       onChange={(e) => changeRole(u.id, e.target.value)}
                       className="w-32 h-8 text-xs"
                     >
-                      <option value="STUDENT">Student</option>
-                      <option value="TEACHER">Teacher</option>
-                      <option value="ADMIN">Admin</option>
+                      <option value="STUDENT">{t('adminUsers.student')}</option>
+                      <option value="TEACHER">{t('adminUsers.teacher')}</option>
+                      <option value="ADMIN">{t('adminUsers.admin')}</option>
                     </Select>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="text-gray-400 hover:text-red-600 hover:bg-red-50"
                       onClick={() => openDeleteDialog(u)}
-                      title="Delete user"
+                      title={t('adminUsers.deleteUser')}
                     >
                       <Trash2 size={16} />
                     </Button>
@@ -211,11 +213,11 @@ export default function UsersPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => load(page - 1)}>
-            Previous
+            {t('common.previous')}
           </Button>
-          <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+          <span className="text-sm text-gray-500">{t('common.page')} {page} {t('common.of')} {totalPages}</span>
           <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => load(page + 1)}>
-            Next
+            {t('common.next')}
           </Button>
         </div>
       )}
@@ -246,30 +248,27 @@ export default function UsersPage() {
                     <AlertTriangle size={20} className="text-red-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Delete User</h3>
-                    <p className="text-sm text-gray-500">This action cannot be undone</p>
+                    <h3 className="text-lg font-semibold text-gray-900">{t('adminUsers.deleteUser')}</h3>
+                    <p className="text-sm text-gray-500">{t('adminUsers.cannotBeUndone')}</p>
                   </div>
                 </div>
 
                 <div className="rounded-lg bg-red-50 border border-red-100 p-4">
                   <p className="text-sm text-red-800">
-                    You are about to permanently delete{' '}
-                    <strong>{deleteTarget.firstName} {deleteTarget.lastName}</strong>{' '}
-                    ({deleteTarget.phone}).
-                    All their data, quiz attempts, and subscriptions will be removed.
+                    {t('adminUsers.aboutToDelete', { name: `${deleteTarget.firstName} ${deleteTarget.lastName}`, phone: deleteTarget.phone })}
                   </p>
                 </div>
 
                 <p className="text-sm text-gray-600">
-                  Are you sure you want to proceed?
+                  {t('adminUsers.areYouSure')}
                 </p>
 
                 <div className="flex items-center justify-end gap-3 pt-2">
                   <Button variant="outline" onClick={closeDeleteDialog}>
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button variant="destructive" onClick={proceedToStep2}>
-                    Yes, continue
+                    {t('adminUsers.yesContinue')}
                   </Button>
                 </div>
               </div>
@@ -281,14 +280,14 @@ export default function UsersPage() {
                     <Trash2 size={20} className="text-red-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Final Confirmation</h3>
-                    <p className="text-sm text-gray-500">Type the user&apos;s full name to confirm</p>
+                    <h3 className="text-lg font-semibold text-gray-900">{t('adminUsers.finalConfirmation')}</h3>
+                    <p className="text-sm text-gray-500">{t('adminUsers.typeNameSubtitle')}</p>
                   </div>
                 </div>
 
                 <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
                   <p className="text-sm text-gray-700">
-                    To confirm deletion, type:{' '}
+                    {t('adminUsers.toConfirmType')}{' '}
                     <strong className="text-gray-900 select-all">{expectedName}</strong>
                   </p>
                 </div>
@@ -307,7 +306,7 @@ export default function UsersPage() {
 
                 <div className="flex items-center justify-end gap-3 pt-2">
                   <Button variant="outline" onClick={() => setDeleteStep(1)}>
-                    Go back
+                    {t('adminUsers.goBack')}
                   </Button>
                   <Button
                     variant="destructive"
@@ -315,7 +314,7 @@ export default function UsersPage() {
                     loading={deleting}
                     onClick={handleDelete}
                   >
-                    Delete permanently
+                    {t('adminUsers.deletePermanently')}
                   </Button>
                 </div>
               </div>

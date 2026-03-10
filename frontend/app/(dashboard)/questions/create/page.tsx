@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { questionsApi, subjectsApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
+import { useTranslation } from '@/lib/i18n';
 import type { Subject } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import Link from 'next/link';
 export default function CreateQuestionPage() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [questionText, setQuestionText] = useState('');
   const [answerText, setAnswerText] = useState('');
@@ -40,11 +42,11 @@ export default function CreateQuestionPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file');
+        toast.error(t('createQuestion.selectImageFile'));
         return;
       }
       if (file.size > 10 * 1024 * 1024) {
-        toast.error('Image must be less than 10MB');
+        toast.error(t('createQuestion.imageTooLarge'));
         return;
       }
       setImage(file);
@@ -61,7 +63,7 @@ export default function CreateQuestionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!questionText.trim() || !answerText.trim() || !subjectId) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('createQuestion.fillRequired'));
       return;
     }
 
@@ -75,12 +77,12 @@ export default function CreateQuestionPage() {
       const isAdmin = user?.role === 'ADMIN' || user?.role === 'TEACHER';
       toast.success(
         isAdmin
-          ? 'Question created and published!'
-          : 'Question submitted for review. An admin will review it shortly.',
+          ? t('createQuestion.createdAndPublished')
+          : t('createQuestion.submittedForReview'),
       );
       router.push('/questions');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to create question');
+      toast.error(err.response?.data?.message || t('createQuestion.error'));
     } finally {
       setSubmitting(false);
     }
@@ -93,36 +95,36 @@ export default function CreateQuestionPage() {
       <div className="flex items-center gap-3">
         <Link href="/questions">
           <Button variant="ghost" size="sm">
-            <ArrowLeft size={16} className="mr-1" /> Back
+            <ArrowLeft size={16} className="mr-1" /> {t('common.back')}
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Add Question</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('questions.addQuestion')}</h1>
           <p className="text-gray-500">
             {isAdmin
-              ? 'Create a new Q&A entry (will be published immediately)'
-              : 'Submit a question for admin review'}
+              ? t('createQuestion.publishedImmediately')
+              : t('createQuestion.submitForReview')}
           </p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Question Details</CardTitle>
+          <CardTitle>{t('createQuestion.questionDetails')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Subject */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Subject <span className="text-red-500">*</span>
+                {t('createQuestion.subject')} <span className="text-red-500">*</span>
               </label>
               <Select
                 value={subjectId}
                 onChange={(e) => setSubjectId(e.target.value)}
                 required
               >
-                <option value="">Select a subject</option>
+                <option value="">{t('createQuestion.selectASubject')}</option>
                 {subjects.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
@@ -132,10 +134,10 @@ export default function CreateQuestionPage() {
             {/* Question */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Question <span className="text-red-500">*</span>
+                {t('questions.question')} <span className="text-red-500">*</span>
               </label>
               <Textarea
-                placeholder="Enter your question here…"
+                placeholder={t('createQuestion.enterQuestion')}
                 value={questionText}
                 onChange={(e) => setQuestionText(e.target.value)}
                 rows={3}
@@ -148,10 +150,10 @@ export default function CreateQuestionPage() {
             {/* Answer */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Answer <span className="text-red-500">*</span>
+                {t('questions.answer')} <span className="text-red-500">*</span>
               </label>
               <Textarea
-                placeholder="Enter the answer here…"
+                placeholder={t('createQuestion.enterAnswer')}
                 value={answerText}
                 onChange={(e) => setAnswerText(e.target.value)}
                 rows={4}
@@ -164,7 +166,7 @@ export default function CreateQuestionPage() {
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Image <span className="text-gray-400">(optional)</span>
+                {t('createQuestion.image')} <span className="text-gray-400">{t('createQuestion.imageOptional')}</span>
               </label>
               {imagePreview ? (
                 <div className="relative inline-block">
@@ -184,8 +186,8 @@ export default function CreateQuestionPage() {
               ) : (
                 <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-6 hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
                   <Upload size={24} className="text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-500">Click to upload an image</span>
-                  <span className="text-xs text-gray-400 mt-1">JPG, PNG, GIF, WEBP (max 10MB)</span>
+                  <span className="text-sm text-gray-500">{t('createQuestion.clickToUpload')}</span>
+                  <span className="text-xs text-gray-400 mt-1">{t('createQuestion.imageFormats')}</span>
                   <input
                     type="file"
                     className="hidden"
@@ -199,18 +201,17 @@ export default function CreateQuestionPage() {
             {/* Info notice for students */}
             {!isAdmin && (
               <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
-                <strong>Note:</strong> Your question will be submitted for review.
-                An administrator will review and approve it before it becomes visible to other students.
+                <strong>{t('createQuestion.note')}</strong> {t('createQuestion.reviewNote')}
               </div>
             )}
 
             {/* Submit */}
             <div className="flex justify-end gap-3">
               <Link href="/questions">
-                <Button variant="outline" type="button">Cancel</Button>
+                <Button variant="outline" type="button">{t('common.cancel')}</Button>
               </Link>
               <Button type="submit" disabled={submitting}>
-                {submitting ? 'Submitting…' : isAdmin ? 'Create & Publish' : 'Submit for Review'}
+                {submitting ? t('createQuestion.submitting') : isAdmin ? t('createQuestion.createAndPublish') : t('createQuestion.submitForReviewBtn')}
               </Button>
             </div>
           </form>

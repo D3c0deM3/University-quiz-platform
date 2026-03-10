@@ -19,9 +19,11 @@ import {
   FileText,
   ArrowRight,
 } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [recentMaterials, setRecentMaterials] = useState<Material[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -58,9 +60,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
         <p className="text-gray-500">
-          Hello, {user?.firstName}! Here&apos;s your learning overview.
+          {t('dashboard.greeting', { name: user?.firstName || '' })}
         </p>
       </div>
 
@@ -71,13 +73,13 @@ export default function DashboardPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <Input
-                placeholder="Search materials, topics, keywords…"
+                placeholder={t('dashboard.searchPlaceholder')}
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button type="submit">Search</Button>
+            <Button type="submit">{t('common.search')}</Button>
           </form>
         </CardContent>
       </Card>
@@ -93,7 +95,7 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {loading ? '—' : stats?.totalAttempts ?? 0}
               </p>
-              <p className="text-sm text-gray-500">Quizzes Taken</p>
+              <p className="text-sm text-gray-500">{t('dashboard.quizzesTaken')}</p>
             </div>
           </CardContent>
         </Card>
@@ -106,7 +108,7 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {loading ? '—' : stats?.averageScore != null ? `${Math.round(stats.averageScore)}%` : '0%'}
               </p>
-              <p className="text-sm text-gray-500">Average Score</p>
+              <p className="text-sm text-gray-500">{t('dashboard.avgScore')}</p>
             </div>
           </CardContent>
         </Card>
@@ -119,7 +121,7 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {loading ? '—' : Array.isArray(subjects) ? subjects.length : 0}
               </p>
-              <p className="text-sm text-gray-500">Subjects</p>
+              <p className="text-sm text-gray-500">{t('dashboard.subjects')}</p>
             </div>
           </CardContent>
         </Card>
@@ -132,7 +134,7 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {loading ? '—' : recentMaterials.length}
               </p>
-              <p className="text-sm text-gray-500">Recent Materials</p>
+              <p className="text-sm text-gray-500">{t('dashboard.recentMaterials')}</p>
             </div>
           </CardContent>
         </Card>
@@ -143,10 +145,10 @@ export default function DashboardPage() {
         {/* Recent Materials */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Materials</CardTitle>
+            <CardTitle>{t('dashboard.recentMaterials')}</CardTitle>
             <Link href="/search">
               <Button variant="ghost" size="sm">
-                View all <ArrowRight size={14} />
+                {t('common.viewAll')} <ArrowRight size={14} />
               </Button>
             </Link>
           </CardHeader>
@@ -159,8 +161,8 @@ export default function DashboardPage() {
               </div>
             ) : recentMaterials.length === 0 ? (
               <EmptyState
-                title="No materials yet"
-                description="Published materials will appear here"
+                title={t('dashboard.noMaterials')}
+                description={t('dashboard.noMaterialsDesc')}
                 className="py-8"
               />
             ) : (
@@ -197,10 +199,10 @@ export default function DashboardPage() {
         {/* Subjects */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Subjects</CardTitle>
+            <CardTitle>{t('dashboard.subjects')}</CardTitle>
             <Link href="/subjects">
               <Button variant="ghost" size="sm">
-                View all <ArrowRight size={14} />
+                {t('common.viewAll')} <ArrowRight size={14} />
               </Button>
             </Link>
           </CardHeader>
@@ -213,8 +215,8 @@ export default function DashboardPage() {
               </div>
             ) : !Array.isArray(subjects) || subjects.length === 0 ? (
               <EmptyState
-                title="No subjects"
-                description="Subjects will appear here once created"
+                title={t('dashboard.noSubjects')}
+                description={t('dashboard.noSubjectsDesc')}
                 className="py-8"
               />
             ) : (
@@ -251,7 +253,7 @@ export default function DashboardPage() {
       {stats && stats.subjectStats.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Performance by Subject</CardTitle>
+            <CardTitle>{t('dashboard.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -264,19 +266,19 @@ export default function DashboardPage() {
                   <div className="mt-2 grid grid-cols-3 gap-2 text-center">
                     <div>
                       <p className="text-lg font-bold text-blue-600">{ss.totalAttempts}</p>
-                      <p className="text-xs text-gray-500">Attempts</p>
+                      <p className="text-xs text-gray-500">{t('dashboard.quizzesTaken')}</p>
                     </div>
                     <div>
                       <p className="text-lg font-bold text-green-600">
                         {Math.round(ss.averageScore)}%
                       </p>
-                      <p className="text-xs text-gray-500">Average</p>
+                      <p className="text-xs text-gray-500">{t('dashboard.avgScore')}</p>
                     </div>
                     <div>
                       <p className="text-lg font-bold text-purple-600">
                         {Math.round(ss.bestScore)}%
                       </p>
-                      <p className="text-xs text-gray-500">Best</p>
+                      <p className="text-xs text-gray-500">{t('common.explore')}</p>
                     </div>
                   </div>
                 </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { questionsApi, subscriptionsApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
+import { useTranslation } from '@/lib/i18n';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,6 +39,7 @@ const CARD_COLORS = [
 
 export default function QuestionsPage() {
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [subjectCounts, setSubjectCounts] = useState<SubjectCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
@@ -76,14 +78,14 @@ export default function QuestionsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Q&A Bank</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('questions.title')}</h1>
           <p className="text-gray-500 mt-1">
-            Browse questions and answers organized by subject
+            {t('questions.subtitle')}
           </p>
         </div>
         <Link href="/questions/create">
           <Button>
-            <Plus size={16} className="mr-2" /> Add Question
+            <Plus size={16} className="mr-2" /> {t('questions.addQuestion')}
           </Button>
         </Link>
       </div>
@@ -93,11 +95,11 @@ export default function QuestionsPage() {
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2 text-gray-600">
             <BookOpen size={16} className="text-blue-500" />
-            <span className="font-medium">{subjectCounts.length}</span> subjects
+            <span className="font-medium">{subjectCounts.length}</span> {t('questions.subjects')}
           </div>
           <div className="flex items-center gap-2 text-gray-600">
             <MessageSquare size={16} className="text-green-500" />
-            <span className="font-medium">{totalQuestions}</span> approved questions
+            <span className="font-medium">{totalQuestions}</span> {t('questions.approvedQuestions')}
           </div>
         </div>
       )}
@@ -112,11 +114,11 @@ export default function QuestionsPage() {
       ) : subjectCounts.length === 0 ? (
         <EmptyState
           icon={<HelpCircle size={48} />}
-          title="No questions yet"
-          description="Be the first to contribute a question to the Q&A Bank!"
+          title={t('questions.noQuestionsYet')}
+          description={t('questions.beFirstToContribute')}
           action={
             <Link href="/questions/create">
-              <Button>Add Question</Button>
+              <Button>{t('questions.addQuestion')}</Button>
             </Link>
           }
         />
@@ -142,7 +144,7 @@ export default function QuestionsPage() {
                       {!sc.subjectDescription && <div className="flex-1" />}
                       <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
                         <span className="text-sm text-gray-400 flex items-center gap-1">
-                          <Lock size={12} /> Subscribe to access
+                          <Lock size={12} /> {t('questions.subscribeToAccess')}
                         </span>
                       </div>
                     </CardContent>
@@ -185,7 +187,7 @@ export default function QuestionsPage() {
                           {sc.questionCount}
                         </span>
                         <span className="text-sm text-gray-500">
-                          question{sc.questionCount !== 1 ? 's' : ''}
+                          {t('questions.count')}
                         </span>
                       </div>
                       <ArrowRight
