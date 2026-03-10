@@ -22,7 +22,7 @@ interface Subscription {
   expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
-  user?: { id: string; firstName: string; lastName: string; email: string; phone?: string };
+  user?: { id: string; firstName: string; lastName: string; phone: string };
   subject?: { id: string; name: string; code: string | null };
 }
 
@@ -157,7 +157,7 @@ export default function AdminSubscriptionsPage() {
     return (
       s.user?.firstName?.toLowerCase().includes(q) ||
       s.user?.lastName?.toLowerCase().includes(q) ||
-      s.user?.email?.toLowerCase().includes(q) ||
+      s.user?.phone?.toLowerCase().includes(q) ||
       s.user?.phone?.toLowerCase().includes(q) ||
       s.subject?.name?.toLowerCase().includes(q) ||
       s.subject?.code?.toLowerCase().includes(q)
@@ -348,7 +348,7 @@ export default function AdminSubscriptionsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900">
                       {sub.user?.firstName} {sub.user?.lastName}
-                      <span className="text-gray-400 font-normal ml-2 text-sm">{sub.user?.phone || sub.user?.email}</span>
+                      <span className="text-gray-400 font-normal ml-2 text-sm">{sub.user?.phone}</span>
                     </p>
                     <p className="text-sm text-gray-500">
                       {sub.subject?.name}

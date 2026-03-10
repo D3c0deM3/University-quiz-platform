@@ -13,7 +13,6 @@ exports.UpdateUserDto = void 0;
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
 class UpdateUserDto {
-    email;
     phone;
     password;
     firstName;
@@ -22,11 +21,6 @@ class UpdateUserDto {
     isActive;
 }
 exports.UpdateUserDto = UpdateUserDto;
-__decorate([
-    (0, class_validator_1.IsEmail)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], UpdateUserDto.prototype, "email", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),

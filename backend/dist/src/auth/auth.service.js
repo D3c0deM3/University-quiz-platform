@@ -68,10 +68,8 @@ let AuthService = class AuthService {
             throw new common_1.ConflictException('Phone number already registered');
         }
         const hashedPassword = await bcrypt.hash(dto.password, 10);
-        const email = dto.email || `${dto.phone.replace(/\+/g, '')}@phone.local`;
         const user = await this.prisma.user.create({
             data: {
-                email,
                 phone: dto.phone,
                 password: hashedPassword,
                 firstName: dto.firstName,
@@ -80,13 +78,12 @@ let AuthService = class AuthService {
         });
         const tokens = await this.generateTokens({
             sub: user.id,
-            email: user.email,
+            phone: user.phone,
             role: user.role,
         });
         return {
             user: {
                 id: user.id,
-                email: user.email,
                 phone: user.phone,
                 firstName: user.firstName,
                 lastName: user.lastName,
@@ -129,10 +126,8 @@ let AuthService = class AuthService {
             throw new common_1.ConflictException('Phone number already registered');
         }
         const hashedPassword = await bcrypt.hash(dto.password, 10);
-        const email = dto.email || `${dto.phone.replace(/\+/g, '')}@phone.local`;
         const user = await this.prisma.user.create({
             data: {
-                email,
                 phone: dto.phone,
                 password: hashedPassword,
                 firstName: dto.firstName,
@@ -141,13 +136,12 @@ let AuthService = class AuthService {
         });
         const tokens = await this.generateTokens({
             sub: user.id,
-            email: user.email,
+            phone: user.phone,
             role: user.role,
         });
         return {
             user: {
                 id: user.id,
-                email: user.email,
                 phone: user.phone,
                 firstName: user.firstName,
                 lastName: user.lastName,
@@ -172,13 +166,12 @@ let AuthService = class AuthService {
         }
         const tokens = await this.generateTokens({
             sub: user.id,
-            email: user.email,
+            phone: user.phone,
             role: user.role,
         });
         return {
             user: {
                 id: user.id,
-                email: user.email,
                 phone: user.phone,
                 firstName: user.firstName,
                 lastName: user.lastName,
@@ -192,7 +185,6 @@ let AuthService = class AuthService {
             where: { id: userId },
             select: {
                 id: true,
-                email: true,
                 phone: true,
                 firstName: true,
                 lastName: true,
@@ -215,7 +207,7 @@ let AuthService = class AuthService {
         }
         const tokens = await this.generateTokens({
             sub: user.id,
-            email: user.email,
+            phone: user.phone,
             role: user.role,
         });
         return tokens;

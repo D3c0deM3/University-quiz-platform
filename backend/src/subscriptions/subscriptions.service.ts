@@ -40,7 +40,7 @@ export class SubscriptionsService {
       },
       include: {
         subject: { select: { id: true, name: true } },
-        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        user: { select: { id: true, firstName: true, lastName: true, phone: true } },
       },
     });
   }
@@ -75,7 +75,7 @@ export class SubscriptionsService {
       data: { status: SubscriptionStatus.REVOKED },
       include: {
         subject: { select: { id: true, name: true } },
-        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        user: { select: { id: true, firstName: true, lastName: true, phone: true } },
       },
     });
   }
@@ -99,7 +99,7 @@ export class SubscriptionsService {
       },
       include: {
         subject: { select: { id: true, name: true } },
-        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        user: { select: { id: true, firstName: true, lastName: true, phone: true } },
       },
     });
   }
@@ -122,7 +122,7 @@ export class SubscriptionsService {
         orderBy: { createdAt: 'desc' },
         include: {
           subject: { select: { id: true, name: true } },
-          user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, role: true } },
+          user: { select: { id: true, firstName: true, lastName: true, phone: true, role: true } },
         },
       }),
       this.prisma.userSubscription.count({ where }),

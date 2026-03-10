@@ -178,7 +178,7 @@ export default function UsersPage() {
                     <p className="font-medium text-gray-900">
                       {u.firstName} {u.lastName}
                     </p>
-                    <p className="text-sm text-gray-500">{u.email} • Joined {formatDate(u.createdAt)}</p>
+                    <p className="text-sm text-gray-500">{u.phone} • Joined {formatDate(u.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <Badge variant={roleVariant(u.role)}>{u.role}</Badge>
@@ -255,7 +255,7 @@ export default function UsersPage() {
                   <p className="text-sm text-red-800">
                     You are about to permanently delete{' '}
                     <strong>{deleteTarget.firstName} {deleteTarget.lastName}</strong>{' '}
-                    ({deleteTarget.email}).
+                    ({deleteTarget.phone}).
                     All their data, quiz attempts, and subscriptions will be removed.
                   </p>
                 </div>

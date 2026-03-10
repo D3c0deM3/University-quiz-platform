@@ -13,23 +13,15 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateUserDto) {
-    // Check uniqueness by phone if provided
-    if (dto.phone) {
-      const existingByPhone = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
-      if (existingByPhone) throw new ConflictException('Phone number already registered');
-    }
-    if (dto.email) {
-      const existingByEmail = await this.prisma.user.findUnique({ where: { email: dto.email } });
-      if (existingByEmail) throw new ConflictException('Email already registered');
-    }
+    // Check uniqueness by phone
+    const existingByPhone = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
+    if (existingByPhone) throw new ConflictException('Phone number already registered');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const email = dto.email || `${(dto.phone || Date.now().toString()).replace(/\+/g, '')}@phone.local`;
 
     const user = await this.prisma.user.create({
       data: {
-        email,
-        phone: dto.phone || null,
+        phone: dto.phone,
         password: hashedPassword,
         firstName: dto.firstName,
         lastName: dto.lastName,
@@ -37,7 +29,6 @@ export class UsersService {
       },
       select: {
         id: true,
-        email: true,
         phone: true,
         firstName: true,
         lastName: true,
@@ -57,7 +48,6 @@ export class UsersService {
     if (role) where.role = role;
     if (search) {
       where.OR = [
-        { email: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
         { firstName: { contains: search, mode: 'insensitive' } },
         { lastName: { contains: search, mode: 'insensitive' } },
@@ -72,7 +62,6 @@ export class UsersService {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
-          email: true,
           phone: true,
           firstName: true,
           lastName: true,
@@ -100,7 +89,6 @@ export class UsersService {
       where: { id },
       select: {
         id: true,
-        email: true,
         phone: true,
         firstName: true,
         lastName: true,
@@ -131,7 +119,6 @@ export class UsersService {
       data,
       select: {
         id: true,
-        email: true,
         phone: true,
         firstName: true,
         lastName: true,
@@ -159,7 +146,6 @@ export class UsersService {
       data: { role: dto.role },
       select: {
         id: true,
-        email: true,
         phone: true,
         firstName: true,
         lastName: true,

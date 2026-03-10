@@ -79,7 +79,7 @@ export class MaterialsService {
       },
       include: {
         subject: { select: { id: true, name: true } },
-        uploadedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+        uploadedBy: { select: { id: true, firstName: true, lastName: true } },
       },
     });
 
@@ -106,7 +106,7 @@ export class MaterialsService {
         orderBy: { createdAt: 'desc' },
         include: {
           subject: { select: { id: true, name: true } },
-          uploadedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+          uploadedBy: { select: { id: true, firstName: true, lastName: true } },
           metadata: {
             select: { title: true, summary: true, keywords: true, tags: true },
           },
@@ -131,7 +131,7 @@ export class MaterialsService {
       where: { id },
       include: {
         subject: true,
-        uploadedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+        uploadedBy: { select: { id: true, firstName: true, lastName: true } },
         metadata: true,
         textChunks: { orderBy: { chunkIndex: 'asc' } },
       },

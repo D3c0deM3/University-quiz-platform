@@ -6,7 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 
 export interface JwtPayload {
   sub: string;
-  email: string;
+  phone: string;
   role: string;
 }
 
@@ -38,7 +38,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     return {
       id: user.id,
-      email: user.email,
       phone: user.phone,
       role: user.role,
       firstName: user.firstName,

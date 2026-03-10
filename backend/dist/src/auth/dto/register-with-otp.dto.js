@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RegisterWithOtpDto = void 0;
 const class_validator_1 = require("class-validator");
 class RegisterWithOtpDto {
-    email;
     phone;
     password;
     firstName;
@@ -20,12 +19,6 @@ class RegisterWithOtpDto {
     otpCode;
 }
 exports.RegisterWithOtpDto = RegisterWithOtpDto;
-__decorate([
-    (0, class_validator_1.IsEmail)(),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.MaxLength)(255),
-    __metadata("design:type", String)
-], RegisterWithOtpDto.prototype, "email", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
