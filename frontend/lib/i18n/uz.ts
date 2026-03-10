@@ -44,6 +44,12 @@ const uz: Record<string, string> = {
   'common.or': 'yoki',
   'common.joined': "Qo'shilgan",
 
+  // ───── Theme ─────
+  'theme.light': "Yorug' rejim",
+  'theme.dark': "Qorong'u rejim",
+  'theme.system': 'Tizim',
+  'theme.toggle': 'Mavzuni almashtirish',
+
   // ───── Auth Layout ─────
   'authLayout.brand': 'UniTest',
   'authLayout.desc': "Sun'iy intellekt yordamida test yaratish va o'quv materiallarini boshqarish platformasi.",

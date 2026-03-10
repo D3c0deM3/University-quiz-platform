@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Mobile overlay */}
         {mobileOpen && (
           <div
-            className="fixed inset-0 z-40 bg-black/30 lg:hidden backdrop-blur-[2px] transition-opacity duration-200"
+            className="fixed inset-0 z-40 bg-black/30 dark:bg-black/50 lg:hidden backdrop-blur-[2px] transition-opacity duration-200"
             onClick={() => setMobileOpen(false)}
           />
         )}
@@ -36,7 +36,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="flex flex-1 flex-col overflow-hidden">
           <Topbar onMenuClick={() => setMobileOpen(!mobileOpen)} />
-          <main className="flex-1 overflow-y-auto bg-gray-50 p-3 sm:p-6">
+          <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-950 p-3 sm:p-6">
             <div className="animate-fade-in">
               {children}
             </div>

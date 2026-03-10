@@ -44,6 +44,12 @@ const en = {
   'common.or': 'or',
   'common.joined': 'Joined',
 
+  // ───── Theme ─────
+  'theme.light': 'Light Mode',
+  'theme.dark': 'Dark Mode',
+  'theme.system': 'System',
+  'theme.toggle': 'Toggle theme',
+
   // ───── Auth Layout ─────
   'authLayout.brand': 'UniTest',
   'authLayout.desc': 'Smart university learning platform with AI-powered quiz generation and material management.',

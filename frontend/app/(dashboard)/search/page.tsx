@@ -17,355 +17,355 @@ import { Search as SearchIcon, FileText, X, SlidersHorizontal, BookOpen } from '
 import { useTranslation } from '@/lib/i18n';
 
 function SearchContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const { t } = useTranslation();
+ const searchParams = useSearchParams();
+ const router = useRouter();
+ const { t } = useTranslation();
 
-  const [query, setQuery] = useState(searchParams.get('q') || '');
-  const [subject, setSubject] = useState(searchParams.get('subject') || '');
-  const [difficulty, setDifficulty] = useState(searchParams.get('difficulty') || '');
-  const [fileType, setFileType] = useState(searchParams.get('type') || '');
-  const [sort, setSort] = useState(searchParams.get('sort') || 'relevance');
-  const [showFilters, setShowFilters] = useState(false);
+ const [query, setQuery] = useState(searchParams.get('q') || '');
+ const [subject, setSubject] = useState(searchParams.get('subject') || '');
+ const [difficulty, setDifficulty] = useState(searchParams.get('difficulty') || '');
+ const [fileType, setFileType] = useState(searchParams.get('type') || '');
+ const [sort, setSort] = useState(searchParams.get('sort') || 'relevance');
+ const [showFilters, setShowFilters] = useState(false);
 
-  const [results, setResults] = useState<Material[]>([]);
-  const [subjectResults, setSubjectResults] = useState<Subject[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+ const [results, setResults] = useState<Material[]>([]);
+ const [subjectResults, setSubjectResults] = useState<Subject[]>([]);
+ const [total, setTotal] = useState(0);
+ const [page, setPage] = useState(1);
+ const [loading, setLoading] = useState(false);
+ const [subjects, setSubjects] = useState<Subject[]>([]);
 
-  useEffect(() => {
-    subjectsApi.list(1, 100).then((res) => {
-      setSubjects(res.data.data || res.data || []);
-    });
-  }, []);
+ useEffect(() => {
+ subjectsApi.list(1, 100).then((res) => {
+ setSubjects(res.data.data || res.data || []);
+ });
+ }, []);
 
-  const doSearch = useCallback(
-    async (p = 1) => {
-      setLoading(true);
-      try {
-        const params: Record<string, string | number | undefined> = {
-          page: p,
-          limit: 20,
-          sort,
-          order: 'desc',
-        };
-        if (query.trim()) params.q = query.trim();
-        if (subject) params.subject = subject;
-        if (difficulty) params.difficulty = difficulty;
-        if (fileType) params.type = fileType;
+ const doSearch = useCallback(
+ async (p = 1) => {
+ setLoading(true);
+ try {
+ const params: Record<string, string | number | undefined> = {
+ page: p,
+ limit: 20,
+ sort,
+ order: 'desc',
+ };
+ if (query.trim()) params.q = query.trim();
+ if (subject) params.subject = subject;
+ if (difficulty) params.difficulty = difficulty;
+ if (fileType) params.type = fileType;
 
-        // Search materials and subjects in parallel
-        const searchPromises: [Promise<any>, Promise<any>?] = [
-          searchApi.search(params),
-        ];
-        // Only search subjects when there's a text query and no subject filter
-        if (query.trim() && !subject && p === 1) {
-          searchPromises.push(subjectsApi.list(1, 5, query.trim()));
-        }
+ // Search materials and subjects in parallel
+ const searchPromises: [Promise<any>, Promise<any>?] = [
+ searchApi.search(params),
+ ];
+ // Only search subjects when there's a text query and no subject filter
+ if (query.trim() && !subject && p === 1) {
+ searchPromises.push(subjectsApi.list(1, 5, query.trim()));
+ }
 
-        const [materialsRes, subjectsRes] = await Promise.all(searchPromises);
-        setResults(materialsRes.data.data || []);
-        setTotal(materialsRes.data.meta?.total || 0);
-        setPage(p);
-        if (subjectsRes) {
-          setSubjectResults(subjectsRes.data.data || subjectsRes.data || []);
-        } else if (p === 1) {
-          setSubjectResults([]);
-        }
-      } catch {
-        // silent
-      } finally {
-        setLoading(false);
-      }
-    },
-    [query, subject, difficulty, fileType, sort],
-  );
+ const [materialsRes, subjectsRes] = await Promise.all(searchPromises);
+ setResults(materialsRes.data.data || []);
+ setTotal(materialsRes.data.meta?.total || 0);
+ setPage(p);
+ if (subjectsRes) {
+ setSubjectResults(subjectsRes.data.data || subjectsRes.data || []);
+ } else if (p === 1) {
+ setSubjectResults([]);
+ }
+ } catch {
+ // silent
+ } finally {
+ setLoading(false);
+ }
+ },
+ [query, subject, difficulty, fileType, sort],
+ );
 
-  // Debounce the query for live search
-  const debouncedQuery = useDebounce(query, 350);
-  const debouncedSubject = useDebounce(subject, 350);
-  const debouncedDifficulty = useDebounce(difficulty, 350);
-  const debouncedFileType = useDebounce(fileType, 350);
-  const debouncedSort = useDebounce(sort, 350);
-  const hasInitialized = useRef(false);
+ // Debounce the query for live search
+ const debouncedQuery = useDebounce(query, 350);
+ const debouncedSubject = useDebounce(subject, 350);
+ const debouncedDifficulty = useDebounce(difficulty, 350);
+ const debouncedFileType = useDebounce(fileType, 350);
+ const debouncedSort = useDebounce(sort, 350);
+ const hasInitialized = useRef(false);
 
-  // Auto-search on mount if query params exist
-  useEffect(() => {
-    if (searchParams.get('q')) {
-      doSearch(1);
-      hasInitialized.current = true;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+ // Auto-search on mount if query params exist
+ useEffect(() => {
+ if (searchParams.get('q')) {
+ doSearch(1);
+ hasInitialized.current = true;
+ }
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, []);
 
-  // Live search: auto-trigger when debounced values change
-  useEffect(() => {
-    // Skip the initial render (handled by the mount effect above)
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      return;
-    }
-    if (debouncedQuery.trim() || debouncedSubject || debouncedDifficulty || debouncedFileType) {
-      doSearch(1);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQuery, debouncedSubject, debouncedDifficulty, debouncedFileType, debouncedSort]);
+ // Live search: auto-trigger when debounced values change
+ useEffect(() => {
+ // Skip the initial render (handled by the mount effect above)
+ if (!hasInitialized.current) {
+ hasInitialized.current = true;
+ return;
+ }
+ if (debouncedQuery.trim() || debouncedSubject || debouncedDifficulty || debouncedFileType) {
+ doSearch(1);
+ }
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [debouncedQuery, debouncedSubject, debouncedDifficulty, debouncedFileType, debouncedSort]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    if (subject) params.set('subject', subject);
-    if (difficulty) params.set('difficulty', difficulty);
-    if (fileType) params.set('type', fileType);
-    params.set('sort', sort);
-    router.push(`/search?${params.toString()}`);
-    doSearch(1);
-  };
+ const handleSearch = (e: React.FormEvent) => {
+ e.preventDefault();
+ const params = new URLSearchParams();
+ if (query) params.set('q', query);
+ if (subject) params.set('subject', subject);
+ if (difficulty) params.set('difficulty', difficulty);
+ if (fileType) params.set('type', fileType);
+ params.set('sort', sort);
+ router.push(`/search?${params.toString()}`);
+ doSearch(1);
+ };
 
-  const clearFilters = () => {
-    setSubject('');
-    setDifficulty('');
-    setFileType('');
-    setSort('relevance');
-  };
+ const clearFilters = () => {
+ setSubject('');
+ setDifficulty('');
+ setFileType('');
+ setSort('relevance');
+ };
 
-  const hasFilters = subject || difficulty || fileType;
-  const totalPages = Math.ceil(total / 20);
+ const hasFilters = subject || difficulty || fileType;
+ const totalPages = Math.ceil(total / 20);
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('search.title')}</h1>
-        <p className="text-gray-500">{t('search.typeToSearchDesc')}</p>
-      </div>
+ return (
+ <div className="space-y-6">
+ <div>
+ <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('search.title')}</h1>
+ <p className="text-gray-500 dark:text-slate-400">{t('search.typeToSearchDesc')}</p>
+ </div>
 
-      {/* Search bar */}
-      <form onSubmit={handleSearch} className="space-y-3">
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <Input
-              placeholder={t('search.placeholder')}
-              className="pl-10"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className="gap-2"
-          >
-            <SlidersHorizontal size={16} />
-            {t('search.subject')}
-            {hasFilters && (
-              <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs text-white">
-                {[subject, difficulty, fileType].filter(Boolean).length}
-              </span>
-            )}
-          </Button>
-          <Button type="submit" loading={loading}>
-            {t('common.search')}
-          </Button>
-        </div>
+ {/* Search bar */}
+ <form onSubmit={handleSearch} className="space-y-3">
+ <div className="flex gap-3">
+ <div className="relative flex-1">
+ <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
+ <Input
+ placeholder={t('search.placeholder')}
+ className="pl-10"
+ value={query}
+ onChange={(e) => setQuery(e.target.value)}
+ />
+ </div>
+ <Button
+ type="button"
+ variant="outline"
+ onClick={() => setShowFilters(!showFilters)}
+ className="gap-2"
+ >
+ <SlidersHorizontal size={16} />
+ {t('search.subject')}
+ {hasFilters && (
+ <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs text-white">
+ {[subject, difficulty, fileType].filter(Boolean).length}
+ </span>
+ )}
+ </Button>
+ <Button type="submit" loading={loading}>
+ {t('common.search')}
+ </Button>
+ </div>
 
-        {/* Filters */}
-        {showFilters && (
-          <Card>
-            <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">{t('search.subject')}</label>
-                <Select value={subject} onChange={(e) => setSubject(e.target.value)}>
-                  <option value="">{t('search.allSubjects')}</option>
-                  {subjects.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">{t('questions.difficulty')}</label>
-                <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-                  <option value="">{t('common.all')}</option>
-                  <option value="BEGINNER">{t('questions.easy')}</option>
-                  <option value="INTERMEDIATE">{t('questions.medium')}</option>
-                  <option value="ADVANCED">{t('questions.hard')}</option>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">{t('common.type')}</label>
-                <Select value={fileType} onChange={(e) => setFileType(e.target.value)}>
-                  <option value="">{t('common.all')}</option>
-                  <option value="pdf">PDF</option>
-                  <option value="docx">DOCX</option>
-                  <option value="pptx">PPTX</option>
-                  <option value="png">Image</option>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">{t('search.sortBy')}</label>
-                <Select value={sort} onChange={(e) => setSort(e.target.value)}>
-                  <option value="relevance">{t('search.relevance')}</option>
-                  <option value="date">{t('search.date')}</option>
-                  <option value="title">{t('search.titleSort')}</option>
-                </Select>
-              </div>
-              {hasFilters && (
-                <div className="sm:col-span-2 lg:col-span-4">
-                  <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
-                    <X size={14} /> {t('common.delete')}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </form>
+ {/* Filters */}
+ {showFilters && (
+ <Card>
+ <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
+ <div className="space-y-1.5">
+ <label className="text-xs font-medium text-gray-500 dark:text-slate-400">{t('search.subject')}</label>
+ <Select value={subject} onChange={(e) => setSubject(e.target.value)}>
+ <option value="">{t('search.allSubjects')}</option>
+ {subjects.map((s) => (
+ <option key={s.id} value={s.id}>
+ {s.name}
+ </option>
+ ))}
+ </Select>
+ </div>
+ <div className="space-y-1.5">
+ <label className="text-xs font-medium text-gray-500 dark:text-slate-400">{t('questions.difficulty')}</label>
+ <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+ <option value="">{t('common.all')}</option>
+ <option value="BEGINNER">{t('questions.easy')}</option>
+ <option value="INTERMEDIATE">{t('questions.medium')}</option>
+ <option value="ADVANCED">{t('questions.hard')}</option>
+ </Select>
+ </div>
+ <div className="space-y-1.5">
+ <label className="text-xs font-medium text-gray-500 dark:text-slate-400">{t('common.type')}</label>
+ <Select value={fileType} onChange={(e) => setFileType(e.target.value)}>
+ <option value="">{t('common.all')}</option>
+ <option value="pdf">PDF</option>
+ <option value="docx">DOCX</option>
+ <option value="pptx">PPTX</option>
+ <option value="png">Image</option>
+ </Select>
+ </div>
+ <div className="space-y-1.5">
+ <label className="text-xs font-medium text-gray-500 dark:text-slate-400">{t('search.sortBy')}</label>
+ <Select value={sort} onChange={(e) => setSort(e.target.value)}>
+ <option value="relevance">{t('search.relevance')}</option>
+ <option value="date">{t('search.date')}</option>
+ <option value="title">{t('search.titleSort')}</option>
+ </Select>
+ </div>
+ {hasFilters && (
+ <div className="sm:col-span-2 lg:col-span-4">
+ <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
+ <X size={14} /> {t('common.delete')}
+ </Button>
+ </div>
+ )}
+ </CardContent>
+ </Card>
+ )}
+ </form>
 
-      {/* Results */}
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
-          ))}
-        </div>
-      ) : results.length === 0 && subjectResults.length === 0 && (query || hasFilters) ? (
-        <EmptyState
-          icon={<SearchIcon size={48} />}
-          title={t('search.noResults')}
-          description={t('search.noResultsDesc')}
-        />
-      ) : results.length === 0 && subjectResults.length === 0 ? (
-        <EmptyState
-          icon={<SearchIcon size={48} />}
-          title={t('search.typeToSearch')}
-          description={t('search.typeToSearchDesc')}
-        />
-      ) : (
-        <>
-          <p className="text-sm text-gray-500">
-            {total + subjectResults.length} {t('search.results')}
-          </p>
+ {/* Results */}
+ {loading ? (
+ <div className="space-y-3">
+ {[1, 2, 3, 4, 5].map((i) => (
+ <Skeleton key={i} className="h-24 w-full rounded-xl" />
+ ))}
+ </div>
+ ) : results.length === 0 && subjectResults.length === 0 && (query || hasFilters) ? (
+ <EmptyState
+ icon={<SearchIcon size={48} />}
+ title={t('search.noResults')}
+ description={t('search.noResultsDesc')}
+ />
+ ) : results.length === 0 && subjectResults.length === 0 ? (
+ <EmptyState
+ icon={<SearchIcon size={48} />}
+ title={t('search.typeToSearch')}
+ description={t('search.typeToSearchDesc')}
+ />
+ ) : (
+ <>
+ <p className="text-sm text-gray-500 dark:text-slate-400">
+ {total + subjectResults.length} {t('search.results')}
+ </p>
 
-          {/* Subject results */}
-          {subjectResults.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('subjects.title')}</h3>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {subjectResults.map((s, i) => (
-                  <Link key={s.id} href={`/subjects/${s.id}`}>
-                    <Card className="transition-all hover:shadow-md cursor-pointer animate-item-in" style={{ animationDelay: `${i * 50}ms` }}>
-                      <CardContent className="flex items-center gap-3 p-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 shrink-0">
-                          <BookOpen size={18} className="text-blue-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-gray-900 text-sm truncate">{s.name}</h3>
-                          {s.description && (
-                            <p className="text-xs text-gray-500 truncate">{s.description}</p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+ {/* Subject results */}
+ {subjectResults.length > 0 && (
+ <div className="space-y-2">
+ <h3 className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">{t('subjects.title')}</h3>
+ <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+ {subjectResults.map((s, i) => (
+ <Link key={s.id} href={`/subjects/${s.id}`}>
+ <Card className="transition-all hover:shadow-md cursor-pointer animate-item-in" style={{ animationDelay: `${i * 50}ms` }}>
+ <CardContent className="flex items-center gap-3 p-3">
+ <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 shrink-0">
+ <BookOpen size={18} className="text-blue-600 dark:text-blue-400" />
+ </div>
+ <div className="flex-1 min-w-0">
+ <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm truncate">{s.name}</h3>
+ {s.description && (
+ <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{s.description}</p>
+ )}
+ </div>
+ </CardContent>
+ </Card>
+ </Link>
+ ))}
+ </div>
+ </div>
+ )}
 
-          {/* Material results */}
-          {results.length > 0 && (
-            <div className="space-y-2">
-              {subjectResults.length > 0 && (
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('sidebar.materials')}</h3>
-              )}
-              <div className="space-y-3">
-                {results.map((m, i) => (
-              <Link key={m.id} href={`/materials/${m.id}`}>
-                <Card className="transition-all hover:shadow-md cursor-pointer animate-item-in" style={{ animationDelay: `${(subjectResults.length + i) * 50}ms` }}>
-                  <CardContent className="flex gap-4 p-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 shrink-0">
-                      <FileText size={20} className="text-gray-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900">
-                        {m.metadata?.title || m.originalName}
-                      </h3>
-                      {m.metadata?.summary && (
-                        <p className="mt-1 text-sm text-gray-500 line-clamp-2">
-                          {m.metadata.summary}
-                        </p>
-                      )}
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <Badge variant="secondary">{m.fileType.toUpperCase()}</Badge>
-                        {m.subject?.name && <Badge variant="default">{m.subject.name}</Badge>}
-                        {m.metadata?.difficultyLevel && (
-                          <Badge
-                            variant={
-                              m.metadata.difficultyLevel === 'BEGINNER'
-                                ? 'success'
-                                : m.metadata.difficultyLevel === 'INTERMEDIATE'
-                                ? 'warning'
-                                : 'destructive'
-                            }
-                          >
-                            {m.metadata.difficultyLevel}
-                          </Badge>
-                        )}
-                        {m.metadata?.keywords?.slice(0, 3).map((kw) => (
-                          <Badge key={kw} variant="outline">
-                            {kw}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-              </div>
-            </div>
-          )}
+ {/* Material results */}
+ {results.length > 0 && (
+ <div className="space-y-2">
+ {subjectResults.length > 0 && (
+ <h3 className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">{t('sidebar.materials')}</h3>
+ )}
+ <div className="space-y-3">
+ {results.map((m, i) => (
+ <Link key={m.id} href={`/materials/${m.id}`}>
+ <Card className="transition-all hover:shadow-md cursor-pointer animate-item-in" style={{ animationDelay: `${(subjectResults.length + i) * 50}ms` }}>
+ <CardContent className="flex gap-4 p-4">
+ <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 dark:bg-slate-700 shrink-0">
+ <FileText size={20} className="text-gray-500 dark:text-slate-400" />
+ </div>
+ <div className="flex-1 min-w-0">
+ <h3 className="font-medium text-gray-900 dark:text-slate-100">
+ {m.metadata?.title || m.originalName}
+ </h3>
+ {m.metadata?.summary && (
+ <p className="mt-1 text-sm text-gray-500 dark:text-slate-400 line-clamp-2">
+ {m.metadata.summary}
+ </p>
+ )}
+ <div className="mt-2 flex flex-wrap gap-1.5">
+ <Badge variant="secondary">{m.fileType.toUpperCase()}</Badge>
+ {m.subject?.name && <Badge variant="default">{m.subject.name}</Badge>}
+ {m.metadata?.difficultyLevel && (
+ <Badge
+ variant={
+ m.metadata.difficultyLevel === 'BEGINNER'
+ ? 'success'
+ : m.metadata.difficultyLevel === 'INTERMEDIATE'
+ ? 'warning'
+ : 'destructive'
+ }
+ >
+ {m.metadata.difficultyLevel}
+ </Badge>
+ )}
+ {m.metadata?.keywords?.slice(0, 3).map((kw) => (
+ <Badge key={kw} variant="outline">
+ {kw}
+ </Badge>
+ ))}
+ </div>
+ </div>
+ </CardContent>
+ </Card>
+ </Link>
+ ))}
+ </div>
+ </div>
+ )}
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => doSearch(page - 1)}
-              >
-                {t('common.previous')}
-              </Button>
-              <span className="text-sm text-gray-500">
-                {t('common.page')} {page} {t('common.of')} {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => doSearch(page + 1)}
-              >
-                {t('common.next')}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+ {/* Pagination */}
+ {totalPages > 1 && (
+ <div className="flex items-center justify-center gap-2">
+ <Button
+ variant="outline"
+ size="sm"
+ disabled={page <= 1}
+ onClick={() => doSearch(page - 1)}
+ >
+ {t('common.previous')}
+ </Button>
+ <span className="text-sm text-gray-500 dark:text-slate-400">
+ {t('common.page')} {page} {t('common.of')} {totalPages}
+ </span>
+ <Button
+ variant="outline"
+ size="sm"
+ disabled={page >= totalPages}
+ onClick={() => doSearch(page + 1)}
+ >
+ {t('common.next')}
+ </Button>
+ </div>
+ )}
+ </>
+ )}
+ </div>
+ );
 }
 
 export default function SearchPage() {
-  return (
-    <Suspense fallback={<div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-12 w-full" /></div>}>
-      <SearchContent />
-    </Suspense>
-  );
+ return (
+ <Suspense fallback={<div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-12 w-full" /></div>}>
+ <SearchContent />
+ </Suspense>
+ );
 }

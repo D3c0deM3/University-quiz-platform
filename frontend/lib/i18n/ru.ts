@@ -44,6 +44,12 @@ const ru: Record<string, string> = {
   'common.or': 'или',
   'common.joined': 'Присоединился',
 
+  // ───── Theme ─────
+  'theme.light': 'Светлая тема',
+  'theme.dark': 'Тёмная тема',
+  'theme.system': 'Системная',
+  'theme.toggle': 'Переключить тему',
+
   // ───── Макет авторизации ─────
   'authLayout.brand': 'UniTest',
   'authLayout.desc': 'Интеллектуальная платформа для обучения с генерацией тестов на основе ИИ и управлением учебными материалами.',

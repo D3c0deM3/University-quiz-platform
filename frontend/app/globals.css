@@ -1,10 +1,18 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: #ffffff;
   --color-foreground: #111827;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+/* ─── Smooth theme transitions ─── */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
@@ -13,11 +21,31 @@ body {
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Prevent pull-to-refresh and overscroll bounce */
   overscroll-behavior: none;
-  /* Prevent text size adjustment on orientation change */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+}
+
+/* ─── Dark mode color overrides ─── */
+.dark {
+  --color-background: #0f172a;
+  --color-foreground: #e2e8f0;
+  color-scheme: dark;
+}
+
+/* Smooth transitions for theme-sensitive elements */
+.dark *,
+* {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Exclude animations from theme transitions */
+.animate-spin,
+.animate-pulse,
+[class*="animate-"] {
+  transition: none !important;
 }
 
 /* ─── Mobile-first native-like behaviors ─── */
@@ -97,6 +125,12 @@ main, article, .selectable {
 ::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
 
 /* Smooth animations */
 @keyframes fadeIn {
@@ -157,6 +191,9 @@ main, article, .selectable {
 .card-interactive:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transform: translateY(-1px);
+}
+.dark .card-interactive:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* Text gradient */

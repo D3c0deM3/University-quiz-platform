@@ -36,12 +36,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* Right Panel — Auth Form */}
-      <div className="flex flex-1 items-center justify-center bg-gray-50 px-4 py-8">
+      <div className="flex flex-1 items-center justify-center bg-gray-50 dark:bg-slate-950 px-4 py-8">
         <div className="w-full max-w-md animate-fade-in">
           {/* Mobile branding */}
           <div className="flex items-center justify-center gap-2 mb-8 lg:hidden">
-            <GraduationCap size={28} className="text-blue-600" />
-            <span className="text-xl font-bold text-gray-900">{t('authLayout.brand')}</span>
+            <GraduationCap size={28} className="text-blue-600 dark:text-blue-400" />
+            <span className="text-xl font-bold text-gray-900 dark:text-slate-100">{t('authLayout.brand')}</span>
           </div>
           {children}
         </div>

@@ -202,7 +202,7 @@ export default function RegisterPage() {
               <div className="space-y-2">
                 <label
                   htmlFor="firstName"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-gray-700 dark:text-slate-300"
                 >
                   {t('register.firstName')}
                 </label>
@@ -220,7 +220,7 @@ export default function RegisterPage() {
               <div className="space-y-2">
                 <label
                   htmlFor="lastName"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-gray-700 dark:text-slate-300"
                 >
                   {t('register.lastName')}
                 </label>
@@ -239,7 +239,7 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <label
                 htmlFor="phone"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-gray-700 dark:text-slate-300"
               >
                 {t('register.phone')}
               </label>
@@ -256,7 +256,7 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <label
                 htmlFor="password"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-gray-700 dark:text-slate-300"
               >
                 {t('register.password')}
               </label>
@@ -275,7 +275,7 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <label
                 htmlFor="confirmPassword"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-gray-700 dark:text-slate-300"
               >
                 {t('register.confirmPassword')}
               </label>
@@ -295,11 +295,11 @@ export default function RegisterPage() {
               {t('register.submit')}
             </Button>
           </form>
-          <p className="mt-4 text-center text-sm text-gray-500">
+          <p className="mt-4 text-center text-sm text-gray-500 dark:text-slate-400">
             {t('register.hasAccount')}{' '}
             <Link
               href="/login"
-              className="font-medium text-blue-600 hover:underline"
+              className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
             >
               {t('register.signIn')}
             </Link>
@@ -319,14 +319,14 @@ export default function RegisterPage() {
         <CardTitle className="text-2xl">{t('register.otpTitle')}</CardTitle>
         <CardDescription>
           {t('register.otpSubtitle')}{' '}
-          <span className="font-medium text-gray-700">{formData?.phone}</span>
+          <span className="font-medium text-gray-700 dark:text-slate-300">{formData?.phone}</span>
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
           {/* OTP Input */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 block text-center">
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300 block text-center">
               {t('register.verifyCode')}
             </label>
             <div
@@ -346,7 +346,7 @@ export default function RegisterPage() {
                   value={digit}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                  className="h-12 w-12 rounded-lg border border-gray-300 text-center text-lg font-semibold
+                  className="h-12 w-12 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-center text-lg font-semibold
                     focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20
                     transition-all duration-150"
                 />
@@ -356,16 +356,16 @@ export default function RegisterPage() {
 
           {/* Info text */}
           {!otpSent && (
-            <div className="rounded-lg bg-blue-50 p-3 text-center">
-              <p className="text-sm text-blue-700">
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3 text-center">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
                 {t('register.getOtp')}
               </p>
             </div>
           )}
 
           {otpSent && (
-            <div className="rounded-lg bg-green-50 p-3 text-center">
-              <p className="text-sm text-green-700">
+            <div className="rounded-lg bg-green-50 dark:bg-green-900/20 p-3 text-center">
+              <p className="text-sm text-green-700 dark:text-green-300">
                 ✓ Telegram bot opened! Start the bot and copy the 6-digit code
                 it sends you.
               </p>
@@ -407,7 +407,7 @@ export default function RegisterPage() {
               setOtpSent(false);
             }}
             disabled={verifyLoading || otpLoading}
-            className="flex items-center justify-center gap-1 text-sm text-gray-500 hover:text-gray-700 w-full transition-colors cursor-pointer"
+            className="flex items-center justify-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 w-full transition-colors cursor-pointer"
           >
             <ArrowLeft size={14} />
             {t('register.back')}

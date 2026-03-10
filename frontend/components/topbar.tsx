@@ -3,8 +3,9 @@
 import { useAuthStore } from '@/stores/auth-store';
 import { useLanguageStore, type Language } from '@/stores/language-store';
 import { useTranslation } from '@/lib/i18n';
-import { Bell, User, Menu, Globe } from 'lucide-react';
+import { Bell, User, Menu, Globe, Moon, Sun } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useThemeStore } from '@/stores/theme-store';
 
 const languageOptions: { code: Language; label: string; flag: string }[] = [
   { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -22,6 +23,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   const { t } = useTranslation();
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
+  const { theme, setTheme } = useThemeStore();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -36,21 +38,21 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   const currentLang = languageOptions.find((l) => l.code === language) ?? languageOptions[0];
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6">
+    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-900 px-4 sm:px-6">
       <div className="flex items-center gap-3">
         {onMenuClick && (
           <button
             onClick={onMenuClick}
-            className="rounded-lg p-2.5 text-gray-500 hover:bg-gray-100 lg:hidden cursor-pointer active:scale-95 transition-transform"
+            className="rounded-lg p-2.5 text-gray-500 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800 lg:hidden cursor-pointer active:scale-95 transition-transform"
           >
             <Menu size={22} />
           </button>
         )}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
             {t('topbar.welcome')}, {user?.firstName || 'User'}
           </h2>
-          <p className="text-sm text-gray-500 capitalize">{user?.role?.toLowerCase() || ''}</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400 capitalize">{user?.role?.toLowerCase() || ''}</p>
         </div>
       </div>
       <div className="flex items-center gap-2 sm:gap-3">
@@ -58,13 +60,13 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         <div className="relative hidden sm:block" ref={langRef}>
           <button
             onClick={() => setLangOpen(!langOpen)}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-slate-600 px-2.5 py-1.5 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
           >
             <Globe size={16} />
             <span>{currentLang.flag} {currentLang.label}</span>
           </button>
           {langOpen && (
-            <div className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg z-50">
+            <div className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 py-1 shadow-lg z-50">
               {languageOptions.map((opt) => (
                 <button
                   key={opt.code}
@@ -74,8 +76,8 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                   }}
                   className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors cursor-pointer ${
                     language === opt.code
-                      ? 'bg-blue-50 text-blue-700 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-blue-50 text-blue-700 font-medium dark:bg-blue-900/30 dark:text-blue-300'
+                      : 'text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700'
                   }`}
                 >
                   <span>{opt.flag}</span>
@@ -86,19 +88,27 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           )}
         </div>
         {/* Bell — hidden on mobile */}
-        <button className="hidden sm:block rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer">
+        <button className="hidden sm:block rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 cursor-pointer">
           <Bell size={20} />
         </button>
+        {/* Theme toggle — hidden on mobile (visible in sidebar on mobile) */}
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="hidden sm:block rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 cursor-pointer"
+          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+        >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
         {/* User avatar — always show icon, name only on sm+ */}
-        <div className="flex items-center gap-2 rounded-lg border border-gray-200 px-2 py-1.5 sm:px-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 shrink-0">
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-600 px-2 py-1.5 sm:px-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 shrink-0">
             <User size={16} />
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-medium text-gray-900">
+            <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
               {user?.firstName} {user?.lastName}
             </p>
-            <p className="text-xs text-gray-500">{user?.phone}</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400">{user?.phone}</p>
           </div>
         </div>
       </div>
