@@ -30,10 +30,11 @@ const update_metadata_dto_js_1 = require("./dto/update-metadata.dto.js");
 const update_quiz_dto_js_1 = require("./dto/update-quiz.dto.js");
 const quiz_question_dto_js_1 = require("./dto/quiz-question.dto.js");
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
+const resolvedUploadDir = (0, path_1.isAbsolute)(uploadDir) ? uploadDir : (0, path_1.join)(process.cwd(), uploadDir);
 const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt'];
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const storage = (0, multer_1.diskStorage)({
-    destination: (0, path_1.join)(process.cwd(), uploadDir),
+    destination: resolvedUploadDir,
     filename: (_req, file, callback) => {
         const ext = (0, path_1.extname)(file.originalname).toLowerCase();
         if (!ALLOWED_EXTENSIONS.includes(ext)) {
