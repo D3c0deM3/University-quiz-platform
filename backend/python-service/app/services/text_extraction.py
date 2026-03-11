@@ -1,7 +1,7 @@
 """
 Text extraction service.
-Extracts text from PDF, DOCX, PPTX, and image files.
-Uses standard parsers (pdfplumber, python-docx, python-pptx, pytesseract).
+Extracts text from PDF, DOCX, PPTX, XLSX/XLS, and image files.
+Uses standard parsers (pdfplumber, python-docx, python-pptx, openpyxl/xlrd, pytesseract).
 """
 import os
 import logging
@@ -12,6 +12,8 @@ from PyPDF2 import PdfReader
 from docx import Document as DocxDocument
 from pptx import Presentation
 from PIL import Image
+from openpyxl import load_workbook
+import xlrd
 
 from app.config import settings
 
@@ -160,6 +162,50 @@ async def extract_with_ocr(file_path: str) -> str:
         return ""
 
 
+async def extract_from_xlsx(file_path: str) -> str:
+    """Extract text from an XLSX file using openpyxl."""
+    logger.info(f"Extracting text from XLSX: {file_path}")
+    text_parts = []
+
+    try:
+        wb = load_workbook(filename=file_path, read_only=True, data_only=True)
+        for sheet in wb.worksheets:
+            sheet_rows: list[str] = []
+            for row in sheet.iter_rows(values_only=True):
+                cells = [str(cell).strip() for cell in row if cell is not None and str(cell).strip()]
+                if cells:
+                    sheet_rows.append(" | ".join(cells))
+            if sheet_rows:
+                text_parts.append(f"[Sheet: {sheet.title}]\n" + "\n".join(sheet_rows))
+        wb.close()
+    except Exception as e:
+        logger.error(f"XLSX extraction failed: {e}")
+
+    return "\n\n".join(text_parts)
+
+
+async def extract_from_xls(file_path: str) -> str:
+    """Extract text from an XLS file using xlrd."""
+    logger.info(f"Extracting text from XLS: {file_path}")
+    text_parts = []
+
+    try:
+        wb = xlrd.open_workbook(file_path)
+        for sheet in wb.sheets():
+            sheet_rows: list[str] = []
+            for row_idx in range(sheet.nrows):
+                row_vals = sheet.row_values(row_idx)
+                cells = [str(cell).strip() for cell in row_vals if str(cell).strip()]
+                if cells:
+                    sheet_rows.append(" | ".join(cells))
+            if sheet_rows:
+                text_parts.append(f"[Sheet: {sheet.name}]\n" + "\n".join(sheet_rows))
+    except Exception as e:
+        logger.error(f"XLS extraction failed: {e}")
+
+    return "\n\n".join(text_parts)
+
+
 async def extract_text(file_path: str, file_type: str) -> str:
     """
     Main dispatcher: extract text from a file based on its type.
@@ -177,6 +223,10 @@ async def extract_text(file_path: str, file_type: str) -> str:
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
         "pptx": "pptx",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+        "xlsx": "xlsx",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+        "xls": "xls",
+        "application/vnd.ms-excel": "xls",
         "png": "image",
         "jpg": "image",
         "jpeg": "image",
@@ -193,6 +243,10 @@ async def extract_text(file_path: str, file_type: str) -> str:
         return await extract_from_docx(abs_path)
     elif normalized == "pptx":
         return await extract_from_pptx(abs_path)
+    elif normalized == "xlsx":
+        return await extract_from_xlsx(abs_path)
+    elif normalized == "xls":
+        return await extract_from_xls(abs_path)
     elif normalized == "image":
         return await extract_with_ocr(abs_path)
     else:
