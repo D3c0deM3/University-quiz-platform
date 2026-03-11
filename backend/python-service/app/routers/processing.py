@@ -3,12 +3,38 @@ from pydantic import BaseModel
 from typing import Optional, List
 import logging
 import traceback
+import httpx
 
+from app.config import settings
 from app.services.text_extraction import extract_text, chunk_text
 from app.services.ai_service import generate_metadata, generate_quiz_questions, generate_quiz_from_questions_and_material
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+async def _report_processing_progress(material_id: str, progress: int, stage: str) -> None:
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                f"{settings.NESTJS_BACKEND_URL}/materials/internal/progress",
+                json={
+                    "materialId": material_id,
+                    "progress": max(0, min(100, int(progress))),
+                    "stage": stage,
+                },
+                headers={"x-processing-key": settings.INTERNAL_PROCESSING_KEY},
+            )
+            if response.status_code >= 400:
+                logger.warning(
+                    f"Progress callback rejected for {material_id}: "
+                    f"{response.status_code} {response.text[:200]}"
+                )
+    except Exception as e:
+        logger.warning(
+            f"Progress callback failed for {material_id}: "
+            f"{type(e).__name__}: {repr(e)}"
+        )
 
 
 class ProcessingRequest(BaseModel):
@@ -49,6 +75,8 @@ async def process_material(request: ProcessingRequest):
     logger.info(f"Processing material {request.material_id} | file: {request.file_path} | type: {request.file_type}")
 
     try:
+        await _report_processing_progress(request.material_id, 10, "Extracting text from file")
+
         # Step 1: Extract text
         full_text = await extract_text(request.file_path, request.file_type)
 
@@ -60,35 +88,85 @@ async def process_material(request: ProcessingRequest):
             )
 
         logger.info(f"Extracted {len(full_text)} characters from material {request.material_id}")
+        await _report_processing_progress(request.material_id, 25, "Text extraction completed")
 
         # Step 2: Chunk text for storage
         text_chunks = chunk_text(full_text)
         logger.info(f"Created {len(text_chunks)} text chunks")
+        await _report_processing_progress(request.material_id, 35, "Text chunks prepared")
 
         # Step 3: Generate metadata via Gemini
         metadata = None
+        metadata_error = None
         try:
+            await _report_processing_progress(request.material_id, 40, "Generating metadata")
             metadata = await generate_metadata(full_text)
             logger.info(f"Metadata generated for material {request.material_id}")
+            await _report_processing_progress(request.material_id, 50, "Metadata generated")
         except Exception as e:
+            metadata_error = str(e)
             logger.error(f"Metadata generation failed: {e}")
-            # Continue without metadata - quiz gen can still work
+            await _report_processing_progress(request.material_id, 50, "Metadata generation failed, continuing")
 
         # Step 4: Generate quiz questions via Gemini
         quiz_questions = []
+        quiz_error = None
         try:
-            quiz_questions = await generate_quiz_questions(full_text, request.num_questions)
+            await _report_processing_progress(request.material_id, 55, "Generating quiz questions")
+
+            async def quiz_progress_callback(progress: int, stage: str) -> None:
+                mapped = 55 + int((max(0, min(100, progress)) / 100) * 40)
+                await _report_processing_progress(request.material_id, mapped, stage)
+
+            quiz_questions = await generate_quiz_questions(
+                full_text,
+                request.num_questions,
+                progress_callback=quiz_progress_callback,
+            )
             logger.info(f"Generated {len(quiz_questions)} quiz questions for material {request.material_id}")
+            await _report_processing_progress(
+                request.material_id,
+                95,
+                f"Quiz generation finished ({len(quiz_questions)} questions)",
+            )
         except Exception as e:
+            quiz_error = str(e)
             logger.error(f"Quiz generation failed: {e}")
-            # Continue without quiz - metadata and text are still valuable
+            await _report_processing_progress(request.material_id, 95, "Quiz generation failed, continuing")
+
+        # Determine status based on what succeeded
+        if not metadata and not quiz_questions:
+            errors = []
+            if metadata_error:
+                errors.append(f"Metadata: {metadata_error}")
+            if quiz_error:
+                errors.append(f"Quiz: {quiz_error}")
+            return ProcessingResponse(
+                material_id=request.material_id,
+                status="failed",
+                text_chunks=text_chunks,
+                error=f"AI generation failed. {'; '.join(errors)}" if errors else "AI generation returned no results",
+            )
+
+        status = "success"
+        error_msg = None
+        if not metadata or not quiz_questions:
+            status = "partial_success"
+            parts = []
+            if not metadata:
+                parts.append(f"metadata generation failed: {metadata_error or 'no data returned'}")
+            if not quiz_questions:
+                parts.append(f"quiz generation failed: {quiz_error or 'no questions returned'}")
+            error_msg = "Partial: " + "; ".join(parts)
+            logger.warning(f"Material {request.material_id}: {error_msg}")
 
         return ProcessingResponse(
             material_id=request.material_id,
-            status="success",
+            status=status,
             metadata=metadata,
             text_chunks=text_chunks,
             quiz_questions=quiz_questions,
+            error=error_msg,
         )
 
     except FileNotFoundError as e:
@@ -107,6 +185,7 @@ async def process_material(request: ProcessingRequest):
         )
     except Exception as e:
         logger.error(f"Processing failed for material {request.material_id}: {traceback.format_exc()}")
+        await _report_processing_progress(request.material_id, 0, "Processing failed")
         return ProcessingResponse(
             material_id=request.material_id,
             status="failed",
@@ -130,6 +209,8 @@ async def process_questions_with_material(request: QuestionsWithMaterialRequest)
     )
 
     try:
+        await _report_processing_progress(request.material_id, 10, "Extracting questions file")
+
         # Step 1a: Extract text from the questions file
         questions_text = await extract_text(request.questions_file_path, request.questions_file_type)
 
@@ -141,8 +222,10 @@ async def process_questions_with_material(request: QuestionsWithMaterialRequest)
             )
 
         logger.info(f"Extracted {len(questions_text)} characters from questions file")
+        await _report_processing_progress(request.material_id, 20, "Questions file extracted")
 
         # Step 1b: Extract text from the study material file
+        await _report_processing_progress(request.material_id, 25, "Extracting study material")
         material_text = await extract_text(request.file_path, request.file_type)
 
         if not material_text or len(material_text.strip()) < 50:
@@ -153,38 +236,89 @@ async def process_questions_with_material(request: QuestionsWithMaterialRequest)
             )
 
         logger.info(f"Extracted {len(material_text)} characters from study material")
+        await _report_processing_progress(request.material_id, 35, "Study material extracted")
 
         # Step 2: Chunk the study material text for storage
         text_chunks = chunk_text(material_text)
         logger.info(f"Created {len(text_chunks)} text chunks from study material")
+        await _report_processing_progress(request.material_id, 45, "Text chunks prepared")
 
         # Step 3: Generate metadata from study material via Gemini
         metadata = None
+        metadata_error = None
         try:
+            await _report_processing_progress(request.material_id, 50, "Generating metadata")
             metadata = await generate_metadata(material_text)
             logger.info(f"Metadata generated for material {request.material_id}")
+            await _report_processing_progress(request.material_id, 60, "Metadata generated")
         except Exception as e:
+            metadata_error = str(e)
             logger.error(f"Metadata generation failed: {e}")
+            await _report_processing_progress(request.material_id, 60, "Metadata generation failed, continuing")
 
         # Step 4: Generate quiz — questions from questions file, answers from study material
         quiz_questions = []
+        quiz_error = None
         try:
+            await _report_processing_progress(request.material_id, 65, "Generating quiz questions")
+
+            async def quiz_progress_callback(progress: int, stage: str) -> None:
+                mapped = 65 + int((max(0, min(100, progress)) / 100) * 30)
+                await _report_processing_progress(request.material_id, mapped, stage)
+
             quiz_questions = await generate_quiz_from_questions_and_material(
-                questions_text, material_text, request.num_questions
+                questions_text,
+                material_text,
+                request.num_questions,
+                progress_callback=quiz_progress_callback,
             )
             logger.info(
                 f"Generated {len(quiz_questions)} quiz questions (questions+material) "
                 f"for material {request.material_id}"
             )
+            await _report_processing_progress(
+                request.material_id,
+                95,
+                f"Quiz generation finished ({len(quiz_questions)} questions)",
+            )
         except Exception as e:
+            quiz_error = str(e)
             logger.error(f"Quiz generation (questions+material) failed: {e}")
+            await _report_processing_progress(request.material_id, 95, "Quiz generation failed, continuing")
+
+        # Determine status based on what succeeded
+        if not metadata and not quiz_questions:
+            errors = []
+            if metadata_error:
+                errors.append(f"Metadata: {metadata_error}")
+            if quiz_error:
+                errors.append(f"Quiz: {quiz_error}")
+            return ProcessingResponse(
+                material_id=request.material_id,
+                status="failed",
+                text_chunks=text_chunks,
+                error=f"AI generation failed. {'; '.join(errors)}" if errors else "AI generation returned no results",
+            )
+
+        status = "success"
+        error_msg = None
+        if not metadata or not quiz_questions:
+            status = "partial_success"
+            parts = []
+            if not metadata:
+                parts.append(f"metadata generation failed: {metadata_error or 'no data returned'}")
+            if not quiz_questions:
+                parts.append(f"quiz generation failed: {quiz_error or 'no questions returned'}")
+            error_msg = "Partial: " + "; ".join(parts)
+            logger.warning(f"Material {request.material_id}: {error_msg}")
 
         return ProcessingResponse(
             material_id=request.material_id,
-            status="success",
+            status=status,
             metadata=metadata,
             text_chunks=text_chunks,
             quiz_questions=quiz_questions,
+            error=error_msg,
         )
 
     except FileNotFoundError as e:
@@ -203,6 +337,7 @@ async def process_questions_with_material(request: QuestionsWithMaterialRequest)
         )
     except Exception as e:
         logger.error(f"Processing failed for material {request.material_id}: {traceback.format_exc()}")
+        await _report_processing_progress(request.material_id, 0, "Processing failed")
         return ProcessingResponse(
             material_id=request.material_id,
             status="failed",

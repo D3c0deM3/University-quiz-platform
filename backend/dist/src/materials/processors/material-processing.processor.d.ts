@@ -15,8 +15,11 @@ export interface MaterialProcessingJobData {
 export declare class MaterialProcessingProcessor extends WorkerHost {
     private prisma;
     private readonly logger;
+    private static readonly PYTHON_REQUEST_TIMEOUT_MS;
     constructor(prisma: PrismaService);
     process(job: Job<MaterialProcessingJobData>): Promise<void>;
     private mapDifficulty;
     private mapQuestionType;
+    private postJson;
+    private isMissingRecordError;
 }

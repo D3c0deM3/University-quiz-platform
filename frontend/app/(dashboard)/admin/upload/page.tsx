@@ -22,6 +22,7 @@ export default function UploadPage() {
  const [uploading, setUploading] = useState(false);
  const [dragOver, setDragOver] = useState(false);
  const [numQuestions, setNumQuestions] = useState(10);
+ const [allQuestions, setAllQuestions] = useState(false);
  const [questionsWithMaterial, setQuestionsWithMaterial] = useState(false);
  const [questionsFile, setQuestionsFile] = useState<File | null>(null);
  const [dragOverQuestions, setDragOverQuestions] = useState(false);
@@ -55,7 +56,7 @@ export default function UploadPage() {
  }
  setUploading(true);
  try {
- await materialsApi.uploadWithQuestions(questionsFile, file, subjectId, numQuestions);
+ await materialsApi.uploadWithQuestions(questionsFile, file, subjectId, allQuestions ? 0 : numQuestions);
  toast.success(t('adminUpload.success'));
  router.push('/admin/materials');
  } catch (err: unknown) {
@@ -73,7 +74,7 @@ export default function UploadPage() {
  }
  setUploading(true);
  try {
- await materialsApi.upload(file, subjectId, numQuestions);
+ await materialsApi.upload(file, subjectId, allQuestions ? 0 : numQuestions);
  toast.success(t('adminUpload.success'));
  router.push('/admin/materials');
  } catch (err: unknown) {
@@ -129,7 +130,7 @@ export default function UploadPage() {
  id={id}
  type="file"
  className="hidden"
- accept=".pdf,.docx,.pptx,.png,.jpg,.jpeg"
+ accept=".pdf,.docx,.pptx,.xlsx,.xls,.png,.jpg,.jpeg"
  onChange={(e) => {
  const f = e.target.files?.[0];
  if (f) onFileChange(f);
@@ -278,6 +279,24 @@ export default function UploadPage() {
  </CardDescription>
  </CardHeader>
  <CardContent>
+ <label className="flex items-center gap-3 mb-3 cursor-pointer select-none">
+ <input
+ type="checkbox"
+ checked={allQuestions}
+ onChange={(e) => setAllQuestions(e.target.checked)}
+ className="h-5 w-5 rounded border-gray-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+ />
+ <div>
+ <p className="font-medium text-gray-900 dark:text-zinc-100 text-sm">
+ {t('adminUpload.allQuestions') || 'Extract all questions from material'}
+ </p>
+ <p className="text-xs text-gray-500 dark:text-zinc-400">
+ {t('adminUpload.allQuestionsDesc') || 'AI will detect and extract every question found in the material'}
+ </p>
+ </div>
+ </label>
+ {!allQuestions && (
+ <>
  <Input
  type="number"
  min={1}
@@ -286,6 +305,8 @@ export default function UploadPage() {
  placeholder="10"
  />
  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">{t('adminUpload.numQuestionsHint') || 'Min: 1. Default: 10'}</p>
+ </>
+ )}
  </CardContent>
  </Card>
 

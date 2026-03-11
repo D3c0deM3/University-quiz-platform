@@ -8,6 +8,7 @@ class Settings:
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
     NESTJS_BACKEND_URL: str = os.getenv("NESTJS_BACKEND_URL", "http://localhost:3000/api")
+    INTERNAL_PROCESSING_KEY: str = os.getenv("INTERNAL_PROCESSING_KEY", "local-processing-key")
     AI_API_KEY: str = os.getenv("AI_API_KEY", "")
     AI_MODEL: str = os.getenv("AI_MODEL", "gemini-3.1-flash-lite-preview")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")

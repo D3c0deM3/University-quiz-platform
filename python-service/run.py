@@ -1,10 +1,11 @@
 import uvicorn
 from app.config import settings
+import os
 
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host=settings.HOST,
         port=settings.PORT,
-        reload=True,
+        reload=os.getenv("PYTHON_RELOAD", "false").lower() == "true",
     )

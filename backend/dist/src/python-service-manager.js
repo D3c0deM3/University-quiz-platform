@@ -60,6 +60,8 @@ let PythonServiceManager = PythonServiceManager_1 = class PythonServiceManager {
                 AI_MODEL: this.config.get('AI_MODEL', 'gemini-3.1-flash-lite-preview'),
                 DATABASE_URL: this.config.get('DATABASE_URL', ''),
                 UPLOAD_DIR: this.config.get('UPLOAD_DIR', '../uploads'),
+                INTERNAL_PROCESSING_KEY: this.config.get('INTERNAL_PROCESSING_KEY', 'local-processing-key'),
+                PYTHON_RELOAD: this.config.get('PYTHON_RELOAD', 'false'),
             },
         });
         this.process.stdout?.on('data', (data) => {

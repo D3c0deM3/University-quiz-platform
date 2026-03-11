@@ -47,6 +47,13 @@ export default function MaterialReviewPage() {
  const [difficulty, setDifficulty] = useState('');
  const [saving, setSaving] = useState(false);
 
+ const getProgress = (m: Material | null) => {
+ if (!m) return 0;
+ const raw = m.processingProgress;
+ if (typeof raw === 'number') return Math.max(0, Math.min(100, raw));
+ return m.status === 'PROCESSING' ? 10 : 0;
+ };
+
  const loadQuizzes = useCallback(async () => {
  if (!id) return;
  try {
@@ -57,9 +64,9 @@ export default function MaterialReviewPage() {
  }
  }, [id]);
 
- useEffect(() => {
+ const loadMaterialData = useCallback(async (opts?: { silent?: boolean }) => {
  if (!id) return;
- async function load() {
+ if (!opts?.silent) setLoading(true);
  try {
  const [matRes, metaRes, quizRes] = await Promise.all([
  materialsApi.get(id),
@@ -80,11 +87,25 @@ export default function MaterialReviewPage() {
  setDifficulty(meta.difficultyLevel || '');
  }
  } finally {
- setLoading(false);
+ if (!opts?.silent) setLoading(false);
  }
- }
- load();
  }, [id]);
+
+ useEffect(() => {
+ if (!id) return;
+ void loadMaterialData();
+ }, [id, loadMaterialData]);
+
+ useEffect(() => {
+ if (!material) return;
+ if (material.status !== 'PENDING' && material.status !== 'PROCESSING') return;
+
+ const interval = setInterval(() => {
+ void loadMaterialData({ silent: true });
+ }, 4000);
+
+ return () => clearInterval(interval);
+ }, [material, loadMaterialData]);
 
  const saveMetadata = async () => {
  if (!id) return;
@@ -111,9 +132,7 @@ export default function MaterialReviewPage() {
  try {
  await materialsApi.review(id, action);
  toast.success(action === 'approve' ? 'Material approved' : 'Material rejected');
- // Reload
- const { data } = await materialsApi.get(id);
- setMaterial(data);
+ await loadMaterialData({ silent: true });
  } catch {
  toast.error(`Failed to ${action}`);
  }
@@ -124,8 +143,7 @@ export default function MaterialReviewPage() {
  try {
  await materialsApi.publish(id, publish);
  toast.success(publish ? 'Material published' : 'Material unpublished');
- const { data } = await materialsApi.get(id);
- setMaterial(data);
+ await loadMaterialData({ silent: true });
  } catch {
  toast.error('Failed to update publish status');
  }
@@ -136,8 +154,7 @@ export default function MaterialReviewPage() {
  try {
  await materialsApi.reprocess(id);
  toast.success('Material queued for reprocessing');
- const { data } = await materialsApi.get(id);
- setMaterial(data);
+ await loadMaterialData({ silent: true });
  } catch {
  toast.error('Failed to reprocess');
  }
@@ -149,8 +166,11 @@ export default function MaterialReviewPage() {
  await materialsApi.delete(id);
  toast.success('Material deleted');
  router.push('/admin/materials');
- } catch (err: any) {
- toast.error(err.response?.data?.message || 'Failed to delete material');
+ } catch (err: unknown) {
+ const message =
+ (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+ 'Failed to delete material';
+ toast.error(message);
  }
  };
 
@@ -160,8 +180,11 @@ export default function MaterialReviewPage() {
  await materialsApi.deleteQuiz(quizId);
  toast.success('Quiz deleted');
  loadQuizzes();
- } catch (err: any) {
- toast.error(err.response?.data?.message || 'Failed to delete quiz');
+ } catch (err: unknown) {
+ const message =
+ (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+ 'Failed to delete quiz';
+ toast.error(message);
  }
  };
 
@@ -211,6 +234,20 @@ export default function MaterialReviewPage() {
  {material.fileType.toUpperCase()} • {(material.fileSize / 1024).toFixed(0)} KB • {formatDate(material.createdAt)}
  </span>
  </div>
+ {(material.status === 'PENDING' || material.status === 'PROCESSING') && (
+ <div className="mt-3 w-full max-w-xl">
+ <div className="mb-1 flex items-center justify-between text-sm text-gray-500 dark:text-zinc-400">
+ <span>{material.processingStage || 'Processing...'}</span>
+ <span>{getProgress(material)}%</span>
+ </div>
+ <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-zinc-700 overflow-hidden">
+ <div
+ className="h-full rounded-full bg-blue-500 transition-all duration-500"
+ style={{ width: `${getProgress(material)}%` }}
+ />
+ </div>
+ </div>
+ )}
  </div>
  <div className="flex items-center gap-2 shrink-0">
  {material.status === 'PROCESSED' && (

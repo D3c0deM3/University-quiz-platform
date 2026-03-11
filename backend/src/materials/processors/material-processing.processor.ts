@@ -1,8 +1,10 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
+import { request as httpRequest } from 'http';
+import { request as httpsRequest } from 'https';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { MaterialStatus, QuestionType, DifficultyLevel, QuestionStatus } from '@prisma/client';
+import { MaterialStatus, QuestionType, DifficultyLevel, QuestionStatus, Prisma } from '@prisma/client';
 
 export interface MaterialProcessingJobData {
   materialId: string;
@@ -19,6 +21,7 @@ export interface MaterialProcessingJobData {
 @Processor('material-processing')
 export class MaterialProcessingProcessor extends WorkerHost {
   private readonly logger = new Logger(MaterialProcessingProcessor.name);
+  private static readonly PYTHON_REQUEST_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
   constructor(private prisma: PrismaService) {
     super();
@@ -29,11 +32,25 @@ export class MaterialProcessingProcessor extends WorkerHost {
 
     this.logger.log(`Processing material ${materialId} (${originalName}) [mode: ${mode || 'standard'}]`);
 
+    const materialExists = await this.prisma.material.findUnique({
+      where: { id: materialId },
+      select: { id: true },
+    });
+    if (!materialExists) {
+      this.logger.warn(`Skipping stale processing job: material ${materialId} no longer exists`);
+      return;
+    }
+
     try {
       // Update status to PROCESSING
       await this.prisma.material.update({
         where: { id: materialId },
-        data: { status: MaterialStatus.PROCESSING },
+        data: {
+          status: MaterialStatus.PROCESSING,
+          processingProgress: 5,
+          processingStage: 'Preparing extraction',
+          errorMessage: null,
+        },
       });
 
       // Call Python FastAPI service
@@ -48,7 +65,8 @@ export class MaterialProcessingProcessor extends WorkerHost {
         material_id: materialId,
         file_path: filePath,
         file_type: fileType,
-        num_questions: numQuestions || 10,
+        // Preserve 0 ("all questions") instead of coercing to default 10.
+        num_questions: numQuestions ?? 10,
       };
 
       // Add questions file info for dual-file mode
@@ -57,18 +75,13 @@ export class MaterialProcessingProcessor extends WorkerHost {
         requestBody.questions_file_type = questionsFileType;
       }
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await this.postJson(endpoint, requestBody);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Python service error (${response.status}): ${errorText}`);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw new Error(`Python service error (${response.statusCode}): ${response.body}`);
       }
 
-      const result = await response.json() as any;
+      const result = JSON.parse(response.body) as any;
 
       if (result.status === 'failed') {
         throw new Error(result.error || 'Processing failed with no details');
@@ -190,21 +203,40 @@ export class MaterialProcessingProcessor extends WorkerHost {
         // Update material status to PROCESSED
         await tx.material.update({
           where: { id: materialId },
-          data: { status: MaterialStatus.PROCESSED, errorMessage: null },
+          data: {
+            status: MaterialStatus.PROCESSED,
+            errorMessage: null,
+            processingProgress: 100,
+            processingStage: 'Completed',
+          },
         });
       });
 
       this.logger.log(`Material ${materialId} processed successfully`);
     } catch (error: any) {
+      if (this.isMissingRecordError(error)) {
+        this.logger.warn(`Material ${materialId} was removed while processing. Skipping stale job.`);
+        return;
+      }
+
       this.logger.error(`Failed to process material ${materialId}: ${error.message}`);
 
-      await this.prisma.material.update({
-        where: { id: materialId },
-        data: {
-          status: MaterialStatus.FAILED,
-          errorMessage: error.message || 'Unknown processing error',
-        },
-      });
+      try {
+        await this.prisma.material.update({
+          where: { id: materialId },
+          data: {
+            status: MaterialStatus.FAILED,
+            errorMessage: error.message || 'Unknown processing error',
+            processingStage: 'Failed',
+          },
+        });
+      } catch (updateError: any) {
+        if (this.isMissingRecordError(updateError)) {
+          this.logger.warn(`Material ${materialId} no longer exists while marking as FAILED`);
+          return;
+        }
+        throw updateError;
+      }
 
       throw error; // Re-throw for BullMQ retry logic
     }
@@ -225,5 +257,61 @@ export class MaterialProcessingProcessor extends WorkerHost {
     if (upper === 'TRUE_FALSE' || upper === 'TRUEFALSE' || upper === 'TF') return QuestionType.TRUE_FALSE;
     if (upper === 'SHORT_ANSWER' || upper === 'SHORTANSWER' || upper === 'SHORT') return QuestionType.SHORT_ANSWER;
     return QuestionType.MCQ;
+  }
+
+  private async postJson(
+    endpoint: string,
+    body: Record<string, unknown>,
+  ): Promise<{ statusCode: number; body: string }> {
+    const url = new URL(endpoint);
+    const payload = JSON.stringify(body);
+    const requestFn = url.protocol === 'https:' ? httpsRequest : httpRequest;
+
+    return new Promise((resolve, reject) => {
+      const req = requestFn(
+        {
+          protocol: url.protocol,
+          hostname: url.hostname,
+          port: url.port,
+          path: `${url.pathname}${url.search}`,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(payload),
+          },
+        },
+        (res) => {
+          const chunks: Buffer[] = [];
+          res.on('data', (chunk) => {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+          });
+          res.on('end', () => {
+            resolve({
+              statusCode: res.statusCode ?? 500,
+              body: Buffer.concat(chunks).toString('utf8'),
+            });
+          });
+        },
+      );
+
+      req.setTimeout(MaterialProcessingProcessor.PYTHON_REQUEST_TIMEOUT_MS, () => {
+        req.destroy(
+          new Error(
+            `Python request timed out after ${MaterialProcessingProcessor.PYTHON_REQUEST_TIMEOUT_MS / 60000} minutes`,
+          ),
+        );
+      });
+
+      req.on('error', (error) => reject(error));
+      req.write(payload);
+      req.end();
+    });
+  }
+
+  private isMissingRecordError(error: unknown): boolean {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError
+      && error.code === 'P2025'
+    );
   }
 }

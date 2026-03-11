@@ -51,6 +51,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       PYTHON_SERVICE_URL: http://python-service:8000
+      INTERNAL_PROCESSING_KEY: ${INTERNAL_PROCESSING_KEY:-local-processing-key}
       UPLOAD_DIR: /app/uploads
       MAX_FILE_SIZE: 52428800
       FRONTEND_URL: http://localhost:3001
@@ -78,6 +79,7 @@ services:
       HOST: 0.0.0.0
       PORT: 8000
       NESTJS_BACKEND_URL: http://backend:3000/api
+      INTERNAL_PROCESSING_KEY: ${INTERNAL_PROCESSING_KEY:-local-processing-key}
       AI_API_KEY: ${AI_API_KEY:-}
       AI_MODEL: gemini-3.1-flash-lite-preview
       DATABASE_URL: postgresql://postgres:0000@postgres:5432/crm_db

@@ -18,6 +18,8 @@ const ALLOWED_MIME_TYPES = [
     'application/pdf',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
     'image/png',
     'image/jpeg',
     'image/jpg',
@@ -31,7 +33,7 @@ let MaterialsService = class MaterialsService {
     }
     validateFile(file) {
         if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-            throw new common_1.BadRequestException(`File type ${file.mimetype} is not supported. Allowed: PDF, DOCX, PPTX, PNG, JPG`);
+            throw new common_1.BadRequestException(`File type ${file.mimetype} is not supported. Allowed: PDF, DOCX, PPTX, XLSX, XLS, PNG, JPG`);
         }
         const maxSize = this.configService.get('MAX_FILE_SIZE', 52428800);
         if (file.size > maxSize) {
@@ -50,6 +52,8 @@ let MaterialsService = class MaterialsService {
             'application/pdf': 'PDF',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
             'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+            'application/vnd.ms-excel': 'XLS',
             'image/png': 'PNG',
             'image/jpeg': 'JPG',
             'image/jpg': 'JPG',
@@ -62,6 +66,8 @@ let MaterialsService = class MaterialsService {
                 fileType: fileTypeMap[file.mimetype] || file.mimetype,
                 fileSize: file.size,
                 status: client_1.MaterialStatus.PENDING,
+                processingProgress: 0,
+                processingStage: 'Queued for processing',
                 subjectId,
                 uploadedById,
             },
@@ -174,9 +180,35 @@ let MaterialsService = class MaterialsService {
         if (!material) {
             throw new common_1.NotFoundException('Material not found');
         }
+        const { progress, stage } = this.getProgressByStatus(status);
         return this.prisma.material.update({
             where: { id },
-            data: { status, errorMessage: errorMessage || null },
+            data: {
+                status,
+                errorMessage: errorMessage || null,
+                processingProgress: progress,
+                processingStage: stage,
+            },
+        });
+    }
+    async updateProcessingProgress(materialId, progress, stage) {
+        const material = await this.prisma.material.findUnique({ where: { id: materialId } });
+        if (!material) {
+            throw new common_1.NotFoundException('Material not found');
+        }
+        const clamped = Math.max(0, Math.min(100, Math.round(progress)));
+        return this.prisma.material.update({
+            where: { id: materialId },
+            data: {
+                processingProgress: clamped,
+                processingStage: stage ?? material.processingStage,
+            },
+            select: {
+                id: true,
+                status: true,
+                processingProgress: true,
+                processingStage: true,
+            },
         });
     }
     async remove(id) {
@@ -302,6 +334,8 @@ let MaterialsService = class MaterialsService {
             data: {
                 status: newStatus,
                 errorMessage: action === 'reject' ? (reason || 'Rejected by admin') : null,
+                processingProgress: newStatus === client_1.MaterialStatus.REVIEWED ? 100 : material.processingProgress,
+                processingStage: newStatus === client_1.MaterialStatus.REVIEWED ? 'Reviewed by admin' : 'Rejected by admin',
             },
             include: {
                 metadata: true,
@@ -327,7 +361,11 @@ let MaterialsService = class MaterialsService {
         }
         return this.prisma.material.update({
             where: { id: materialId },
-            data: { status: newStatus },
+            data: {
+                status: newStatus,
+                processingProgress: publish ? 100 : material.processingProgress,
+                processingStage: publish ? 'Published' : 'Unpublished',
+            },
             include: {
                 metadata: true,
             },
@@ -349,6 +387,8 @@ let MaterialsService = class MaterialsService {
             data: {
                 status: client_1.MaterialStatus.PENDING,
                 errorMessage: null,
+                processingProgress: 0,
+                processingStage: 'Queued for reprocessing',
             },
         });
     }
@@ -455,11 +495,37 @@ let MaterialsService = class MaterialsService {
         if (!material) {
             throw new common_1.NotFoundException('Material not found');
         }
+        const progressMeta = this.getProgressByStatus(status);
         return this.prisma.material.update({
             where: { id: materialId },
-            data: { status },
+            data: {
+                status,
+                processingProgress: progressMeta.progress,
+                processingStage: progressMeta.stage,
+            },
             include: { metadata: true },
         });
+    }
+    getProgressByStatus(status) {
+        if (status === client_1.MaterialStatus.PENDING) {
+            return { progress: 0, stage: 'Queued for processing' };
+        }
+        if (status === client_1.MaterialStatus.PROCESSING) {
+            return { progress: 5, stage: 'Processing started' };
+        }
+        if (status === client_1.MaterialStatus.PROCESSED) {
+            return { progress: 100, stage: 'Processing complete' };
+        }
+        if (status === client_1.MaterialStatus.REVIEWED) {
+            return { progress: 100, stage: 'Reviewed by admin' };
+        }
+        if (status === client_1.MaterialStatus.PUBLISHED) {
+            return { progress: 100, stage: 'Published' };
+        }
+        if (status === client_1.MaterialStatus.FAILED) {
+            return { progress: 0, stage: 'Processing failed' };
+        }
+        return { progress: 0, stage: 'Unknown' };
     }
 };
 exports.MaterialsService = MaterialsService;

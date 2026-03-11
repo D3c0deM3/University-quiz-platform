@@ -54,6 +54,8 @@ export interface Material {
   fileType: string;
   fileSize: number;
   status: MaterialStatus;
+  processingProgress?: number;
+  processingStage?: string | null;
   errorMessage: string | null;
   subjectId: string;
   uploadedById: string;

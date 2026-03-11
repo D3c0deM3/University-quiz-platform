@@ -36,7 +36,7 @@ import type { MaterialProcessingJobData } from './processors/material-processing
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
 const resolvedUploadDir = isAbsolute(uploadDir) ? uploadDir : join(process.cwd(), uploadDir);
 
-const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xlsx', '.xls', '.txt'];
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 const storage = diskStorage({
@@ -81,7 +81,9 @@ export class MaterialsController {
       throw new BadRequestException('subjectId is required');
     }
 
-    const numQuestions = Math.max(parseInt(numQuestionsRaw, 10) || 10, 1);
+    const numQuestions = parseInt(numQuestionsRaw, 10);
+    // 0 means "all questions", otherwise at least 1
+    const validNumQuestions = isNaN(numQuestions) ? 10 : (numQuestions === 0 ? 0 : Math.max(numQuestions, 1));
 
     const material = await this.materialsService.upload(file, subjectId, userId);
 
@@ -93,7 +95,7 @@ export class MaterialsController {
         filePath: material.filePath,
         fileType: material.fileType,
         originalName: material.originalName,
-        numQuestions,
+        numQuestions: validNumQuestions,
         uploadedById: userId,
       } satisfies MaterialProcessingJobData,
       {
@@ -138,7 +140,8 @@ export class MaterialsController {
       throw new BadRequestException('subjectId is required');
     }
 
-    const numQuestions = Math.max(parseInt(numQuestionsRaw, 10) || 10, 1);
+    const numQuestions = parseInt(numQuestionsRaw, 10);
+    const validNumQuestions = isNaN(numQuestions) ? 10 : (numQuestions === 0 ? 0 : Math.max(numQuestions, 1));
 
     // Upload the material file as the primary material
     const material = await this.materialsService.upload(materialFile, subjectId, userId);
@@ -151,7 +154,7 @@ export class MaterialsController {
         filePath: material.filePath,
         fileType: material.fileType,
         originalName: material.originalName,
-        numQuestions,
+        numQuestions: validNumQuestions,
         uploadedById: userId,
         mode: 'questions_with_material',
         questionsFilePath: questionsFile.path,

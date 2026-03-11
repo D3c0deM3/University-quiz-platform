@@ -13,11 +13,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MaterialProcessingProcessor = void 0;
 const bullmq_1 = require("@nestjs/bullmq");
 const common_1 = require("@nestjs/common");
+const http_1 = require("http");
+const https_1 = require("https");
 const prisma_service_js_1 = require("../../prisma/prisma.service.js");
 const client_1 = require("@prisma/client");
-let MaterialProcessingProcessor = MaterialProcessingProcessor_1 = class MaterialProcessingProcessor extends bullmq_1.WorkerHost {
+let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bullmq_1.WorkerHost {
+    static { MaterialProcessingProcessor_1 = this; }
     prisma;
     logger = new common_1.Logger(MaterialProcessingProcessor_1.name);
+    static PYTHON_REQUEST_TIMEOUT_MS = 30 * 60 * 1000;
     constructor(prisma) {
         super();
         this.prisma = prisma;
@@ -25,10 +29,23 @@ let MaterialProcessingProcessor = MaterialProcessingProcessor_1 = class Material
     async process(job) {
         const { materialId, filePath, fileType, originalName, numQuestions, uploadedById, mode, questionsFilePath, questionsFileType } = job.data;
         this.logger.log(`Processing material ${materialId} (${originalName}) [mode: ${mode || 'standard'}]`);
+        const materialExists = await this.prisma.material.findUnique({
+            where: { id: materialId },
+            select: { id: true },
+        });
+        if (!materialExists) {
+            this.logger.warn(`Skipping stale processing job: material ${materialId} no longer exists`);
+            return;
+        }
         try {
             await this.prisma.material.update({
                 where: { id: materialId },
-                data: { status: client_1.MaterialStatus.PROCESSING },
+                data: {
+                    status: client_1.MaterialStatus.PROCESSING,
+                    processingProgress: 5,
+                    processingStage: 'Preparing extraction',
+                    errorMessage: null,
+                },
             });
             const pythonUrl = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
             const endpoint = mode === 'questions_with_material'
@@ -38,22 +55,17 @@ let MaterialProcessingProcessor = MaterialProcessingProcessor_1 = class Material
                 material_id: materialId,
                 file_path: filePath,
                 file_type: fileType,
-                num_questions: numQuestions || 10,
+                num_questions: numQuestions ?? 10,
             };
             if (mode === 'questions_with_material' && questionsFilePath && questionsFileType) {
                 requestBody.questions_file_path = questionsFilePath;
                 requestBody.questions_file_type = questionsFileType;
             }
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody),
-            });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Python service error (${response.status}): ${errorText}`);
+            const response = await this.postJson(endpoint, requestBody);
+            if (response.statusCode < 200 || response.statusCode >= 300) {
+                throw new Error(`Python service error (${response.statusCode}): ${response.body}`);
             }
-            const result = await response.json();
+            const result = JSON.parse(response.body);
             if (result.status === 'failed') {
                 throw new Error(result.error || 'Processing failed with no details');
             }
@@ -153,20 +165,39 @@ let MaterialProcessingProcessor = MaterialProcessingProcessor_1 = class Material
                 }
                 await tx.material.update({
                     where: { id: materialId },
-                    data: { status: client_1.MaterialStatus.PROCESSED, errorMessage: null },
+                    data: {
+                        status: client_1.MaterialStatus.PROCESSED,
+                        errorMessage: null,
+                        processingProgress: 100,
+                        processingStage: 'Completed',
+                    },
                 });
             });
             this.logger.log(`Material ${materialId} processed successfully`);
         }
         catch (error) {
+            if (this.isMissingRecordError(error)) {
+                this.logger.warn(`Material ${materialId} was removed while processing. Skipping stale job.`);
+                return;
+            }
             this.logger.error(`Failed to process material ${materialId}: ${error.message}`);
-            await this.prisma.material.update({
-                where: { id: materialId },
-                data: {
-                    status: client_1.MaterialStatus.FAILED,
-                    errorMessage: error.message || 'Unknown processing error',
-                },
-            });
+            try {
+                await this.prisma.material.update({
+                    where: { id: materialId },
+                    data: {
+                        status: client_1.MaterialStatus.FAILED,
+                        errorMessage: error.message || 'Unknown processing error',
+                        processingStage: 'Failed',
+                    },
+                });
+            }
+            catch (updateError) {
+                if (this.isMissingRecordError(updateError)) {
+                    this.logger.warn(`Material ${materialId} no longer exists while marking as FAILED`);
+                    return;
+                }
+                throw updateError;
+            }
             throw error;
         }
     }
@@ -191,6 +222,45 @@ let MaterialProcessingProcessor = MaterialProcessingProcessor_1 = class Material
         if (upper === 'SHORT_ANSWER' || upper === 'SHORTANSWER' || upper === 'SHORT')
             return client_1.QuestionType.SHORT_ANSWER;
         return client_1.QuestionType.MCQ;
+    }
+    async postJson(endpoint, body) {
+        const url = new URL(endpoint);
+        const payload = JSON.stringify(body);
+        const requestFn = url.protocol === 'https:' ? https_1.request : http_1.request;
+        return new Promise((resolve, reject) => {
+            const req = requestFn({
+                protocol: url.protocol,
+                hostname: url.hostname,
+                port: url.port,
+                path: `${url.pathname}${url.search}`,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(payload),
+                },
+            }, (res) => {
+                const chunks = [];
+                res.on('data', (chunk) => {
+                    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+                });
+                res.on('end', () => {
+                    resolve({
+                        statusCode: res.statusCode ?? 500,
+                        body: Buffer.concat(chunks).toString('utf8'),
+                    });
+                });
+            });
+            req.setTimeout(MaterialProcessingProcessor_1.PYTHON_REQUEST_TIMEOUT_MS, () => {
+                req.destroy(new Error(`Python request timed out after ${MaterialProcessingProcessor_1.PYTHON_REQUEST_TIMEOUT_MS / 60000} minutes`));
+            });
+            req.on('error', (error) => reject(error));
+            req.write(payload);
+            req.end();
+        });
+    }
+    isMissingRecordError(error) {
+        return (error instanceof client_1.Prisma.PrismaClientKnownRequestError
+            && error.code === 'P2025');
     }
 };
 exports.MaterialProcessingProcessor = MaterialProcessingProcessor;

@@ -32,6 +32,8 @@ export declare class MaterialsController {
             filePath: string;
             fileType: string;
             fileSize: number;
+            processingProgress: number;
+            processingStage: string | null;
             errorMessage: string | null;
             subjectId: string;
             uploadedById: string;
@@ -62,6 +64,8 @@ export declare class MaterialsController {
             filePath: string;
             fileType: string;
             fileSize: number;
+            processingProgress: number;
+            processingStage: string | null;
             errorMessage: string | null;
             subjectId: string;
             uploadedById: string;
@@ -94,6 +98,8 @@ export declare class MaterialsController {
             filePath: string;
             fileType: string;
             fileSize: number;
+            processingProgress: number;
+            processingStage: string | null;
             errorMessage: string | null;
             subjectId: string;
             uploadedById: string;
@@ -149,6 +155,8 @@ export declare class MaterialsController {
         filePath: string;
         fileType: string;
         fileSize: number;
+        processingProgress: number;
+        processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -276,6 +284,8 @@ export declare class MaterialsController {
         filePath: string;
         fileType: string;
         fileSize: number;
+        processingProgress: number;
+        processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -306,6 +316,8 @@ export declare class MaterialsController {
         filePath: string;
         fileType: string;
         fileSize: number;
+        processingProgress: number;
+        processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -322,6 +334,8 @@ export declare class MaterialsController {
             filePath: string;
             fileType: string;
             fileSize: number;
+            processingProgress: number;
+            processingStage: string | null;
             errorMessage: string | null;
             subjectId: string;
             uploadedById: string;
@@ -394,6 +408,8 @@ export declare class MaterialsController {
         filePath: string;
         fileType: string;
         fileSize: number;
+        processingProgress: number;
+        processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;

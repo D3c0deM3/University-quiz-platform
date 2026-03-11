@@ -31,7 +31,7 @@ const update_quiz_dto_js_1 = require("./dto/update-quiz.dto.js");
 const quiz_question_dto_js_1 = require("./dto/quiz-question.dto.js");
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
 const resolvedUploadDir = (0, path_1.isAbsolute)(uploadDir) ? uploadDir : (0, path_1.join)(process.cwd(), uploadDir);
-const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xlsx', '.xls', '.txt'];
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const storage = (0, multer_1.diskStorage)({
     destination: resolvedUploadDir,
@@ -64,14 +64,15 @@ let MaterialsController = class MaterialsController {
         if (!subjectId) {
             throw new common_1.BadRequestException('subjectId is required');
         }
-        const numQuestions = Math.max(parseInt(numQuestionsRaw, 10) || 10, 1);
+        const numQuestions = parseInt(numQuestionsRaw, 10);
+        const validNumQuestions = isNaN(numQuestions) ? 10 : (numQuestions === 0 ? 0 : Math.max(numQuestions, 1));
         const material = await this.materialsService.upload(file, subjectId, userId);
         await this.processingQueue.add('process', {
             materialId: material.id,
             filePath: material.filePath,
             fileType: material.fileType,
             originalName: material.originalName,
-            numQuestions,
+            numQuestions: validNumQuestions,
             uploadedById: userId,
         }, {
             attempts: 3,
@@ -96,14 +97,15 @@ let MaterialsController = class MaterialsController {
         if (!subjectId) {
             throw new common_1.BadRequestException('subjectId is required');
         }
-        const numQuestions = Math.max(parseInt(numQuestionsRaw, 10) || 10, 1);
+        const numQuestions = parseInt(numQuestionsRaw, 10);
+        const validNumQuestions = isNaN(numQuestions) ? 10 : (numQuestions === 0 ? 0 : Math.max(numQuestions, 1));
         const material = await this.materialsService.upload(materialFile, subjectId, userId);
         await this.processingQueue.add('process', {
             materialId: material.id,
             filePath: material.filePath,
             fileType: material.fileType,
             originalName: material.originalName,
-            numQuestions,
+            numQuestions: validNumQuestions,
             uploadedById: userId,
             mode: 'questions_with_material',
             questionsFilePath: questionsFile.path,

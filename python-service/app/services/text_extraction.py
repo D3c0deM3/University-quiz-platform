@@ -160,6 +160,32 @@ async def extract_with_ocr(file_path: str) -> str:
         return ""
 
 
+async def extract_from_excel(file_path: str) -> str:
+    """Extract text from an Excel file (XLSX/XLS) using openpyxl."""
+    logger.info(f"Extracting text from Excel: {file_path}")
+    text_parts = []
+
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+        for sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+            sheet_texts = [f"[Sheet: {sheet_name}]"]
+            for row in ws.iter_rows(values_only=True):
+                row_text = " | ".join(
+                    str(cell).strip() for cell in row if cell is not None and str(cell).strip()
+                )
+                if row_text:
+                    sheet_texts.append(row_text)
+            if len(sheet_texts) > 1:  # more than just the header
+                text_parts.append("\n".join(sheet_texts))
+        wb.close()
+    except Exception as e:
+        logger.error(f"Excel extraction failed: {e}")
+
+    return "\n\n".join(text_parts)
+
+
 async def extract_text(file_path: str, file_type: str) -> str:
     """
     Main dispatcher: extract text from a file based on its type.
@@ -177,6 +203,10 @@ async def extract_text(file_path: str, file_type: str) -> str:
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
         "pptx": "pptx",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+        "xlsx": "xlsx",
+        "xls": "xls",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+        "application/vnd.ms-excel": "xls",
         "png": "image",
         "jpg": "image",
         "jpeg": "image",
@@ -193,6 +223,8 @@ async def extract_text(file_path: str, file_type: str) -> str:
         return await extract_from_docx(abs_path)
     elif normalized == "pptx":
         return await extract_from_pptx(abs_path)
+    elif normalized in ("xlsx", "xls"):
+        return await extract_from_excel(abs_path)
     elif normalized == "image":
         return await extract_with_ocr(abs_path)
     else:

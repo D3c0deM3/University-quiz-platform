@@ -116,6 +116,8 @@ model Material {
   fileType       String         @map("file_type")
   fileSize       Int            @map("file_size")
   status         MaterialStatus @default(PENDING)
+  processingProgress Int        @default(0) @map("processing_progress")
+  processingStage String?       @map("processing_stage")
   errorMessage   String?        @map("error_message")
   subjectId      String         @map("subject_id")
   uploadedById   String         @map("uploaded_by_id")

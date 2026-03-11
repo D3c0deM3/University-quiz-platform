@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { materialsApi } from '@/lib/api';
 import type { Material, MaterialStatus } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
@@ -53,8 +53,8 @@ export default function AdminMaterialsPage() {
  const [total, setTotal] = useState(0);
  const [loading, setLoading] = useState(true);
 
- const load = async (p = 1, s = status) => {
- setLoading(true);
+ const load = async (p = 1, s = status, options?: { silent?: boolean }) => {
+ if (!options?.silent) setLoading(true);
  try {
  const params: Record<string, string | number | undefined> = { page: p, limit: 20 };
  if (s) params.status = s;
@@ -63,7 +63,7 @@ export default function AdminMaterialsPage() {
  setTotal(data.meta?.total || 0);
  setPage(p);
  } finally {
- setLoading(false);
+ if (!options?.silent) setLoading(false);
  }
  };
 
@@ -72,12 +72,24 @@ export default function AdminMaterialsPage() {
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, []);
 
+ useEffect(() => {
+ const hasActiveProcessing = materials.some((m) => m.status === 'PENDING' || m.status === 'PROCESSING');
+ if (!hasActiveProcessing) return;
+
+ const interval = setInterval(() => {
+ void load(page, status, { silent: true });
+ }, 5000);
+
+ return () => clearInterval(interval);
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [materials, page, status]);
+
  const handleStatusChange = (val: string) => {
  setStatus(val);
  load(1, val);
  };
 
- const handleDelete = async (id: string, e: React.MouseEvent) => {
+const handleDelete = async (id: string, e: React.MouseEvent) => {
  e.preventDefault();
  e.stopPropagation();
  if (!confirm(t('adminMaterials.confirmDelete'))) return;
@@ -85,9 +97,18 @@ export default function AdminMaterialsPage() {
  await materialsApi.delete(id);
  toast.success(t('adminMaterials.materialDeleted'));
  load(page);
- } catch (err: any) {
- toast.error(err.response?.data?.message || t('adminMaterials.failedDelete'));
+ } catch (err: unknown) {
+ const message =
+ (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+ t('adminMaterials.failedDelete');
+ toast.error(message);
  }
+ };
+
+ const getProgress = (material: Material) => {
+ const raw = material.processingProgress;
+ if (typeof raw === 'number') return Math.max(0, Math.min(100, raw));
+ return material.status === 'PROCESSING' ? 10 : 0;
  };
 
  const totalPages = Math.ceil(total / 20);
@@ -154,6 +175,20 @@ export default function AdminMaterialsPage() {
  <p className="text-sm text-gray-500 dark:text-zinc-400">
  {m.fileType.toUpperCase()} • {(m.fileSize / 1024).toFixed(0)} KB • {formatDate(m.createdAt)}
  </p>
+ {(m.status === 'PENDING' || m.status === 'PROCESSING') && (
+ <div className="mt-2">
+ <div className="mb-1 flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400">
+ <span>{m.processingStage || t('common.processing')}</span>
+ <span>{getProgress(m)}%</span>
+ </div>
+ <div className="h-1.5 w-full rounded-full bg-gray-200 dark:bg-zinc-700 overflow-hidden">
+ <div
+ className="h-full rounded-full bg-blue-500 transition-all duration-500"
+ style={{ width: `${getProgress(m)}%` }}
+ />
+ </div>
+ </div>
+ )}
  </div>
  <div className="flex items-center gap-3 shrink-0">
  <Badge variant={statusVariant(m.status)}>{t(STATUS_LABEL_MAP[m.status] || m.status)}</Badge>

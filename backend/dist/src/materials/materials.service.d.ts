@@ -29,6 +29,8 @@ export declare class MaterialsService {
         filePath: string;
         fileType: string;
         fileSize: number;
+        processingProgress: number;
+        processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -60,6 +62,8 @@ export declare class MaterialsService {
             filePath: string;
             fileType: string;
             fileSize: number;
+            processingProgress: number;
+            processingStage: string | null;
             errorMessage: string | null;
             subjectId: string;
             uploadedById: string;
@@ -98,6 +102,8 @@ export declare class MaterialsService {
             filePath: string;
             fileType: string;
             fileSize: number;
+            processingProgress: number;
+            processingStage: string | null;
             errorMessage: string | null;
             subjectId: string;
             uploadedById: string;
@@ -153,6 +159,8 @@ export declare class MaterialsService {
         filePath: string;
         fileType: string;
         fileSize: number;
+        processingProgress: number;
+        processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -167,9 +175,17 @@ export declare class MaterialsService {
         filePath: string;
         fileType: string;
         fileSize: number;
+        processingProgress: number;
+        processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
+    }>;
+    updateProcessingProgress(materialId: string, progress: number, stage?: string): Promise<{
+        id: string;
+        status: import("@prisma/client").$Enums.MaterialStatus;
+        processingProgress: number;
+        processingStage: string | null;
     }>;
     remove(id: string): Promise<{
         message: string;
@@ -288,6 +304,8 @@ export declare class MaterialsService {
         filePath: string;
         fileType: string;
         fileSize: number;
+        processingProgress: number;
+        processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -316,6 +334,8 @@ export declare class MaterialsService {
         filePath: string;
         fileType: string;
         fileSize: number;
+        processingProgress: number;
+        processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -330,6 +350,8 @@ export declare class MaterialsService {
         filePath: string;
         fileType: string;
         fileSize: number;
+        processingProgress: number;
+        processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
@@ -421,8 +443,11 @@ export declare class MaterialsService {
         filePath: string;
         fileType: string;
         fileSize: number;
+        processingProgress: number;
+        processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
         uploadedById: string;
     }>;
+    private getProgressByStatus;
 }
