@@ -416,9 +416,10 @@ export class MaterialsService {
       throw new NotFoundException('Material not found');
     }
 
-    if (material.status !== MaterialStatus.FAILED) {
+    const reprocessableStatuses: MaterialStatus[] = [MaterialStatus.FAILED, MaterialStatus.REVIEWED, MaterialStatus.PROCESSED];
+    if (!reprocessableStatuses.includes(material.status)) {
       throw new BadRequestException(
-        `Only FAILED materials can be reprocessed. Current: ${material.status}`,
+        `Only FAILED, PROCESSED, or REVIEWED materials can be reprocessed. Current: ${material.status}`,
       );
     }
 

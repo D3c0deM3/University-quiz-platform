@@ -54,8 +54,11 @@ let MaterialProcessingProcessor = MaterialProcessingProcessor_1 = class Material
                 throw new Error(`Python service error (${response.status}): ${errorText}`);
             }
             const result = await response.json();
-            if (result.error && result.status !== 'success') {
-                throw new Error(result.error);
+            if (result.status === 'failed') {
+                throw new Error(result.error || 'Processing failed with no details');
+            }
+            if (result.status === 'partial_success' && result.error) {
+                this.logger.warn(`Partial processing for material ${materialId}: ${result.error}`);
             }
             await this.prisma.$transaction(async (tx) => {
                 if (result.metadata) {

@@ -67,28 +67,57 @@ async def process_material(request: ProcessingRequest):
 
         # Step 3: Generate metadata via Gemini
         metadata = None
+        metadata_error = None
         try:
             metadata = await generate_metadata(full_text)
             logger.info(f"Metadata generated for material {request.material_id}")
         except Exception as e:
+            metadata_error = str(e)
             logger.error(f"Metadata generation failed: {e}")
-            # Continue without metadata - quiz gen can still work
 
         # Step 4: Generate quiz questions via Gemini
         quiz_questions = []
+        quiz_error = None
         try:
             quiz_questions = await generate_quiz_questions(full_text, request.num_questions)
             logger.info(f"Generated {len(quiz_questions)} quiz questions for material {request.material_id}")
         except Exception as e:
+            quiz_error = str(e)
             logger.error(f"Quiz generation failed: {e}")
-            # Continue without quiz - metadata and text are still valuable
+
+        # Determine status based on what succeeded
+        if not metadata and not quiz_questions:
+            errors = []
+            if metadata_error:
+                errors.append(f"Metadata: {metadata_error}")
+            if quiz_error:
+                errors.append(f"Quiz: {quiz_error}")
+            return ProcessingResponse(
+                material_id=request.material_id,
+                status="failed",
+                text_chunks=text_chunks,
+                error=f"AI generation failed. {'; '.join(errors)}" if errors else "AI generation returned no results",
+            )
+
+        status = "success"
+        error_msg = None
+        if not metadata or not quiz_questions:
+            status = "partial_success"
+            parts = []
+            if not metadata:
+                parts.append(f"metadata generation failed: {metadata_error or 'no data returned'}")
+            if not quiz_questions:
+                parts.append(f"quiz generation failed: {quiz_error or 'no questions returned'}")
+            error_msg = "Partial: " + "; ".join(parts)
+            logger.warning(f"Material {request.material_id}: {error_msg}")
 
         return ProcessingResponse(
             material_id=request.material_id,
-            status="success",
+            status=status,
             metadata=metadata,
             text_chunks=text_chunks,
             quiz_questions=quiz_questions,
+            error=error_msg,
         )
 
     except FileNotFoundError as e:
@@ -160,14 +189,17 @@ async def process_questions_with_material(request: QuestionsWithMaterialRequest)
 
         # Step 3: Generate metadata from study material via Gemini
         metadata = None
+        metadata_error = None
         try:
             metadata = await generate_metadata(material_text)
             logger.info(f"Metadata generated for material {request.material_id}")
         except Exception as e:
+            metadata_error = str(e)
             logger.error(f"Metadata generation failed: {e}")
 
         # Step 4: Generate quiz — questions from questions file, answers from study material
         quiz_questions = []
+        quiz_error = None
         try:
             quiz_questions = await generate_quiz_from_questions_and_material(
                 questions_text, material_text, request.num_questions
@@ -177,14 +209,42 @@ async def process_questions_with_material(request: QuestionsWithMaterialRequest)
                 f"for material {request.material_id}"
             )
         except Exception as e:
+            quiz_error = str(e)
             logger.error(f"Quiz generation (questions+material) failed: {e}")
+
+        # Determine status based on what succeeded
+        if not metadata and not quiz_questions:
+            errors = []
+            if metadata_error:
+                errors.append(f"Metadata: {metadata_error}")
+            if quiz_error:
+                errors.append(f"Quiz: {quiz_error}")
+            return ProcessingResponse(
+                material_id=request.material_id,
+                status="failed",
+                text_chunks=text_chunks,
+                error=f"AI generation failed. {'; '.join(errors)}" if errors else "AI generation returned no results",
+            )
+
+        status = "success"
+        error_msg = None
+        if not metadata or not quiz_questions:
+            status = "partial_success"
+            parts = []
+            if not metadata:
+                parts.append(f"metadata generation failed: {metadata_error or 'no data returned'}")
+            if not quiz_questions:
+                parts.append(f"quiz generation failed: {quiz_error or 'no questions returned'}")
+            error_msg = "Partial: " + "; ".join(parts)
+            logger.warning(f"Material {request.material_id}: {error_msg}")
 
         return ProcessingResponse(
             material_id=request.material_id,
-            status="success",
+            status=status,
             metadata=metadata,
             text_chunks=text_chunks,
             quiz_questions=quiz_questions,
+            error=error_msg,
         )
 
     except FileNotFoundError as e:

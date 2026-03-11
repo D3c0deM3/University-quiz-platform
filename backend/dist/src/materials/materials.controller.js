@@ -176,6 +176,8 @@ let MaterialsController = class MaterialsController {
             filePath: material.filePath,
             fileType: material.fileType,
             originalName: material.originalName,
+            numQuestions: 10,
+            uploadedById: userId,
         }, {
             attempts: 3,
             backoff: { type: 'exponential', delay: 5000 },

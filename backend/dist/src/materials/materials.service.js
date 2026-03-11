@@ -340,8 +340,9 @@ let MaterialsService = class MaterialsService {
         if (!material) {
             throw new common_1.NotFoundException('Material not found');
         }
-        if (material.status !== client_1.MaterialStatus.FAILED) {
-            throw new common_1.BadRequestException(`Only FAILED materials can be reprocessed. Current: ${material.status}`);
+        const reprocessableStatuses = [client_1.MaterialStatus.FAILED, client_1.MaterialStatus.REVIEWED, client_1.MaterialStatus.PROCESSED];
+        if (!reprocessableStatuses.includes(material.status)) {
+            throw new common_1.BadRequestException(`Only FAILED, PROCESSED, or REVIEWED materials can be reprocessed. Current: ${material.status}`);
         }
         return this.prisma.material.update({
             where: { id: materialId },

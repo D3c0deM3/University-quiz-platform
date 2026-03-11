@@ -70,8 +70,13 @@ export class MaterialProcessingProcessor extends WorkerHost {
 
       const result = await response.json() as any;
 
-      if (result.error && result.status !== 'success') {
-        throw new Error(result.error);
+      if (result.status === 'failed') {
+        throw new Error(result.error || 'Processing failed with no details');
+      }
+
+      // Log partial success warnings but continue saving what we have
+      if (result.status === 'partial_success' && result.error) {
+        this.logger.warn(`Partial processing for material ${materialId}: ${result.error}`);
       }
 
       // Save results in a transaction

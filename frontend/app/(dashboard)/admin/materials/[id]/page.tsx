@@ -233,7 +233,7 @@ export default function MaterialReviewPage() {
  <GlobeIcon size={16} /> Unpublish
  </Button>
  )}
- {(material.status === 'FAILED' || material.status === 'PROCESSED') && (
+ {(material.status === 'FAILED' || material.status === 'PROCESSED' || material.status === 'REVIEWED') && (
  <Button variant="secondary" onClick={handleReprocess} className="gap-1">
  <RotateCcw size={16} /> Reprocess
  </Button>
