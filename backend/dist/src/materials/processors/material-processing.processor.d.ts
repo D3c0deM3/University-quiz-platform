@@ -22,4 +22,6 @@ export declare class MaterialProcessingProcessor extends WorkerHost {
     private mapQuestionType;
     private postJson;
     private isMissingRecordError;
+    private parsePythonResult;
+    private errorMessage;
 }

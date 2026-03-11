@@ -4,7 +4,13 @@ import { Job } from 'bullmq';
 import { request as httpRequest } from 'http';
 import { request as httpsRequest } from 'https';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { MaterialStatus, QuestionType, DifficultyLevel, QuestionStatus, Prisma } from '@prisma/client';
+import {
+  MaterialStatus,
+  QuestionType,
+  DifficultyLevel,
+  QuestionStatus,
+  Prisma,
+} from '@prisma/client';
 
 export interface MaterialProcessingJobData {
   materialId: string;
@@ -18,26 +24,70 @@ export interface MaterialProcessingJobData {
   questionsFileType?: string;
 }
 
+interface PythonQuizOption {
+  text: string;
+  is_correct?: boolean;
+}
+
+interface PythonQuizQuestion {
+  question_text: string;
+  question_type?: string;
+  options?: PythonQuizOption[];
+  explanation?: string | null;
+}
+
+interface PythonMetadata {
+  title?: string;
+  summary?: string | null;
+  keywords?: string[];
+  topics?: string[];
+  tags?: string[];
+  difficulty_level?: string;
+  content_type?: string;
+}
+
+interface PythonProcessingResult {
+  status: 'success' | 'partial_success' | 'failed';
+  error?: string;
+  metadata?: PythonMetadata;
+  text_chunks?: string[];
+  quiz_questions?: PythonQuizQuestion[];
+}
+
 @Processor('material-processing')
 export class MaterialProcessingProcessor extends WorkerHost {
   private readonly logger = new Logger(MaterialProcessingProcessor.name);
-  private static readonly PYTHON_REQUEST_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+  private static readonly PYTHON_REQUEST_TIMEOUT_MS = 30 * 60 * 1000;
 
   constructor(private prisma: PrismaService) {
     super();
   }
 
   async process(job: Job<MaterialProcessingJobData>): Promise<void> {
-    const { materialId, filePath, fileType, originalName, numQuestions, uploadedById, mode, questionsFilePath, questionsFileType } = job.data;
+    const {
+      materialId,
+      filePath,
+      fileType,
+      originalName,
+      numQuestions,
+      uploadedById,
+      mode,
+      questionsFilePath,
+      questionsFileType,
+    } = job.data;
 
-    this.logger.log(`Processing material ${materialId} (${originalName}) [mode: ${mode || 'standard'}]`);
+    this.logger.log(
+      `Processing material ${materialId} (${originalName}) [mode: ${mode || 'standard'}]`,
+    );
 
     const materialExists = await this.prisma.material.findUnique({
       where: { id: materialId },
       select: { id: true },
     });
     if (!materialExists) {
-      this.logger.warn(`Skipping stale processing job: material ${materialId} no longer exists`);
+      this.logger.warn(
+        `Skipping stale processing job: material ${materialId} no longer exists`,
+      );
       return;
     }
 
@@ -54,12 +104,14 @@ export class MaterialProcessingProcessor extends WorkerHost {
       });
 
       // Call Python FastAPI service
-      const pythonUrl = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
+      const pythonUrl =
+        process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
 
       // Choose endpoint based on mode
-      const endpoint = mode === 'questions_with_material'
-        ? `${pythonUrl}/process/questions-with-material`
-        : `${pythonUrl}/process/material`;
+      const endpoint =
+        mode === 'questions_with_material'
+          ? `${pythonUrl}/process/questions-with-material`
+          : `${pythonUrl}/process/material`;
 
       const requestBody: Record<string, unknown> = {
         material_id: materialId,
@@ -70,7 +122,11 @@ export class MaterialProcessingProcessor extends WorkerHost {
       };
 
       // Add questions file info for dual-file mode
-      if (mode === 'questions_with_material' && questionsFilePath && questionsFileType) {
+      if (
+        mode === 'questions_with_material' &&
+        questionsFilePath &&
+        questionsFileType
+      ) {
         requestBody.questions_file_path = questionsFilePath;
         requestBody.questions_file_type = questionsFileType;
       }
@@ -78,10 +134,12 @@ export class MaterialProcessingProcessor extends WorkerHost {
       const response = await this.postJson(endpoint, requestBody);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw new Error(`Python service error (${response.statusCode}): ${response.body}`);
+        throw new Error(
+          `Python service error (${response.statusCode}): ${response.body}`,
+        );
       }
 
-      const result = JSON.parse(response.body) as any;
+      const result = this.parsePythonResult(response.body);
 
       if (result.status === 'failed') {
         throw new Error(result.error || 'Processing failed with no details');
@@ -89,7 +147,9 @@ export class MaterialProcessingProcessor extends WorkerHost {
 
       // Log partial success warnings but continue saving what we have
       if (result.status === 'partial_success' && result.error) {
-        this.logger.warn(`Partial processing for material ${materialId}: ${result.error}`);
+        this.logger.warn(
+          `Partial processing for material ${materialId}: ${result.error}`,
+        );
       }
 
       // Save results in a transaction
@@ -100,22 +160,26 @@ export class MaterialProcessingProcessor extends WorkerHost {
             where: { materialId },
             create: {
               materialId,
-              title: result.metadata.title || originalName,
-              summary: result.metadata.summary || null,
-              keywords: result.metadata.keywords || [],
-              topics: result.metadata.topics || [],
-              tags: result.metadata.tags || [],
-              difficultyLevel: this.mapDifficulty(result.metadata.difficulty_level),
-              contentType: result.metadata.content_type || fileType,
+              title: result.metadata.title ?? originalName,
+              summary: result.metadata.summary ?? null,
+              keywords: result.metadata.keywords ?? [],
+              topics: result.metadata.topics ?? [],
+              tags: result.metadata.tags ?? [],
+              difficultyLevel: this.mapDifficulty(
+                result.metadata.difficulty_level,
+              ),
+              contentType: result.metadata.content_type ?? fileType,
             },
             update: {
-              title: result.metadata.title || originalName,
-              summary: result.metadata.summary || null,
-              keywords: result.metadata.keywords || [],
-              topics: result.metadata.topics || [],
-              tags: result.metadata.tags || [],
-              difficultyLevel: this.mapDifficulty(result.metadata.difficulty_level),
-              contentType: result.metadata.content_type || fileType,
+              title: result.metadata.title ?? originalName,
+              summary: result.metadata.summary ?? null,
+              keywords: result.metadata.keywords ?? [],
+              topics: result.metadata.topics ?? [],
+              tags: result.metadata.tags ?? [],
+              difficultyLevel: this.mapDifficulty(
+                result.metadata.difficulty_level,
+              ),
+              contentType: result.metadata.content_type ?? fileType,
             },
           });
         }
@@ -169,7 +233,7 @@ export class MaterialProcessingProcessor extends WorkerHost {
               // Create options for MCQ and TRUE_FALSE
               if (q.options && q.options.length > 0) {
                 await tx.quizOption.createMany({
-                  data: q.options.map((opt: any, optIndex: number) => ({
+                  data: q.options.map((opt, optIndex) => ({
                     questionId: question.id,
                     optionText: opt.text,
                     isCorrect: opt.is_correct || false,
@@ -182,7 +246,7 @@ export class MaterialProcessingProcessor extends WorkerHost {
             // Also save quiz questions to the Q&A bank (ManualQuestion)
             if (uploadedById) {
               for (const q of result.quiz_questions) {
-                const correctOption = q.options?.find((opt: any) => opt.is_correct);
+                const correctOption = q.options?.find((opt) => opt.is_correct);
                 const answerText = correctOption?.text || q.explanation || '';
                 if (q.question_text && answerText) {
                   await tx.manualQuestion.create({
@@ -213,26 +277,33 @@ export class MaterialProcessingProcessor extends WorkerHost {
       });
 
       this.logger.log(`Material ${materialId} processed successfully`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (this.isMissingRecordError(error)) {
-        this.logger.warn(`Material ${materialId} was removed while processing. Skipping stale job.`);
+        this.logger.warn(
+          `Material ${materialId} was removed while processing. Skipping stale job.`,
+        );
         return;
       }
 
-      this.logger.error(`Failed to process material ${materialId}: ${error.message}`);
+      this.logger.error(
+        `Failed to process material ${materialId}: ${this.errorMessage(error)}`,
+      );
 
       try {
         await this.prisma.material.update({
           where: { id: materialId },
           data: {
             status: MaterialStatus.FAILED,
-            errorMessage: error.message || 'Unknown processing error',
+            errorMessage: this.errorMessage(error),
+            processingProgress: 100,
             processingStage: 'Failed',
           },
         });
-      } catch (updateError: any) {
+      } catch (updateError: unknown) {
         if (this.isMissingRecordError(updateError)) {
-          this.logger.warn(`Material ${materialId} no longer exists while marking as FAILED`);
+          this.logger.warn(
+            `Material ${materialId} no longer exists while marking as FAILED`,
+          );
           return;
         }
         throw updateError;
@@ -254,8 +325,14 @@ export class MaterialProcessingProcessor extends WorkerHost {
   private mapQuestionType(type?: string): QuestionType {
     if (!type) return QuestionType.MCQ;
     const upper = type.toUpperCase();
-    if (upper === 'TRUE_FALSE' || upper === 'TRUEFALSE' || upper === 'TF') return QuestionType.TRUE_FALSE;
-    if (upper === 'SHORT_ANSWER' || upper === 'SHORTANSWER' || upper === 'SHORT') return QuestionType.SHORT_ANSWER;
+    if (upper === 'TRUE_FALSE' || upper === 'TRUEFALSE' || upper === 'TF')
+      return QuestionType.TRUE_FALSE;
+    if (
+      upper === 'SHORT_ANSWER' ||
+      upper === 'SHORTANSWER' ||
+      upper === 'SHORT'
+    )
+      return QuestionType.SHORT_ANSWER;
     return QuestionType.MCQ;
   }
 
@@ -283,7 +360,13 @@ export class MaterialProcessingProcessor extends WorkerHost {
         (res) => {
           const chunks: Buffer[] = [];
           res.on('data', (chunk) => {
-            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+            if (Buffer.isBuffer(chunk)) {
+              chunks.push(chunk);
+              return;
+            }
+            if (typeof chunk === 'string' || chunk instanceof Uint8Array) {
+              chunks.push(Buffer.from(chunk));
+            }
           });
           res.on('end', () => {
             resolve({
@@ -294,13 +377,18 @@ export class MaterialProcessingProcessor extends WorkerHost {
         },
       );
 
-      req.setTimeout(MaterialProcessingProcessor.PYTHON_REQUEST_TIMEOUT_MS, () => {
-        req.destroy(
-          new Error(
-            `Python request timed out after ${MaterialProcessingProcessor.PYTHON_REQUEST_TIMEOUT_MS / 60000} minutes`,
-          ),
-        );
-      });
+      req.setTimeout(
+        MaterialProcessingProcessor.PYTHON_REQUEST_TIMEOUT_MS,
+        () => {
+          req.destroy(
+            new Error(
+              `Python request timed out after ${
+                MaterialProcessingProcessor.PYTHON_REQUEST_TIMEOUT_MS / 60000
+              } minutes`,
+            ),
+          );
+        },
+      );
 
       req.on('error', (error) => reject(error));
       req.write(payload);
@@ -310,8 +398,22 @@ export class MaterialProcessingProcessor extends WorkerHost {
 
   private isMissingRecordError(error: unknown): boolean {
     return (
-      error instanceof Prisma.PrismaClientKnownRequestError
-      && error.code === 'P2025'
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2025'
     );
+  }
+
+  private parsePythonResult(body: string): PythonProcessingResult {
+    const parsed: unknown = JSON.parse(body);
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('Invalid Python service response format');
+    }
+    return parsed as PythonProcessingResult;
+  }
+
+  private errorMessage(error: unknown): string {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string') return error;
+    return 'Unknown processing error';
   }
 }

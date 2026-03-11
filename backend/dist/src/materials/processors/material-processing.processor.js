@@ -27,7 +27,7 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
         this.prisma = prisma;
     }
     async process(job) {
-        const { materialId, filePath, fileType, originalName, numQuestions, uploadedById, mode, questionsFilePath, questionsFileType } = job.data;
+        const { materialId, filePath, fileType, originalName, numQuestions, uploadedById, mode, questionsFilePath, questionsFileType, } = job.data;
         this.logger.log(`Processing material ${materialId} (${originalName}) [mode: ${mode || 'standard'}]`);
         const materialExists = await this.prisma.material.findUnique({
             where: { id: materialId },
@@ -57,7 +57,9 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
                 file_type: fileType,
                 num_questions: numQuestions ?? 10,
             };
-            if (mode === 'questions_with_material' && questionsFilePath && questionsFileType) {
+            if (mode === 'questions_with_material' &&
+                questionsFilePath &&
+                questionsFileType) {
                 requestBody.questions_file_path = questionsFilePath;
                 requestBody.questions_file_type = questionsFileType;
             }
@@ -65,7 +67,7 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
             if (response.statusCode < 200 || response.statusCode >= 300) {
                 throw new Error(`Python service error (${response.statusCode}): ${response.body}`);
             }
-            const result = JSON.parse(response.body);
+            const result = this.parsePythonResult(response.body);
             if (result.status === 'failed') {
                 throw new Error(result.error || 'Processing failed with no details');
             }
@@ -78,22 +80,22 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
                         where: { materialId },
                         create: {
                             materialId,
-                            title: result.metadata.title || originalName,
-                            summary: result.metadata.summary || null,
-                            keywords: result.metadata.keywords || [],
-                            topics: result.metadata.topics || [],
-                            tags: result.metadata.tags || [],
+                            title: result.metadata.title ?? originalName,
+                            summary: result.metadata.summary ?? null,
+                            keywords: result.metadata.keywords ?? [],
+                            topics: result.metadata.topics ?? [],
+                            tags: result.metadata.tags ?? [],
                             difficultyLevel: this.mapDifficulty(result.metadata.difficulty_level),
-                            contentType: result.metadata.content_type || fileType,
+                            contentType: result.metadata.content_type ?? fileType,
                         },
                         update: {
-                            title: result.metadata.title || originalName,
-                            summary: result.metadata.summary || null,
-                            keywords: result.metadata.keywords || [],
-                            topics: result.metadata.topics || [],
-                            tags: result.metadata.tags || [],
+                            title: result.metadata.title ?? originalName,
+                            summary: result.metadata.summary ?? null,
+                            keywords: result.metadata.keywords ?? [],
+                            topics: result.metadata.topics ?? [],
+                            tags: result.metadata.tags ?? [],
                             difficultyLevel: this.mapDifficulty(result.metadata.difficulty_level),
-                            contentType: result.metadata.content_type || fileType,
+                            contentType: result.metadata.content_type ?? fileType,
                         },
                     });
                 }
@@ -180,13 +182,14 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
                 this.logger.warn(`Material ${materialId} was removed while processing. Skipping stale job.`);
                 return;
             }
-            this.logger.error(`Failed to process material ${materialId}: ${error.message}`);
+            this.logger.error(`Failed to process material ${materialId}: ${this.errorMessage(error)}`);
             try {
                 await this.prisma.material.update({
                     where: { id: materialId },
                     data: {
                         status: client_1.MaterialStatus.FAILED,
-                        errorMessage: error.message || 'Unknown processing error',
+                        errorMessage: this.errorMessage(error),
+                        processingProgress: 100,
                         processingStage: 'Failed',
                     },
                 });
@@ -219,7 +222,9 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
         const upper = type.toUpperCase();
         if (upper === 'TRUE_FALSE' || upper === 'TRUEFALSE' || upper === 'TF')
             return client_1.QuestionType.TRUE_FALSE;
-        if (upper === 'SHORT_ANSWER' || upper === 'SHORTANSWER' || upper === 'SHORT')
+        if (upper === 'SHORT_ANSWER' ||
+            upper === 'SHORTANSWER' ||
+            upper === 'SHORT')
             return client_1.QuestionType.SHORT_ANSWER;
         return client_1.QuestionType.MCQ;
     }
@@ -241,7 +246,13 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
             }, (res) => {
                 const chunks = [];
                 res.on('data', (chunk) => {
-                    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+                    if (Buffer.isBuffer(chunk)) {
+                        chunks.push(chunk);
+                        return;
+                    }
+                    if (typeof chunk === 'string' || chunk instanceof Uint8Array) {
+                        chunks.push(Buffer.from(chunk));
+                    }
                 });
                 res.on('end', () => {
                     resolve({
@@ -259,8 +270,22 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
         });
     }
     isMissingRecordError(error) {
-        return (error instanceof client_1.Prisma.PrismaClientKnownRequestError
-            && error.code === 'P2025');
+        return (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2025');
+    }
+    parsePythonResult(body) {
+        const parsed = JSON.parse(body);
+        if (!parsed || typeof parsed !== 'object') {
+            throw new Error('Invalid Python service response format');
+        }
+        return parsed;
+    }
+    errorMessage(error) {
+        if (error instanceof Error)
+            return error.message;
+        if (typeof error === 'string')
+            return error;
+        return 'Unknown processing error';
     }
 };
 exports.MaterialProcessingProcessor = MaterialProcessingProcessor;
