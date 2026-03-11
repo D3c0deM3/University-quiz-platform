@@ -11,6 +11,9 @@ export interface MaterialProcessingJobData {
   originalName: string;
   numQuestions?: number;
   uploadedById?: string;
+  mode?: 'standard' | 'questions_with_material';
+  questionsFilePath?: string;
+  questionsFileType?: string;
 }
 
 @Processor('material-processing')
@@ -22,9 +25,9 @@ export class MaterialProcessingProcessor extends WorkerHost {
   }
 
   async process(job: Job<MaterialProcessingJobData>): Promise<void> {
-    const { materialId, filePath, fileType, originalName, numQuestions, uploadedById } = job.data;
+    const { materialId, filePath, fileType, originalName, numQuestions, uploadedById, mode, questionsFilePath, questionsFileType } = job.data;
 
-    this.logger.log(`Processing material ${materialId} (${originalName})`);
+    this.logger.log(`Processing material ${materialId} (${originalName}) [mode: ${mode || 'standard'}]`);
 
     try {
       // Update status to PROCESSING
@@ -35,15 +38,29 @@ export class MaterialProcessingProcessor extends WorkerHost {
 
       // Call Python FastAPI service
       const pythonUrl = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
-      const response = await fetch(`${pythonUrl}/process/material`, {
+
+      // Choose endpoint based on mode
+      const endpoint = mode === 'questions_with_material'
+        ? `${pythonUrl}/process/questions-with-material`
+        : `${pythonUrl}/process/material`;
+
+      const requestBody: Record<string, unknown> = {
+        material_id: materialId,
+        file_path: filePath,
+        file_type: fileType,
+        num_questions: numQuestions || 10,
+      };
+
+      // Add questions file info for dual-file mode
+      if (mode === 'questions_with_material' && questionsFilePath && questionsFileType) {
+        requestBody.questions_file_path = questionsFilePath;
+        requestBody.questions_file_type = questionsFileType;
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          material_id: materialId,
-          file_path: filePath,
-          file_type: fileType,
-          num_questions: numQuestions || 10,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {

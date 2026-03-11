@@ -11,11 +11,12 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
   ParseIntPipe,
   DefaultValuePipe,
   BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { diskStorage } from 'multer';
@@ -105,6 +106,67 @@ export class MaterialsController {
 
     return {
       message: 'Material uploaded successfully. Processing will begin shortly.',
+      material,
+    };
+  }
+
+  @Post('upload-with-questions')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @UseInterceptors(FileFieldsInterceptor(
+    [
+      { name: 'questionsFile', maxCount: 1 },
+      { name: 'materialFile', maxCount: 1 },
+    ],
+    multerOptions,
+  ))
+  async uploadWithQuestions(
+    @UploadedFiles() files: { questionsFile?: Express.Multer.File[]; materialFile?: Express.Multer.File[] },
+    @Body('subjectId') subjectId: string,
+    @Body('numQuestions') numQuestionsRaw: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    const questionsFile = files?.questionsFile?.[0];
+    const materialFile = files?.materialFile?.[0];
+
+    if (!questionsFile) {
+      throw new BadRequestException('Questions file is required');
+    }
+    if (!materialFile) {
+      throw new BadRequestException('Study material file is required');
+    }
+    if (!subjectId) {
+      throw new BadRequestException('subjectId is required');
+    }
+
+    const numQuestions = Math.max(parseInt(numQuestionsRaw, 10) || 10, 1);
+
+    // Upload the material file as the primary material
+    const material = await this.materialsService.upload(materialFile, subjectId, userId);
+
+    // Enqueue background processing job with dual-file mode
+    await this.processingQueue.add(
+      'process',
+      {
+        materialId: material.id,
+        filePath: material.filePath,
+        fileType: material.fileType,
+        originalName: material.originalName,
+        numQuestions,
+        uploadedById: userId,
+        mode: 'questions_with_material',
+        questionsFilePath: questionsFile.path,
+        questionsFileType: extname(questionsFile.originalname).toLowerCase().replace('.', '').toUpperCase(),
+      } satisfies MaterialProcessingJobData,
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    );
+
+    return {
+      message: 'Questions and material uploaded successfully. Processing will begin shortly.',
       material,
     };
   }

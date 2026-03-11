@@ -521,7 +521,17 @@ const ru: Record<string, string> = {
   'adminUpload.changeFile': 'Изменить',
   'adminUpload.numQuestions': 'Количество вопросов',
   'adminUpload.numQuestionsDesc': 'Сколько вопросов ИИ должен сгенерировать из этого материала?',
+  'adminUpload.numQuestionsDescDual': 'Максимальное количество вопросов для извлечения из файла вопросов',
   'adminUpload.numQuestionsHint': 'Мин: 1. По умолчанию: 10',
+  'adminUpload.questionsWithMaterial': 'Загрузить вопросы с учебным материалом',
+  'adminUpload.questionsWithMaterialDesc': 'Загрузите файл с вопросами и файл учебного материала. ИИ найдёт ответы строго из учебного материала, а не из собственных знаний.',
+  'adminUpload.questionsFile': 'Файл вопросов',
+  'adminUpload.questionsFileDesc': 'Загрузите файл с экзаменационными вопросами, тестовыми заданиями или банком вопросов',
+  'adminUpload.chooseQuestionsFile': 'Выберите файл вопросов или перетащите сюда',
+  'adminUpload.studyMaterialFile': 'Файл учебного материала',
+  'adminUpload.studyMaterialFileDesc': 'Загрузите учебный материал, из которого будут найдены ответы на вопросы',
+  'adminUpload.chooseStudyMaterial': 'Выберите учебный материал или перетащите сюда',
+  'adminUpload.errorBothFiles': 'Необходимы оба файла: файл вопросов и файл учебного материала',
 
   // ───── Подписки (админ) ─────
   'adminSubs.title': 'Подписки',

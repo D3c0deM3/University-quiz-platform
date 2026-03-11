@@ -84,6 +84,41 @@ let MaterialsController = class MaterialsController {
             material,
         };
     }
+    async uploadWithQuestions(files, subjectId, numQuestionsRaw, userId) {
+        const questionsFile = files?.questionsFile?.[0];
+        const materialFile = files?.materialFile?.[0];
+        if (!questionsFile) {
+            throw new common_1.BadRequestException('Questions file is required');
+        }
+        if (!materialFile) {
+            throw new common_1.BadRequestException('Study material file is required');
+        }
+        if (!subjectId) {
+            throw new common_1.BadRequestException('subjectId is required');
+        }
+        const numQuestions = Math.max(parseInt(numQuestionsRaw, 10) || 10, 1);
+        const material = await this.materialsService.upload(materialFile, subjectId, userId);
+        await this.processingQueue.add('process', {
+            materialId: material.id,
+            filePath: material.filePath,
+            fileType: material.fileType,
+            originalName: material.originalName,
+            numQuestions,
+            uploadedById: userId,
+            mode: 'questions_with_material',
+            questionsFilePath: questionsFile.path,
+            questionsFileType: (0, path_1.extname)(questionsFile.originalname).toLowerCase().replace('.', '').toUpperCase(),
+        }, {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 5000 },
+            removeOnComplete: true,
+            removeOnFail: false,
+        });
+        return {
+            message: 'Questions and material uploaded successfully. Processing will begin shortly.',
+            material,
+        };
+    }
     async findAll(page, limit, status, subjectId, userId, role) {
         if (role === client_1.Role.STUDENT) {
             if (subjectId) {
@@ -181,6 +216,21 @@ __decorate([
     __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", Promise)
 ], MaterialsController.prototype, "upload", null);
+__decorate([
+    (0, common_1.Post)('upload-with-questions'),
+    (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileFieldsInterceptor)([
+        { name: 'questionsFile', maxCount: 1 },
+        { name: 'materialFile', maxCount: 1 },
+    ], multerOptions)),
+    __param(0, (0, common_1.UploadedFiles)()),
+    __param(1, (0, common_1.Body)('subjectId')),
+    __param(2, (0, common_1.Body)('numQuestions')),
+    __param(3, (0, index_js_2.CurrentUser)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String, String]),
+    __metadata("design:returntype", Promise)
+], MaterialsController.prototype, "uploadWithQuestions", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('page', new common_1.DefaultValuePipe(1), common_1.ParseIntPipe)),

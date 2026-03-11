@@ -521,7 +521,17 @@ const uz: Record<string, string> = {
   'adminUpload.changeFile': 'O\'zgartirish',
   'adminUpload.numQuestions': 'Savollar soni',
   'adminUpload.numQuestionsDesc': 'AI ushbu materialdan nechta test savoli yaratsin?',
+  'adminUpload.numQuestionsDescDual': 'Savollar faylidan chiqariladigan maksimal savollar soni',
   'adminUpload.numQuestionsHint': 'Min: 1. Standart: 10',
+  'adminUpload.questionsWithMaterial': 'Savollarni o\'quv materiali bilan yuklash',
+  'adminUpload.questionsWithMaterialDesc': 'Savollar fayli va o\'quv materiali faylini yuklang. AI javoblarni faqat o\'quv materialidan topadi, o\'z bilimlaridan emas.',
+  'adminUpload.questionsFile': 'Savollar fayli',
+  'adminUpload.questionsFileDesc': 'Imtihon savollari, test topshiriqlari yoki savollar banki bo\'lgan faylni yuklang',
+  'adminUpload.chooseQuestionsFile': 'Savollar faylini tanlang yoki shu yerga tashlang',
+  'adminUpload.studyMaterialFile': 'O\'quv materiali fayli',
+  'adminUpload.studyMaterialFileDesc': 'Savollarga javoblar topiladigan o\'quv materialini yuklang',
+  'adminUpload.chooseStudyMaterial': 'O\'quv materialini tanlang yoki shu yerga tashlang',
+  'adminUpload.errorBothFiles': 'Ikkala fayl ham kerak: savollar fayli va o\'quv materiali fayli',
 
   // ───── Admin obunalar ─────
   'adminSubs.title': 'Obunalar',

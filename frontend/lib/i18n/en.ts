@@ -521,7 +521,17 @@ const en = {
   'adminUpload.changeFile': 'Change',
   'adminUpload.numQuestions': 'Number of Questions',
   'adminUpload.numQuestionsDesc': 'How many quiz questions should the AI generate from this material?',
+  'adminUpload.numQuestionsDescDual': 'Maximum number of questions to extract from the questions file',
   'adminUpload.numQuestionsHint': 'Min: 1. Default: 10',
+  'adminUpload.questionsWithMaterial': 'Upload questions with study material',
+  'adminUpload.questionsWithMaterialDesc': 'Upload a questions file and a study material file. AI will find answers strictly from the study material, not from its own knowledge.',
+  'adminUpload.questionsFile': 'Questions File',
+  'adminUpload.questionsFileDesc': 'Upload the file containing exam questions, test papers, or question banks',
+  'adminUpload.chooseQuestionsFile': 'Choose questions file or drag and drop',
+  'adminUpload.studyMaterialFile': 'Study Material File',
+  'adminUpload.studyMaterialFileDesc': 'Upload the study material from which answers to the questions will be found',
+  'adminUpload.chooseStudyMaterial': 'Choose study material or drag and drop',
+  'adminUpload.errorBothFiles': 'Both questions file and study material file are required',
 
   // ───── Admin Subscriptions ─────
   'adminSubs.title': 'Subscriptions',

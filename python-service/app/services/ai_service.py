@@ -95,6 +95,53 @@ Rules for ALL questions:
 TEXT TO ANALYZE:
 """
 
+QUESTIONS_WITH_MATERIAL_PROMPT = """You are an expert educational quiz creator with a strict accuracy mandate.
+
+You are given TWO separate documents:
+1. **QUESTIONS DOCUMENT** — contains existing questions (exam papers, question banks, test sheets)
+2. **STUDY MATERIAL DOCUMENT** — contains educational content (textbook, lecture notes, articles) that holds the answers to those questions
+
+YOUR TASK:
+- Extract questions from the QUESTIONS DOCUMENT exactly as they are (word-for-word)
+- Find the correct answer for each question STRICTLY from the STUDY MATERIAL DOCUMENT only
+- Do NOT use your own knowledge to determine answers — every correct answer MUST be found in or directly derived from the study material text
+- If a question's answer cannot be found in the study material, still include the question but mark explanation as "Answer not found in provided study material" and make your best guess based solely on the material content
+- You MAY generate 4 MCQ answer options yourself (including plausible distractors), but the correct option MUST come from the study material
+- Provide an explanation that quotes or references the relevant part of the study material where the answer was found
+
+ACCURACY RULES:
+- The correct answer MUST be sourced from the study material document, NOT from your training data
+- When creating wrong options (distractors), make them plausible but clearly incorrect based on the study material
+- If the questions document already provides answer options, preserve them but verify the correct answer against the study material
+- Include a brief quote or reference from the study material in the explanation to prove the answer's source
+
+Return ONLY valid JSON (no markdown, no code fences) as an array of question objects:
+[
+  {{
+    "question_text": "The exact question from the questions document",
+    "question_type": "MCQ",
+    "options": [
+      {{"text": "Option A", "is_correct": false}},
+      {{"text": "Option B", "is_correct": true}},
+      {{"text": "Option C", "is_correct": false}},
+      {{"text": "Option D", "is_correct": false}}
+    ],
+    "explanation": "According to the study material: [quote or reference from study material]. This confirms that the correct answer is Option B."
+  }}
+]
+
+Rules:
+- All questions must be MCQ (multiple choice) with exactly 4 options and exactly 1 correct answer
+- question_type must always be "MCQ"
+- Extract up to {num_questions} questions from the questions document
+- NEVER invent answers from your own knowledge — answers must come from the study material
+
+===== QUESTIONS DOCUMENT =====
+{questions_text}
+
+===== STUDY MATERIAL DOCUMENT =====
+"""
+
 
 def _clean_json_response(text: str) -> str:
     """Strip markdown code fences and whitespace from Gemini response."""
@@ -255,4 +302,81 @@ async def generate_quiz_questions(text: str, num_questions: int = 10) -> list:
         return []
     except Exception as e:
         logger.error(f"Gemini quiz generation failed: {e}")
+        raise
+
+
+async def generate_quiz_from_questions_and_material(
+    questions_text: str, material_text: str, num_questions: int = 10
+) -> list:
+    """
+    Scenario 3: Generate quiz by taking questions from a questions file
+    and finding answers strictly from the study material file.
+    Returns list of: { question_text, question_type, options, explanation }
+    """
+    if not settings.AI_API_KEY:
+        raise ValueError("AI_API_KEY is not configured")
+
+    max_len = settings.MAX_TEXT_LENGTH
+    # Split the budget between questions and material text
+    questions_max = max_len // 3  # ~1/3 for questions
+    material_max = max_len - questions_max  # ~2/3 for material (answers need more context)
+
+    truncated_questions = questions_text[:questions_max] if len(questions_text) > questions_max else questions_text
+    truncated_material = material_text[:material_max] if len(material_text) > material_max else material_text
+
+    prompt = (
+        QUESTIONS_WITH_MATERIAL_PROMPT
+        .replace("{num_questions}", str(num_questions))
+        .replace("{questions_text}", truncated_questions)
+        + truncated_material
+    )
+
+    logger.info(
+        f"Generating quiz from questions ({len(truncated_questions)} chars) "
+        f"+ material ({len(truncated_material)} chars)"
+    )
+
+    try:
+        raw = await _call_gemini_with_fallback(
+            prompt, temperature=0.3, max_output_tokens=min(65536, max(4096, num_questions * 250))
+        )
+        cleaned = _clean_json_response(raw)
+        questions = json.loads(cleaned)
+
+        if not isinstance(questions, list):
+            raise ValueError("Expected a JSON array of questions")
+
+        # Validate and normalize each question
+        validated = []
+        for q in questions:
+            if not q.get("question_text"):
+                continue
+
+            validated_q = {
+                "question_text": q["question_text"],
+                "question_type": "MCQ",
+                "options": q.get("options", []),
+                "explanation": q.get("explanation", ""),
+            }
+
+            if validated_q["options"]:
+                validated_q["options"] = [
+                    {
+                        "text": str(opt.get("text", "")),
+                        "is_correct": bool(opt.get("is_correct", False)),
+                    }
+                    for opt in validated_q["options"]
+                    if opt.get("text")
+                ]
+
+            validated.append(validated_q)
+
+        logger.info(f"Generated {len(validated)} valid quiz questions from questions+material")
+        return validated
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse Gemini quiz response as JSON: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"Gemini quiz generation (questions+material) failed: {e}")
         raise

@@ -8,6 +8,9 @@ export interface MaterialProcessingJobData {
     originalName: string;
     numQuestions?: number;
     uploadedById?: string;
+    mode?: 'standard' | 'questions_with_material';
+    questionsFilePath?: string;
+    questionsFileType?: string;
 }
 export declare class MaterialProcessingProcessor extends WorkerHost {
     private prisma;

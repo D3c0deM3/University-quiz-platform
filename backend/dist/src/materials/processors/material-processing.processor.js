@@ -23,23 +23,31 @@ let MaterialProcessingProcessor = MaterialProcessingProcessor_1 = class Material
         this.prisma = prisma;
     }
     async process(job) {
-        const { materialId, filePath, fileType, originalName, numQuestions, uploadedById } = job.data;
-        this.logger.log(`Processing material ${materialId} (${originalName})`);
+        const { materialId, filePath, fileType, originalName, numQuestions, uploadedById, mode, questionsFilePath, questionsFileType } = job.data;
+        this.logger.log(`Processing material ${materialId} (${originalName}) [mode: ${mode || 'standard'}]`);
         try {
             await this.prisma.material.update({
                 where: { id: materialId },
                 data: { status: client_1.MaterialStatus.PROCESSING },
             });
             const pythonUrl = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
-            const response = await fetch(`${pythonUrl}/process/material`, {
+            const endpoint = mode === 'questions_with_material'
+                ? `${pythonUrl}/process/questions-with-material`
+                : `${pythonUrl}/process/material`;
+            const requestBody = {
+                material_id: materialId,
+                file_path: filePath,
+                file_type: fileType,
+                num_questions: numQuestions || 10,
+            };
+            if (mode === 'questions_with_material' && questionsFilePath && questionsFileType) {
+                requestBody.questions_file_path = questionsFilePath;
+                requestBody.questions_file_type = questionsFileType;
+            }
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    material_id: materialId,
-                    file_path: filePath,
-                    file_type: fileType,
-                    num_questions: numQuestions || 10,
-                }),
+                body: JSON.stringify(requestBody),
             });
             if (!response.ok) {
                 const errorText = await response.text();

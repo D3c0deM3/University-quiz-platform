@@ -168,6 +168,16 @@ export const materialsApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  uploadWithQuestions: (questionsFile: File, materialFile: File, subjectId: string, numQuestions: number = 10) => {
+    const form = new FormData();
+    form.append('questionsFile', questionsFile);
+    form.append('materialFile', materialFile);
+    form.append('subjectId', subjectId);
+    form.append('numQuestions', String(numQuestions));
+    return api.post('/materials/upload-with-questions', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   delete: (id: string) => api.delete(`/materials/${id}`),
   getMetadata: (id: string) => api.get(`/materials/${id}/metadata`),
   updateMetadata: (id: string, data: Record<string, unknown>) =>
