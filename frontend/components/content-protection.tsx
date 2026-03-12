@@ -30,22 +30,9 @@ const PROTECTED_PATH_PREFIXES = [
   '/search',
   '/quiz-history',
 ];
-const MOBILE_BLOCK_PATH_PREFIXES = [
-  '/quizzes',
-  '/materials',
-  '/questions',
-  '/search',
-  '/quiz-history',
-];
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
-
-function isMobileBlockedPath(pathname: string): boolean {
-  return MOBILE_BLOCK_PATH_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
 }
 
 function isMobileDevice(): boolean {
@@ -105,18 +92,6 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
 
     return () => clearInterval(interval);
   }, [isProtected, protectAndRedirect]);
-
-  // On mobile devices, protected routes are blocked entirely to reduce
-  // screenshot capture risk that browsers cannot fully prevent.
-  useEffect(() => {
-    if (!isProtected || !isMobileBlockedPath(pathname)) return;
-    if (!isMobileDevice()) return;
-    showOverlay();
-    if (!redirectingRef.current) {
-      redirectingRef.current = true;
-      router.replace('/dashboard');
-    }
-  }, [isProtected, pathname, showOverlay, router]);
 
   // ── Block keyboard shortcuts (keydown + keyup for Linux compat) ──
   const handleKey = useCallback(
@@ -190,6 +165,7 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
   // Visibility change — tab switch or minimize
   const handleVisibilityChange = useCallback(() => {
     if (!isProtected) return;
+    if (isMobileDevice()) return;
     if (document.hidden) {
       protectAndRedirect();
     }
@@ -198,6 +174,7 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
   // Window blur
   const handleBlur = useCallback(() => {
     if (!isProtected) return;
+    if (isMobileDevice()) return;
     protectAndRedirect();
   }, [isProtected, protectAndRedirect]);
 
