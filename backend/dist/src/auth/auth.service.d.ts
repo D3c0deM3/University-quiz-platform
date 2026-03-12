@@ -16,6 +16,12 @@ export declare class AuthService {
     private telegramService;
     constructor(prisma: PrismaService, jwtService: JwtService, configService: ConfigService, telegramService: TelegramService);
     private hashToken;
+    private isMissingBlockedDevicesTable;
+    private normalizeUserAgent;
+    private isAutomatedUserAgent;
+    private getRelaxedDeviceSignature;
+    private assertDeviceNotBlocked;
+    private enforceRecentDeviceLimit;
     private generateTokens;
     private revokeAllUserSessions;
     private createSession;

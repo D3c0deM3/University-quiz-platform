@@ -449,5 +449,42 @@ export declare class MaterialsService {
         subjectId: string;
         uploadedById: string;
     }>;
+    listStoredFiles(page?: number, limit?: number, search?: string): Promise<{
+        data: {
+            name: string;
+            relativePath: string;
+            size: number;
+            modifiedAt: Date;
+            material: {
+                id: string;
+                originalName: string;
+                status: import("@prisma/client").$Enums.MaterialStatus;
+                createdAt: Date;
+                subject: {
+                    id: string;
+                    name: string;
+                };
+            } | null;
+        }[];
+        meta: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+        };
+    }>;
+    getStoredFileForDownload(relativePath: string): Promise<{
+        absolutePath: string;
+        fileName: string;
+    }>;
+    deleteStoredFile(relativePath: string): Promise<{
+        message: string;
+        materialDeleted: boolean;
+    }>;
+    private collectStoredFiles;
+    private resolveManagedFilePath;
+    private toRelativeMaterialPath;
+    private resolveMaterialFilePath;
+    private normalizeRelativePath;
     private getProgressByStatus;
 }

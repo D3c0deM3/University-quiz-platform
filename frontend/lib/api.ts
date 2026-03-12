@@ -200,6 +200,15 @@ export const materialsApi = {
     api.put(`/materials/quiz-questions/${questionId}`, data),
   deleteQuestion: (questionId: string) =>
     api.delete(`/materials/quiz-questions/${questionId}`),
+  listStoredFiles: (params: { page?: number; limit?: number; search?: string }) =>
+    api.get('/materials/admin/files', { params }),
+  downloadStoredFile: (path: string) =>
+    api.get('/materials/admin/files/download', {
+      params: { path },
+      responseType: 'blob',
+    }),
+  deleteStoredFile: (path: string) =>
+    api.delete('/materials/admin/files', { data: { path } }),
 };
 
 // ─── Search ───────────────────────────────────────────
@@ -240,6 +249,15 @@ export const usersApi = {
   update: (id: string, data: Record<string, unknown>) => api.put(`/users/${id}`, data),
   delete: (id: string) => api.delete(`/users/${id}`),
   assignRole: (id: string, role: string) => api.patch(`/users/${id}/role`, { role }),
+  suspicious: (params: { page?: number; limit?: number; search?: string }) =>
+    api.get('/users/suspicious', { params }),
+  devices: (id: string) => api.get(`/users/${id}/devices`),
+  blockUser: (id: string, reason?: string) => api.patch(`/users/${id}/block`, { reason }),
+  unblockUser: (id: string) => api.patch(`/users/${id}/unblock`),
+  blockDevice: (id: string, fingerprintHash: string, reason?: string) =>
+    api.post(`/users/${id}/devices/block`, { fingerprintHash, reason }),
+  unblockDevice: (id: string, fingerprintHash: string) =>
+    api.post(`/users/${id}/devices/unblock`, { fingerprintHash }),
 };
 
 // ─── Subscriptions ────────────────────────────────────

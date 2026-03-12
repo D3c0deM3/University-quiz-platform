@@ -12,6 +12,9 @@ export interface JwtPayload {
   sessionId?: string;
 }
 
+const ACCOUNT_BLOCKED_MESSAGE =
+  'Because suspicious activity was detected on your account, it has been blocked. If you have any inquiries about your blocking, please contact the admins.';
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
@@ -35,8 +38,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { id: payload.sub },
     });
 
-    if (!user || !user.isActive) {
-      throw new UnauthorizedException('User not found or inactive');
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException(ACCOUNT_BLOCKED_MESSAGE);
     }
 
     // Validate that the session is still active (if sessionId is in the token)

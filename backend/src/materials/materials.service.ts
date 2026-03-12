@@ -4,6 +4,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { promises as fs } from 'fs';
+import { basename, isAbsolute, join, relative, resolve } from 'path';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MaterialStatus, DifficultyLevel, QuestionType, SubscriptionStatus } from '@prisma/client';
 import { UpdateMetadataDto } from './dto/update-metadata.dto.js';
@@ -20,6 +22,10 @@ const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/jpg',
 ];
+const uploadDir = process.env.UPLOAD_DIR || '../uploads';
+const resolvedUploadDir = isAbsolute(uploadDir)
+  ? uploadDir
+  : join(process.cwd(), uploadDir);
 
 @Injectable()
 export class MaterialsService {
@@ -262,6 +268,10 @@ export class MaterialsService {
     if (!material) {
       throw new NotFoundException('Material not found');
     }
+
+    const filePath = this.resolveMaterialFilePath(material.filePath, material.fileName);
+    await fs.unlink(filePath).catch(() => undefined);
+
     await this.prisma.material.delete({ where: { id } });
     return { message: 'Material deleted successfully' };
   }
@@ -610,6 +620,212 @@ export class MaterialsService {
       },
       include: { metadata: true },
     });
+  }
+
+  async listStoredFiles(page = 1, limit = 20, search?: string) {
+    const files = await this.collectStoredFiles(resolvedUploadDir);
+    const normalizedSearch = search?.trim().toLowerCase();
+
+    const filtered = normalizedSearch
+      ? files.filter((file) =>
+          file.relativePath.toLowerCase().includes(normalizedSearch),
+        )
+      : files;
+
+    const sorted = filtered.sort(
+      (a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime(),
+    );
+
+    const materials = await this.prisma.material.findMany({
+      select: {
+        id: true,
+        fileName: true,
+        originalName: true,
+        filePath: true,
+        status: true,
+        createdAt: true,
+        subject: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    const materialByPath = new Map<string, (typeof materials)[number]>();
+    for (const material of materials) {
+      const normalizedPath = this.normalizeRelativePath(
+        this.toRelativeMaterialPath(material.filePath, material.fileName),
+      );
+      materialByPath.set(normalizedPath, material);
+      materialByPath.set(this.normalizeRelativePath(material.fileName), material);
+    }
+
+    const start = (page - 1) * limit;
+    const paged = sorted.slice(start, start + limit).map((file) => {
+      const material =
+        materialByPath.get(this.normalizeRelativePath(file.relativePath)) ||
+        materialByPath.get(this.normalizeRelativePath(basename(file.relativePath)));
+
+      return {
+        name: basename(file.relativePath),
+        relativePath: file.relativePath,
+        size: file.size,
+        modifiedAt: file.modifiedAt,
+        material: material
+          ? {
+              id: material.id,
+              originalName: material.originalName,
+              status: material.status,
+              createdAt: material.createdAt,
+              subject: material.subject,
+            }
+          : null,
+      };
+    });
+
+    return {
+      data: paged,
+      meta: {
+        total: sorted.length,
+        page,
+        limit,
+        totalPages: Math.ceil(sorted.length / limit),
+      },
+    };
+  }
+
+  async getStoredFileForDownload(relativePath: string) {
+    if (!relativePath?.trim()) {
+      throw new BadRequestException('path is required');
+    }
+
+    const { absolutePath, normalizedRelativePath } =
+      this.resolveManagedFilePath(relativePath);
+    const stat = await fs.stat(absolutePath).catch(() => null);
+    if (!stat || !stat.isFile()) {
+      throw new NotFoundException('File not found');
+    }
+
+    return {
+      absolutePath,
+      fileName: basename(normalizedRelativePath),
+    };
+  }
+
+  async deleteStoredFile(relativePath: string) {
+    if (!relativePath?.trim()) {
+      throw new BadRequestException('path is required');
+    }
+
+    const { absolutePath, normalizedRelativePath } =
+      this.resolveManagedFilePath(relativePath);
+    const stat = await fs.stat(absolutePath).catch(() => null);
+    if (!stat || !stat.isFile()) {
+      throw new NotFoundException('File not found');
+    }
+
+    const fileName = basename(normalizedRelativePath);
+    const material = await this.prisma.material.findFirst({
+      where: {
+        OR: [
+          { fileName },
+          { filePath: normalizedRelativePath },
+          { filePath: absolutePath },
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (material) {
+      await this.prisma.material.delete({ where: { id: material.id } });
+    }
+
+    await fs.unlink(absolutePath);
+
+    return {
+      message: 'File deleted successfully',
+      materialDeleted: !!material,
+    };
+  }
+
+  private async collectStoredFiles(dirPath: string): Promise<Array<{
+    relativePath: string;
+    absolutePath: string;
+    size: number;
+    modifiedAt: Date;
+  }>> {
+    const entries = await fs
+      .readdir(dirPath, { withFileTypes: true })
+      .catch((err: NodeJS.ErrnoException) => {
+        if (err.code === 'ENOENT') return [];
+        throw err;
+      });
+    const files: Array<{
+      relativePath: string;
+      absolutePath: string;
+      size: number;
+      modifiedAt: Date;
+    }> = [];
+
+    for (const entry of entries) {
+      const absolutePath = join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        const nested = await this.collectStoredFiles(absolutePath);
+        files.push(...nested);
+        continue;
+      }
+
+      if (!entry.isFile()) continue;
+
+      const stat = await fs.stat(absolutePath);
+      files.push({
+        relativePath: this.normalizeRelativePath(
+          relative(resolvedUploadDir, absolutePath),
+        ),
+        absolutePath,
+        size: stat.size,
+        modifiedAt: stat.mtime,
+      });
+    }
+
+    return files;
+  }
+
+  private resolveManagedFilePath(relativePath: string) {
+    const normalizedRelativePath = this.normalizeRelativePath(relativePath);
+    const absolutePath = resolve(resolvedUploadDir, normalizedRelativePath);
+    const uploadRoot = resolve(resolvedUploadDir);
+    const normalizedAbsolute = absolutePath.replace(/\\/g, '/');
+    const normalizedRoot = uploadRoot.replace(/\\/g, '/');
+    const uploadRootWithSep = `${normalizedRoot}/`;
+
+    if (
+      normalizedAbsolute !== normalizedRoot &&
+      !normalizedAbsolute.startsWith(uploadRootWithSep)
+    ) {
+      throw new BadRequestException('Invalid file path');
+    }
+
+    return { absolutePath, normalizedRelativePath };
+  }
+
+  private toRelativeMaterialPath(filePath: string, fileName: string) {
+    if (!filePath) return fileName;
+    if (isAbsolute(filePath)) {
+      return relative(resolvedUploadDir, filePath);
+    }
+    return filePath;
+  }
+
+  private resolveMaterialFilePath(filePath: string, fileName: string) {
+    if (isAbsolute(filePath)) return filePath;
+    return resolve(resolvedUploadDir, filePath || fileName);
+  }
+
+  private normalizeRelativePath(pathValue: string) {
+    return pathValue.replace(/\\/g, '/').replace(/^\/+/, '');
   }
 
   private getProgressByStatus(status: MaterialStatus): { progress: number; stage: string } {

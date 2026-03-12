@@ -13,7 +13,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { RegisterDto, LoginDto, RegisterWithOtpDto } from './dto/index.js';
 import { TelegramService } from '../telegram/telegram.service.js';
 import type { JwtPayload } from './strategies/jwt.strategy.js';
-import { SessionStatus, SessionEventType } from '@prisma/client';
+import { SessionStatus, SessionEventType, Role } from '@prisma/client';
 
 export interface SessionContext {
   ip?: string;
@@ -21,6 +21,13 @@ export interface SessionContext {
   fingerprint?: string;
   deviceName?: string;
 }
+
+const MAX_ALLOWED_RECENT_DEVICES = 2;
+const DEVICE_WINDOW_DAYS = 7;
+const ACCOUNT_BLOCKED_MESSAGE =
+  'Because suspicious activity was detected on your account, it has been blocked. If you have any inquiries about your blocking, please contact the admins.';
+const BLOCKED_DEVICE_MESSAGE =
+  'This device has been blocked for this account by an administrator.';
 
 @Injectable()
 export class AuthService {
@@ -35,6 +42,145 @@ export class AuthService {
 
   private hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private isMissingBlockedDevicesTable(error: unknown): boolean {
+    if (!error || typeof error !== 'object') return false;
+    const e = error as { code?: string; meta?: { modelName?: string } };
+    return e.code === 'P2021' && e.meta?.modelName === 'BlockedDevice';
+  }
+
+  private normalizeUserAgent(userAgent?: string | null) {
+    if (!userAgent) return '';
+    return userAgent
+      .toLowerCase()
+      .replace(/[0-9._]+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 120);
+  }
+
+  private isAutomatedUserAgent(userAgent?: string | null) {
+    if (!userAgent) return false;
+    return /(curl|postmanruntime|insomnia|httpie|python-requests|wget|go-http-client|node-fetch)/i.test(
+      userAgent,
+    );
+  }
+
+  private getRelaxedDeviceSignature(session: {
+    fingerprintHash: string | null;
+    deviceName: string | null;
+    userAgent: string | null;
+    ipFirstSeen: string | null;
+    ipLastSeen: string | null;
+  }) {
+    const deviceName = (session.deviceName || '').trim().toLowerCase();
+    const normalizedAgent = this.normalizeUserAgent(session.userAgent);
+
+    if (deviceName) {
+      return `sig:${deviceName}`;
+    }
+
+    if (normalizedAgent) {
+      return `ua:${normalizedAgent}`;
+    }
+
+    if (session.fingerprintHash) {
+      return `fp:${session.fingerprintHash}`;
+    }
+
+    return `legacy:${session.ipFirstSeen || session.ipLastSeen || 'unknown'}`;
+  }
+
+  private async assertDeviceNotBlocked(userId: string, fingerprint?: string) {
+    if (!fingerprint) return;
+
+    const fingerprintHash = this.hashToken(fingerprint);
+    let blockedDevice: { id: string } | null = null;
+    try {
+      blockedDevice = await this.prisma.blockedDevice.findFirst({
+        where: {
+          userId,
+          fingerprintHash,
+          isBlocked: true,
+        },
+        select: { id: true },
+      });
+    } catch (error) {
+      if (this.isMissingBlockedDevicesTable(error)) {
+        return;
+      }
+      throw error;
+    }
+
+    if (blockedDevice) {
+      throw new ForbiddenException(BLOCKED_DEVICE_MESSAGE);
+    }
+  }
+
+  private async enforceRecentDeviceLimit(userId: string, sessionId: string) {
+    if (this.configService.get<string>('NODE_ENV') !== 'production') {
+      return;
+    }
+
+    const windowStart = new Date(
+      Date.now() - DEVICE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+    );
+
+    const recentSessions = await this.prisma.userSession.findMany({
+      where: {
+        userId,
+        createdAt: { gte: windowStart },
+      },
+      select: {
+        fingerprintHash: true,
+        deviceName: true,
+        userAgent: true,
+        ipFirstSeen: true,
+        ipLastSeen: true,
+      },
+    });
+
+    const countableRecentSessions = recentSessions.filter(
+      (session) => !this.isAutomatedUserAgent(session.userAgent),
+    );
+
+    if (countableRecentSessions.length === 0) {
+      return;
+    }
+
+    const distinctSignatures = new Set(
+      countableRecentSessions.map((session) =>
+        this.getRelaxedDeviceSignature(session),
+      ),
+    );
+
+    if (distinctSignatures.size <= MAX_ALLOWED_RECENT_DEVICES) {
+      return;
+    }
+
+    await this.prisma.sessionEvent.create({
+      data: {
+        sessionId,
+        eventType: SessionEventType.DEVICE_LIMIT_EXCEEDED,
+        metadata: {
+          distinctRecentDevices: distinctSignatures.size,
+          rawRecentSessions: recentSessions.length,
+          countableRecentSessions: countableRecentSessions.length,
+          maxAllowedDevices: MAX_ALLOWED_RECENT_DEVICES,
+          windowDays: DEVICE_WINDOW_DAYS,
+        },
+      },
+    });
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+    });
+
+    await this.revokeAllUserSessions(userId);
+
+    throw new ForbiddenException(ACCOUNT_BLOCKED_MESSAGE);
   }
 
   private async generateTokens(payload: JwtPayload) {
@@ -112,6 +258,10 @@ export class AuthService {
         status: SessionStatus.ACTIVE,
       },
     });
+
+    if (user.role !== Role.ADMIN) {
+      await this.enforceRecentDeviceLimit(user.id, session.id);
+    }
 
     // Now generate tokens with sessionId embedded
     const tokens = await this.generateTokens({
@@ -274,7 +424,14 @@ export class AuthService {
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('Account is deactivated');
+      if (user.role === Role.ADMIN) {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { isActive: true },
+        });
+      } else {
+        throw new UnauthorizedException(ACCOUNT_BLOCKED_MESSAGE);
+      }
     }
 
     const passwordValid = await bcrypt.compare(dto.password, user.password);
@@ -282,6 +439,8 @@ export class AuthService {
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    await this.assertDeviceNotBlocked(user.id, ctx.fingerprint);
 
     // Check if there are already active sessions — if so, we forcefully
     // terminate them (one-device-at-a-time policy).
@@ -324,6 +483,17 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
+    if (!user.isActive) {
+      if (user.role === Role.ADMIN) {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { isActive: true },
+        });
+      } else {
+        throw new UnauthorizedException(ACCOUNT_BLOCKED_MESSAGE);
+      }
+    }
+
     return user;
   }
 
@@ -344,9 +514,15 @@ export class AuthService {
       where: { id: payload.sub },
     });
 
-    if (!user || !user.isActive) {
-      throw new UnauthorizedException('User not found or inactive');
+    if (!user) {
+      throw new UnauthorizedException('User not found');
     }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException(ACCOUNT_BLOCKED_MESSAGE);
+    }
+
+    await this.assertDeviceNotBlocked(user.id, ctx.fingerprint);
 
     // Find the session by the hashed refresh token
     const oldHash = this.hashToken(oldRefreshToken);
@@ -379,6 +555,31 @@ export class AuthService {
       }
 
       throw new UnauthorizedException('Session invalid. All sessions revoked for security. Please log in again.');
+    }
+
+    if (session.fingerprintHash) {
+      let blockedDevice: { id: string } | null = null;
+      try {
+        blockedDevice = await this.prisma.blockedDevice.findFirst({
+          where: {
+            userId: user.id,
+            fingerprintHash: session.fingerprintHash,
+            isBlocked: true,
+          },
+          select: { id: true },
+        });
+      } catch (error) {
+        if (!this.isMissingBlockedDevicesTable(error)) {
+          throw error;
+        }
+      }
+      if (blockedDevice) {
+        await this.prisma.userSession.update({
+          where: { id: session.id },
+          data: { status: SessionStatus.REVOKED, revokedAt: new Date() },
+        });
+        throw new ForbiddenException(BLOCKED_DEVICE_MESSAGE);
+      }
     }
 
     // Fingerprint risk check: if a fingerprint was stored and the new one differs significantly

@@ -15,6 +15,7 @@ const passport_1 = require("@nestjs/passport");
 const passport_jwt_1 = require("passport-jwt");
 const config_1 = require("@nestjs/config");
 const prisma_service_js_1 = require("../../prisma/prisma.service.js");
+const ACCOUNT_BLOCKED_MESSAGE = 'Because suspicious activity was detected on your account, it has been blocked. If you have any inquiries about your blocking, please contact the admins.';
 let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
     configService;
     prisma;
@@ -36,8 +37,11 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         const user = await this.prisma.user.findUnique({
             where: { id: payload.sub },
         });
-        if (!user || !user.isActive) {
-            throw new common_1.UnauthorizedException('User not found or inactive');
+        if (!user) {
+            throw new common_1.UnauthorizedException('User not found');
+        }
+        if (!user.isActive) {
+            throw new common_1.UnauthorizedException(ACCOUNT_BLOCKED_MESSAGE);
         }
         if (payload.sessionId) {
             const session = await this.prisma.userSession.findFirst({

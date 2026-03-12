@@ -51,6 +51,10 @@ const crypto = __importStar(require("crypto"));
 const prisma_service_js_1 = require("../prisma/prisma.service.js");
 const telegram_service_js_1 = require("../telegram/telegram.service.js");
 const client_1 = require("@prisma/client");
+const MAX_ALLOWED_RECENT_DEVICES = 2;
+const DEVICE_WINDOW_DAYS = 7;
+const ACCOUNT_BLOCKED_MESSAGE = 'Because suspicious activity was detected on your account, it has been blocked. If you have any inquiries about your blocking, please contact the admins.';
+const BLOCKED_DEVICE_MESSAGE = 'This device has been blocked for this account by an administrator.';
 let AuthService = class AuthService {
     prisma;
     jwtService;
@@ -64,6 +68,112 @@ let AuthService = class AuthService {
     }
     hashToken(token) {
         return crypto.createHash('sha256').update(token).digest('hex');
+    }
+    isMissingBlockedDevicesTable(error) {
+        if (!error || typeof error !== 'object')
+            return false;
+        const e = error;
+        return e.code === 'P2021' && e.meta?.modelName === 'BlockedDevice';
+    }
+    normalizeUserAgent(userAgent) {
+        if (!userAgent)
+            return '';
+        return userAgent
+            .toLowerCase()
+            .replace(/[0-9._]+/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 120);
+    }
+    isAutomatedUserAgent(userAgent) {
+        if (!userAgent)
+            return false;
+        return /(curl|postmanruntime|insomnia|httpie|python-requests|wget|go-http-client|node-fetch)/i.test(userAgent);
+    }
+    getRelaxedDeviceSignature(session) {
+        const deviceName = (session.deviceName || '').trim().toLowerCase();
+        const normalizedAgent = this.normalizeUserAgent(session.userAgent);
+        if (deviceName) {
+            return `sig:${deviceName}`;
+        }
+        if (normalizedAgent) {
+            return `ua:${normalizedAgent}`;
+        }
+        if (session.fingerprintHash) {
+            return `fp:${session.fingerprintHash}`;
+        }
+        return `legacy:${session.ipFirstSeen || session.ipLastSeen || 'unknown'}`;
+    }
+    async assertDeviceNotBlocked(userId, fingerprint) {
+        if (!fingerprint)
+            return;
+        const fingerprintHash = this.hashToken(fingerprint);
+        let blockedDevice = null;
+        try {
+            blockedDevice = await this.prisma.blockedDevice.findFirst({
+                where: {
+                    userId,
+                    fingerprintHash,
+                    isBlocked: true,
+                },
+                select: { id: true },
+            });
+        }
+        catch (error) {
+            if (this.isMissingBlockedDevicesTable(error)) {
+                return;
+            }
+            throw error;
+        }
+        if (blockedDevice) {
+            throw new common_1.ForbiddenException(BLOCKED_DEVICE_MESSAGE);
+        }
+    }
+    async enforceRecentDeviceLimit(userId, sessionId) {
+        if (this.configService.get('NODE_ENV') !== 'production') {
+            return;
+        }
+        const windowStart = new Date(Date.now() - DEVICE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+        const recentSessions = await this.prisma.userSession.findMany({
+            where: {
+                userId,
+                createdAt: { gte: windowStart },
+            },
+            select: {
+                fingerprintHash: true,
+                deviceName: true,
+                userAgent: true,
+                ipFirstSeen: true,
+                ipLastSeen: true,
+            },
+        });
+        const countableRecentSessions = recentSessions.filter((session) => !this.isAutomatedUserAgent(session.userAgent));
+        if (countableRecentSessions.length === 0) {
+            return;
+        }
+        const distinctSignatures = new Set(countableRecentSessions.map((session) => this.getRelaxedDeviceSignature(session)));
+        if (distinctSignatures.size <= MAX_ALLOWED_RECENT_DEVICES) {
+            return;
+        }
+        await this.prisma.sessionEvent.create({
+            data: {
+                sessionId,
+                eventType: client_1.SessionEventType.DEVICE_LIMIT_EXCEEDED,
+                metadata: {
+                    distinctRecentDevices: distinctSignatures.size,
+                    rawRecentSessions: recentSessions.length,
+                    countableRecentSessions: countableRecentSessions.length,
+                    maxAllowedDevices: MAX_ALLOWED_RECENT_DEVICES,
+                    windowDays: DEVICE_WINDOW_DAYS,
+                },
+            },
+        });
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { isActive: false },
+        });
+        await this.revokeAllUserSessions(userId);
+        throw new common_1.ForbiddenException(ACCOUNT_BLOCKED_MESSAGE);
     }
     async generateTokens(payload) {
         const [accessToken, refreshToken] = await Promise.all([
@@ -120,6 +230,9 @@ let AuthService = class AuthService {
                 status: client_1.SessionStatus.ACTIVE,
             },
         });
+        if (user.role !== client_1.Role.ADMIN) {
+            await this.enforceRecentDeviceLimit(user.id, session.id);
+        }
         const tokens = await this.generateTokens({
             sub: user.id,
             phone: user.phone,
@@ -239,12 +352,21 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
         if (!user.isActive) {
-            throw new common_1.UnauthorizedException('Account is deactivated');
+            if (user.role === client_1.Role.ADMIN) {
+                await this.prisma.user.update({
+                    where: { id: user.id },
+                    data: { isActive: true },
+                });
+            }
+            else {
+                throw new common_1.UnauthorizedException(ACCOUNT_BLOCKED_MESSAGE);
+            }
         }
         const passwordValid = await bcrypt.compare(dto.password, user.password);
         if (!passwordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
+        await this.assertDeviceNotBlocked(user.id, ctx.fingerprint);
         const session = await this.createSession({ id: user.id, phone: user.phone, role: user.role }, ctx);
         return {
             user: {
@@ -275,6 +397,17 @@ let AuthService = class AuthService {
         if (!user) {
             throw new common_1.UnauthorizedException('User not found');
         }
+        if (!user.isActive) {
+            if (user.role === client_1.Role.ADMIN) {
+                await this.prisma.user.update({
+                    where: { id: user.id },
+                    data: { isActive: true },
+                });
+            }
+            else {
+                throw new common_1.UnauthorizedException(ACCOUNT_BLOCKED_MESSAGE);
+            }
+        }
         return user;
     }
     async refreshToken(oldRefreshToken, ctx = {}) {
@@ -290,9 +423,13 @@ let AuthService = class AuthService {
         const user = await this.prisma.user.findUnique({
             where: { id: payload.sub },
         });
-        if (!user || !user.isActive) {
-            throw new common_1.UnauthorizedException('User not found or inactive');
+        if (!user) {
+            throw new common_1.UnauthorizedException('User not found');
         }
+        if (!user.isActive) {
+            throw new common_1.UnauthorizedException(ACCOUNT_BLOCKED_MESSAGE);
+        }
+        await this.assertDeviceNotBlocked(user.id, ctx.fingerprint);
         const oldHash = this.hashToken(oldRefreshToken);
         const session = await this.prisma.userSession.findFirst({
             where: {
@@ -318,6 +455,31 @@ let AuthService = class AuthService {
                 });
             }
             throw new common_1.UnauthorizedException('Session invalid. All sessions revoked for security. Please log in again.');
+        }
+        if (session.fingerprintHash) {
+            let blockedDevice = null;
+            try {
+                blockedDevice = await this.prisma.blockedDevice.findFirst({
+                    where: {
+                        userId: user.id,
+                        fingerprintHash: session.fingerprintHash,
+                        isBlocked: true,
+                    },
+                    select: { id: true },
+                });
+            }
+            catch (error) {
+                if (!this.isMissingBlockedDevicesTable(error)) {
+                    throw error;
+                }
+            }
+            if (blockedDevice) {
+                await this.prisma.userSession.update({
+                    where: { id: session.id },
+                    data: { status: client_1.SessionStatus.REVOKED, revokedAt: new Date() },
+                });
+                throw new common_1.ForbiddenException(BLOCKED_DEVICE_MESSAGE);
+            }
         }
         if (session.fingerprintHash && ctx.fingerprint) {
             const newFpHash = this.hashToken(ctx.fingerprint);

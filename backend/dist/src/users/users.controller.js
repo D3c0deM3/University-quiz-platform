@@ -30,6 +30,24 @@ let UsersController = class UsersController {
     async findAll(page, limit, role, search) {
         return this.usersService.findAll(page, limit, role, search);
     }
+    async findSuspicious(page, limit, search) {
+        return this.usersService.getSuspiciousUsers(page, limit, search);
+    }
+    async getDevices(id) {
+        return this.usersService.getUserDevices(id);
+    }
+    async blockUser(id, adminId, body) {
+        return this.usersService.blockUserAccount(id, adminId, body.reason);
+    }
+    async unblockUser(id) {
+        return this.usersService.unblockUserAccount(id);
+    }
+    async blockDevice(id, adminId, body) {
+        return this.usersService.blockDevice(id, body.fingerprintHash, adminId, body.reason);
+    }
+    async unblockDevice(id, body) {
+        return this.usersService.unblockDevice(id, body.fingerprintHash);
+    }
     async findOne(id) {
         return this.usersService.findOne(id);
     }
@@ -63,6 +81,61 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number, String, String]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('suspicious'),
+    (0, index_js_3.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Query)('page', new common_1.DefaultValuePipe(1), common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Query)('limit', new common_1.DefaultValuePipe(20), common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Query)('search')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number, String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "findSuspicious", null);
+__decorate([
+    (0, common_1.Get)(':id/devices'),
+    (0, index_js_3.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getDevices", null);
+__decorate([
+    (0, common_1.Patch)(':id/block'),
+    (0, index_js_3.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, index_js_3.CurrentUser)('id')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "blockUser", null);
+__decorate([
+    (0, common_1.Patch)(':id/unblock'),
+    (0, index_js_3.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "unblockUser", null);
+__decorate([
+    (0, common_1.Post)(':id/devices/block'),
+    (0, index_js_3.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, index_js_3.CurrentUser)('id')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "blockDevice", null);
+__decorate([
+    (0, common_1.Post)(':id/devices/unblock'),
+    (0, index_js_3.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "unblockDevice", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, index_js_3.Roles)(client_1.Role.ADMIN),

@@ -15,6 +15,7 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
 import {
   FileInterceptor,
@@ -38,6 +39,7 @@ import {
   UpdateSingleQuestionDto,
 } from './dto/quiz-question.dto.js';
 import type { MaterialProcessingJobData } from './processors/material-processing.processor.js';
+import type { Response } from 'express';
 
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
 const resolvedUploadDir = isAbsolute(uploadDir)
@@ -265,6 +267,37 @@ export class MaterialsController {
       );
     }
     return this.materialsService.findAll(page, limit, status, subjectId);
+  }
+
+  @Get('admin/files')
+  @Roles(Role.ADMIN)
+  async listStoredFiles(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+  ) {
+    return this.materialsService.listStoredFiles(page, limit, search);
+  }
+
+  @Get('admin/files/download')
+  @Roles(Role.ADMIN)
+  async downloadStoredFile(
+    @Query('path') path: string,
+    @Res() res: Response,
+  ) {
+    const file = await this.materialsService.getStoredFileForDownload(path);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=\"${encodeURIComponent(file.fileName)}\"`,
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    return res.sendFile(file.absolutePath);
+  }
+
+  @Delete('admin/files')
+  @Roles(Role.ADMIN)
+  async deleteStoredFile(@Body() body: { path: string }) {
+    return this.materialsService.deleteStoredFile(body.path);
   }
 
   @Get(':id')

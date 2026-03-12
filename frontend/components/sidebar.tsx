@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   BookOpen,
   Search,
-  ClipboardList,
   History,
   Upload,
   FileText,
@@ -22,7 +21,8 @@ import {
   ChevronRight,
   HelpCircle,
   CreditCard,
-  Globe,
+  AlertTriangle,
+  FolderKanban,
   Moon,
   Sun,
 } from 'lucide-react';
@@ -56,6 +56,8 @@ const navItems: NavItem[] = [
   { href: '/admin/upload', labelKey: 'sidebar.upload', icon: <Upload size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
   { href: '/admin/subjects', labelKey: 'sidebar.subjects2', icon: <BookOpen size={20} />, roles: ['ADMIN', 'TEACHER'], section: 'admin' },
   { href: '/admin/users', labelKey: 'sidebar.users', icon: <Users size={20} />, roles: ['ADMIN'], section: 'admin' },
+  { href: '/admin/suspicious', labelKey: 'sidebar.suspiciousUsers', icon: <AlertTriangle size={20} />, roles: ['ADMIN'], section: 'admin' },
+  { href: '/admin/files', labelKey: 'sidebar.fileManagement', icon: <FolderKanban size={20} />, roles: ['ADMIN'], section: 'admin' },
   { href: '/admin/subscriptions', labelKey: 'sidebar.subscriptions', icon: <CreditCard size={20} />, roles: ['ADMIN'], section: 'admin' },
 ];
 

@@ -30,9 +30,33 @@ const PROTECTED_PATH_PREFIXES = [
   '/search',
   '/quiz-history',
 ];
+const MOBILE_BLOCK_PATH_PREFIXES = [
+  '/quizzes',
+  '/materials',
+  '/questions',
+  '/search',
+  '/quiz-history',
+];
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+function isMobileBlockedPath(pathname: string): boolean {
+  return MOBILE_BLOCK_PATH_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix),
+  );
+}
+
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const mobileUa =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const coarsePointer =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(pointer: coarse)').matches;
+  return mobileUa || coarsePointer;
 }
 
 export function ContentProtection({ children }: { children: React.ReactNode }) {
@@ -69,6 +93,7 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
   // ── Polling: continuously check focus (catches cases events miss) ──
   useEffect(() => {
     if (!isProtected) return;
+    if (isMobileDevice()) return;
     redirectingRef.current = false;
 
     const interval = setInterval(() => {
@@ -80,6 +105,18 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
 
     return () => clearInterval(interval);
   }, [isProtected, protectAndRedirect]);
+
+  // On mobile devices, protected routes are blocked entirely to reduce
+  // screenshot capture risk that browsers cannot fully prevent.
+  useEffect(() => {
+    if (!isProtected || !isMobileBlockedPath(pathname)) return;
+    if (!isMobileDevice()) return;
+    showOverlay();
+    if (!redirectingRef.current) {
+      redirectingRef.current = true;
+      router.replace('/dashboard');
+    }
+  }, [isProtected, pathname, showOverlay, router]);
 
   // ── Block keyboard shortcuts (keydown + keyup for Linux compat) ──
   const handleKey = useCallback(
@@ -244,7 +281,7 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
           inset: 0,
           zIndex: 2147483647,
           backgroundColor: '#000',
-          pointerEvents: 'none',
+          pointerEvents: 'auto',
         }}
         aria-hidden="true"
       />

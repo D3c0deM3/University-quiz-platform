@@ -161,3 +161,47 @@ export interface QuizStats {
     bestScore: number;
   }[];
 }
+
+export interface SuspiciousUser {
+  id: string;
+  phone: string;
+  firstName: string;
+  lastName: string;
+  role: Role;
+  isActive: boolean;
+  createdAt: string;
+  deviceCount: number;
+  recentDeviceCount: number;
+  activeSessionCount: number;
+  blockedDeviceCount: number;
+  autoBlocked: boolean;
+}
+
+export interface UserDeviceInfo {
+  deviceKey: string;
+  fingerprintHash: string | null;
+  deviceName: string | null;
+  userAgent: string | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  lastIp: string | null;
+  totalSessions: number;
+  activeSessions: number;
+  blocked: boolean;
+  blockedReason: string | null;
+  blockedAt: string | null;
+}
+
+export interface StoredFileEntry {
+  name: string;
+  relativePath: string;
+  size: number;
+  modifiedAt: string;
+  material: {
+    id: string;
+    originalName: string;
+    status: MaterialStatus;
+    createdAt: string;
+    subject?: { id: string; name: string } | null;
+  } | null;
+}

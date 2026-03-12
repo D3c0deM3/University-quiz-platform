@@ -83,6 +83,7 @@ model User {
   manualQuestions    ManualQuestion[] @relation("CreatedQuestions")
   subscriptions      UserSubscription[]
   sessions           UserSession[]
+  blockedDevices     BlockedDevice[]
 
   @@map("users")
 }
@@ -362,6 +363,27 @@ model UserSession {
   @@index([refreshTokenHash])
   @@index([userId, status])
   @@map("user_sessions")
+}
+
+// ─── Blocked Devices ───────────────────────────────────
+
+model BlockedDevice {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  fingerprintHash String    @map("fingerprint_hash")
+  deviceName      String?   @map("device_name")
+  reason          String?
+  blockedById     String?   @map("blocked_by_id")
+  blockedAt       DateTime  @default(now()) @map("blocked_at")
+  unblockedAt     DateTime? @map("unblocked_at")
+  isBlocked       Boolean   @default(true) @map("is_blocked")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fingerprintHash])
+  @@index([userId, isBlocked])
+  @@map("blocked_devices")
 }
 
 // ─── Session Events ──────────────────────────────────────

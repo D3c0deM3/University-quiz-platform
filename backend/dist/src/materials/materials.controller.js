@@ -160,6 +160,18 @@ let MaterialsController = class MaterialsController {
         }
         return this.materialsService.findAll(page, limit, status, subjectId);
     }
+    async listStoredFiles(page, limit, search) {
+        return this.materialsService.listStoredFiles(page, limit, search);
+    }
+    async downloadStoredFile(path, res) {
+        const file = await this.materialsService.getStoredFileForDownload(path);
+        res.setHeader('Content-Disposition', `attachment; filename=\"${encodeURIComponent(file.fileName)}\"`);
+        res.setHeader('Cache-Control', 'no-store');
+        return res.sendFile(file.absolutePath);
+    }
+    async deleteStoredFile(body) {
+        return this.materialsService.deleteStoredFile(body.path);
+    }
     async findOne(id, userId, role) {
         const material = await this.materialsService.findOne(id);
         if (role === client_1.Role.STUDENT && material.subjectId) {
@@ -276,6 +288,33 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], MaterialsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('admin/files'),
+    (0, index_js_2.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Query)('page', new common_1.DefaultValuePipe(1), common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Query)('limit', new common_1.DefaultValuePipe(20), common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Query)('search')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number, String]),
+    __metadata("design:returntype", Promise)
+], MaterialsController.prototype, "listStoredFiles", null);
+__decorate([
+    (0, common_1.Get)('admin/files/download'),
+    (0, index_js_2.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Query)('path')),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], MaterialsController.prototype, "downloadStoredFile", null);
+__decorate([
+    (0, common_1.Delete)('admin/files'),
+    (0, index_js_2.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], MaterialsController.prototype, "deleteStoredFile", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

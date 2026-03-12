@@ -5,6 +5,7 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service.js'
 import { UpdateMetadataDto } from './dto/update-metadata.dto.js';
 import { UpdateQuizDto } from './dto/update-quiz.dto.js';
 import { CreateQuizQuestionDto, UpdateSingleQuestionDto } from './dto/quiz-question.dto.js';
+import type { Response } from 'express';
 export declare class MaterialsController {
     private materialsService;
     private processingQueue;
@@ -111,6 +112,37 @@ export declare class MaterialsController {
             limit: number;
             totalPages: number;
         };
+    }>;
+    listStoredFiles(page: number, limit: number, search?: string): Promise<{
+        data: {
+            name: string;
+            relativePath: string;
+            size: number;
+            modifiedAt: Date;
+            material: {
+                id: string;
+                originalName: string;
+                status: import("@prisma/client").$Enums.MaterialStatus;
+                createdAt: Date;
+                subject: {
+                    id: string;
+                    name: string;
+                };
+            } | null;
+        }[];
+        meta: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+        };
+    }>;
+    downloadStoredFile(path: string, res: Response): Promise<void>;
+    deleteStoredFile(body: {
+        path: string;
+    }): Promise<{
+        message: string;
+        materialDeleted: boolean;
     }>;
     findOne(id: string, userId: string, role: Role): Promise<{
         subject: {
