@@ -76,10 +76,20 @@ let QuizzesService = class QuizzesService {
         }
         return quiz;
     }
-    async startAttempt(quizId, userId) {
+    async startAttempt(quizId, userId, dto = {}) {
         const quiz = await this.prisma.quiz.findUnique({
             where: { id: quizId },
-            include: { _count: { select: { questions: true } } },
+            select: {
+                id: true,
+                isPublished: true,
+                questions: {
+                    orderBy: { orderIndex: 'asc' },
+                    select: {
+                        id: true,
+                        orderIndex: true,
+                    },
+                },
+            },
         });
         if (!quiz) {
             throw new common_1.NotFoundException('Quiz not found');
@@ -87,44 +97,70 @@ let QuizzesService = class QuizzesService {
         if (!quiz.isPublished) {
             throw new common_1.ForbiddenException('This quiz is not yet published');
         }
-        const attempt = await this.prisma.quizAttempt.create({
-            data: {
-                quizId,
-                userId,
-                totalPoints: quiz._count.questions,
-            },
-            include: {
-                quiz: {
-                    select: {
-                        id: true,
-                        title: true,
-                        questions: {
-                            orderBy: { orderIndex: 'asc' },
-                            select: {
-                                id: true,
-                                questionText: true,
-                                questionType: true,
-                                orderIndex: true,
-                                options: {
-                                    orderBy: { orderIndex: 'asc' },
-                                    select: {
-                                        id: true,
-                                        optionText: true,
-                                        orderIndex: true,
+        const selectedQuestions = this.selectQuestionsForAttempt(quiz.questions, dto);
+        const selectedQuestionIds = selectedQuestions.map((q) => q.id);
+        const attempt = await this.prisma.$transaction(async (tx) => {
+            const created = await tx.quizAttempt.create({
+                data: {
+                    quizId,
+                    userId,
+                    totalPoints: selectedQuestions.length,
+                },
+            });
+            await tx.quizAttemptAnswer.createMany({
+                data: selectedQuestionIds.map((questionId) => ({
+                    attemptId: created.id,
+                    questionId,
+                })),
+            });
+            return tx.quizAttempt.findUnique({
+                where: { id: created.id },
+                include: {
+                    quiz: {
+                        select: {
+                            id: true,
+                            title: true,
+                            questions: {
+                                where: { id: { in: selectedQuestionIds } },
+                                orderBy: { orderIndex: 'asc' },
+                                select: {
+                                    id: true,
+                                    questionText: true,
+                                    questionType: true,
+                                    orderIndex: true,
+                                    options: {
+                                        orderBy: { orderIndex: 'asc' },
+                                        select: {
+                                            id: true,
+                                            optionText: true,
+                                            orderIndex: true,
+                                        },
                                     },
                                 },
                             },
                         },
                     },
                 },
-            },
+            });
         });
+        if (!attempt) {
+            throw new common_1.NotFoundException('Quiz attempt not found');
+        }
         return attempt;
     }
     async submitAttempt(attemptId, userId, dto) {
         const attempt = await this.prisma.quizAttempt.findUnique({
             where: { id: attemptId },
             include: {
+                answers: {
+                    include: {
+                        question: {
+                            include: {
+                                options: true,
+                            },
+                        },
+                    },
+                },
                 quiz: {
                     include: {
                         questions: {
@@ -145,21 +181,46 @@ let QuizzesService = class QuizzesService {
         if (attempt.completedAt) {
             throw new common_1.BadRequestException('This attempt has already been submitted');
         }
-        const questionMap = new Map();
-        for (const q of attempt.quiz.questions) {
-            questionMap.set(q.id, q);
+        const selectedQuestionEntries = attempt.answers.length > 0
+            ? attempt.answers.map((a) => ({
+                answerId: a.id,
+                question: a.question,
+            }))
+            : attempt.quiz.questions.map((q) => ({
+                answerId: null,
+                question: q,
+            }));
+        const selectedQuestionMap = new Map(selectedQuestionEntries.map((entry) => [entry.question.id, entry]));
+        const incomingAnswerMap = new Map();
+        for (const answer of dto.answers) {
+            if (incomingAnswerMap.has(answer.questionId)) {
+                throw new common_1.BadRequestException('Duplicate answers are not allowed');
+            }
+            incomingAnswerMap.set(answer.questionId, answer);
+        }
+        for (const questionId of incomingAnswerMap.keys()) {
+            if (!selectedQuestionMap.has(questionId)) {
+                throw new common_1.BadRequestException('One or more answers contain questions outside of this quiz attempt');
+            }
         }
         let correctCount = 0;
-        const answerRecords = [];
-        for (const answer of dto.answers) {
-            const question = questionMap.get(answer.questionId);
-            if (!question)
-                continue;
+        const answerUpdates = [];
+        for (const entry of selectedQuestionEntries) {
+            const question = entry.question;
+            const answer = incomingAnswerMap.get(question.id);
+            const selectedOptionId = answer?.selectedOptionId ?? null;
+            let textAnswer = answer?.textAnswer ?? null;
             let isCorrect = null;
-            if (question.questionType === client_1.QuestionType.MCQ || question.questionType === client_1.QuestionType.TRUE_FALSE) {
-                if (answer.selectedOptionId) {
+            if (question.questionType === client_1.QuestionType.MCQ ||
+                question.questionType === client_1.QuestionType.TRUE_FALSE) {
+                if (selectedOptionId &&
+                    !question.options.some((o) => o.id === selectedOptionId)) {
+                    throw new common_1.BadRequestException('Invalid option selected for one or more questions');
+                }
+                textAnswer = null;
+                if (selectedOptionId) {
                     const correctOption = question.options.find((o) => o.isCorrect);
-                    isCorrect = correctOption?.id === answer.selectedOptionId;
+                    isCorrect = correctOption?.id === selectedOptionId;
                     if (isCorrect)
                         correctCount++;
                 }
@@ -168,26 +229,50 @@ let QuizzesService = class QuizzesService {
                 }
             }
             else if (question.questionType === client_1.QuestionType.SHORT_ANSWER) {
+                if (selectedOptionId) {
+                    throw new common_1.BadRequestException('Short-answer questions cannot include option selections');
+                }
                 isCorrect = null;
             }
-            answerRecords.push({
-                attemptId,
-                questionId: answer.questionId,
-                selectedOptionId: answer.selectedOptionId || null,
-                textAnswer: answer.textAnswer || null,
+            answerUpdates.push({
+                answerId: entry.answerId,
+                questionId: question.id,
+                selectedOptionId,
+                textAnswer,
                 isCorrect,
             });
         }
-        const totalQuestions = attempt.quiz.questions.length;
-        const gradableQuestions = attempt.quiz.questions.filter((q) => q.questionType !== client_1.QuestionType.SHORT_ANSWER).length;
+        const totalQuestions = selectedQuestionEntries.length;
+        const gradableQuestions = selectedQuestionEntries.filter((entry) => entry.question.questionType !== client_1.QuestionType.SHORT_ANSWER).length;
         const score = gradableQuestions > 0 ? (correctCount / gradableQuestions) * 100 : 0;
         const result = await this.prisma.$transaction(async (tx) => {
-            if (answerRecords.length > 0) {
-                await tx.quizAttemptAnswer.createMany({ data: answerRecords });
+            if (answerUpdates.length > 0) {
+                const existingUpdates = answerUpdates.filter((a) => !!a.answerId);
+                const newRecords = answerUpdates.filter((a) => !a.answerId);
+                await Promise.all(existingUpdates.map((a) => tx.quizAttemptAnswer.update({
+                    where: { id: a.answerId },
+                    data: {
+                        selectedOptionId: a.selectedOptionId,
+                        textAnswer: a.textAnswer,
+                        isCorrect: a.isCorrect,
+                    },
+                })));
+                if (newRecords.length > 0) {
+                    await tx.quizAttemptAnswer.createMany({
+                        data: newRecords.map((a) => ({
+                            attemptId,
+                            questionId: a.questionId,
+                            selectedOptionId: a.selectedOptionId,
+                            textAnswer: a.textAnswer,
+                            isCorrect: a.isCorrect,
+                        })),
+                    });
+                }
             }
             return tx.quizAttempt.update({
                 where: { id: attemptId },
                 data: {
+                    totalPoints: totalQuestions,
                     score: Math.round(score * 100) / 100,
                     completedAt: new Date(),
                 },
@@ -318,7 +403,7 @@ let QuizzesService = class QuizzesService {
                 },
                 quizTitle: a.quiz.title,
                 subjectName: a.quiz.subject.name,
-                totalQuestions: a.quiz._count.questions,
+                totalQuestions: a.totalPoints ?? a.quiz._count.questions,
                 status: a.completedAt ? 'completed' : 'in_progress',
             })),
             meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
@@ -338,7 +423,9 @@ let QuizzesService = class QuizzesService {
         });
         const totalAttempts = completedAttempts.length;
         const totalScore = completedAttempts.reduce((sum, a) => sum + (a.score ?? 0), 0);
-        const averageScore = totalAttempts > 0 ? Math.round((totalScore / totalAttempts) * 100) / 100 : 0;
+        const averageScore = totalAttempts > 0
+            ? Math.round((totalScore / totalAttempts) * 100) / 100
+            : 0;
         const subjectMap = new Map();
         for (const attempt of completedAttempts) {
             const subjectId = attempt.quiz.subjectId;
@@ -358,7 +445,8 @@ let QuizzesService = class QuizzesService {
             subjectName: data.name,
             totalAttempts: data.count,
             averageScore: data.scores.length > 0
-                ? Math.round((data.scores.reduce((a, b) => a + b, 0) / data.scores.length) * 100) / 100
+                ? Math.round((data.scores.reduce((a, b) => a + b, 0) / data.scores.length) *
+                    100) / 100
                 : 0,
             bestScore: Math.max(...data.scores, 0),
         }));
@@ -407,6 +495,43 @@ let QuizzesService = class QuizzesService {
         }
         await this.prisma.quiz.delete({ where: { id: quizId } });
         return { message: 'Quiz deleted successfully' };
+    }
+    selectQuestionsForAttempt(questions, dto) {
+        if (questions.length === 0) {
+            throw new common_1.BadRequestException('This quiz has no questions');
+        }
+        const rangeStart = dto.rangeStart ?? 1;
+        const rangeEnd = dto.rangeEnd ?? questions.length;
+        if (rangeStart > rangeEnd) {
+            throw new common_1.BadRequestException('Range start cannot be greater than range end');
+        }
+        if (rangeStart < 1 || rangeEnd > questions.length) {
+            throw new common_1.BadRequestException(`Question range must be between 1 and ${questions.length}`);
+        }
+        const rangeQuestions = questions.slice(rangeStart - 1, rangeEnd);
+        if (rangeQuestions.length === 0) {
+            throw new common_1.BadRequestException('The selected range contains no questions');
+        }
+        const questionCount = dto.questionCount ?? rangeQuestions.length;
+        if (questionCount < 1) {
+            throw new common_1.BadRequestException('Question count must be at least 1');
+        }
+        if (questionCount > rangeQuestions.length) {
+            throw new common_1.BadRequestException(`Question count cannot exceed the selected range (${rangeQuestions.length})`);
+        }
+        const sampled = this.sampleQuestions(rangeQuestions, questionCount);
+        return sampled.sort((a, b) => a.orderIndex - b.orderIndex);
+    }
+    sampleQuestions(items, count) {
+        if (count >= items.length) {
+            return [...items];
+        }
+        const shuffled = [...items];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled.slice(0, count);
     }
 };
 exports.QuizzesService = QuizzesService;

@@ -1,6 +1,7 @@
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
 import { CheckAnswerDto } from './dto/check-answer.dto.js';
+import { StartAttemptDto } from './dto/start-attempt.dto.js';
 export declare class QuizzesService {
     private prisma;
     constructor(prisma: PrismaService);
@@ -56,7 +57,7 @@ export declare class QuizzesService {
         subjectId: string;
         materialId: string | null;
     }>;
-    startAttempt(quizId: string, userId: string): Promise<{
+    startAttempt(quizId: string, userId: string, dto?: StartAttemptDto): Promise<{
         quiz: {
             id: string;
             title: string;
@@ -190,4 +191,6 @@ export declare class QuizzesService {
     deleteQuiz(quizId: string): Promise<{
         message: string;
     }>;
+    private selectQuestionsForAttempt;
+    private sampleQuestions;
 }

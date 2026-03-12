@@ -20,6 +20,7 @@ const index_js_2 = require("../auth/decorators/index.js");
 const client_1 = require("@prisma/client");
 const submit_quiz_dto_js_1 = require("./dto/submit-quiz.dto.js");
 const check_answer_dto_js_1 = require("./dto/check-answer.dto.js");
+const start_attempt_dto_js_1 = require("./dto/start-attempt.dto.js");
 const subscriptions_service_js_1 = require("../subscriptions/subscriptions.service.js");
 const common_2 = require("@nestjs/common");
 let QuizzesController = class QuizzesController {
@@ -46,7 +47,7 @@ let QuizzesController = class QuizzesController {
         }
         return quiz;
     }
-    async startAttempt(quizId, userId, role) {
+    async startAttempt(quizId, userId, role, dto) {
         if (role === client_1.Role.STUDENT) {
             const quiz = await this.quizzesService.findOne(quizId);
             if (quiz.subjectId) {
@@ -55,7 +56,7 @@ let QuizzesController = class QuizzesController {
                     throw new common_2.ForbiddenException('You do not have a subscription for this subject');
             }
         }
-        return this.quizzesService.startAttempt(quizId, userId);
+        return this.quizzesService.startAttempt(quizId, userId, dto);
     }
     async submitAttempt(attemptId, userId, dto) {
         return this.quizzesService.submitAttempt(attemptId, userId, dto);
@@ -105,8 +106,9 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, index_js_2.CurrentUser)('id')),
     __param(2, (0, index_js_2.CurrentUser)('role')),
+    __param(3, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, start_attempt_dto_js_1.StartAttemptDto]),
     __metadata("design:returntype", Promise)
 ], QuizzesController.prototype, "startAttempt", null);
 __decorate([

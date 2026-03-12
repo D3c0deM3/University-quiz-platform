@@ -44,6 +44,9 @@ export default function QuizTakePage() {
  const [currentIndex, setCurrentIndex] = useState(0);
  const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('end');
  const [revealed, setRevealed] = useState<RevealedMap>({});
+ const [rangeStart, setRangeStart] = useState(1);
+ const [rangeEnd, setRangeEnd] = useState(1);
+ const [questionCount, setQuestionCount] = useState(1);
  const prevIndexRef = useRef<number>(0);
 
  // Load quiz details
@@ -54,7 +57,16 @@ export default function QuizTakePage() {
  .then((res) => setQuiz(res.data))
  .catch(() => toast.error(t('common.error')))
  .finally(() => setLoading(false));
- }, [id]);
+ }, [id, t]);
+
+ const quizId = quiz?.id;
+ const totalQuizQuestions = quiz?.questions?.length || 0;
+ useEffect(() => {
+ if (totalQuizQuestions < 1) return;
+ setRangeStart(1);
+ setRangeEnd(totalQuizQuestions);
+ setQuestionCount(totalQuizQuestions);
+ }, [quizId, totalQuizQuestions]);
 
  // Reveal answer when navigating away in instant mode
  useEffect(() => {
@@ -82,10 +94,36 @@ export default function QuizTakePage() {
  }, [currentIndex, feedbackMode, quiz, answers, revealed]);
 
  const startQuiz = useCallback(async () => {
- if (!id) return;
+ if (!id || !quiz) return;
+ const total = quiz.questions?.length || 0;
+ if (total < 1) {
+ toast.error(t('common.error'));
+ return;
+ }
+
+ if (!Number.isInteger(rangeStart) || !Number.isInteger(rangeEnd) || !Number.isInteger(questionCount)) {
+ toast.error(t('quiz.invalidRange'));
+ return;
+ }
+
+ if (rangeStart < 1 || rangeEnd < 1 || rangeStart > rangeEnd || rangeEnd > total) {
+ toast.error(t('quiz.invalidRange'));
+ return;
+ }
+
+ const availableInRange = rangeEnd - rangeStart + 1;
+ if (questionCount < 1 || questionCount > availableInRange) {
+ toast.error(t('quiz.invalidQuestionCount', { max: availableInRange }));
+ return;
+ }
+
  setStarting(true);
  try {
- const { data } = await quizzesApi.startAttempt(id);
+ const { data } = await quizzesApi.startAttempt(id, {
+ questionCount,
+ rangeStart,
+ rangeEnd,
+ });
  setAttempt(data);
  const questions: QuizQuestion[] = data.quiz?.questions || [];
  const initial: AnswerMap = {};
@@ -93,13 +131,15 @@ export default function QuizTakePage() {
  initial[q.id] = {};
  });
  setAnswers(initial);
+ setRevealed({});
+ setCurrentIndex(0);
  setQuiz(data.quiz || quiz);
  } catch {
  toast.error(t('common.error'));
  } finally {
  setStarting(false);
  }
- }, [id, quiz]);
+ }, [id, quiz, questionCount, rangeStart, rangeEnd, t]);
 
  const setAnswer = (questionId: string, value: { selectedOptionId?: string; textAnswer?: string }) => {
  // Don't allow changing answer if already revealed
@@ -153,6 +193,13 @@ export default function QuizTakePage() {
  }
 
  const questions = quiz.questions || [];
+ const hasValidRange =
+ Number.isInteger(rangeStart)
+ && Number.isInteger(rangeEnd)
+ && rangeStart >= 1
+ && rangeEnd >= rangeStart
+ && rangeEnd <= questions.length;
+ const availableInRange = hasValidRange ? rangeEnd - rangeStart + 1 : 0;
 
  // ── Not started ──
  if (!attempt) {
@@ -183,6 +230,48 @@ export default function QuizTakePage() {
  <Clock size={13} />
  {t('quiz.minutes')}
  </span>
+ </div>
+
+ <div className="mx-auto max-w-sm space-y-2 text-left">
+ <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300">{t('quiz.questionSetupLabel')}</p>
+ <div className="grid grid-cols-2 gap-2">
+ <div className="space-y-1">
+ <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">{t('quiz.rangeStart')}</p>
+ <Input
+ type="number"
+ min={1}
+ max={questions.length}
+ value={rangeStart}
+ onChange={(e) => setRangeStart(Number.parseInt(e.target.value || '0', 10))}
+ />
+ </div>
+ <div className="space-y-1">
+ <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">{t('quiz.rangeEnd')}</p>
+ <Input
+ type="number"
+ min={1}
+ max={questions.length}
+ value={rangeEnd}
+ onChange={(e) => setRangeEnd(Number.parseInt(e.target.value || '0', 10))}
+ />
+ </div>
+ <div className="space-y-1 col-span-2">
+ <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">{t('quiz.questionCountLabel')}</p>
+ <Input
+ type="number"
+ min={1}
+ max={Math.max(1, availableInRange)}
+ value={questionCount}
+ onChange={(e) => setQuestionCount(Number.parseInt(e.target.value || '0', 10))}
+ />
+ </div>
+ </div>
+ <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">
+ {t('quiz.availableInRange', { count: availableInRange })}
+ </p>
+ <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">
+ {t('quiz.questionSetupHint')}
+ </p>
  </div>
 
  {/* Feedback mode selector */}
@@ -232,7 +321,13 @@ export default function QuizTakePage() {
  </div>
  </div>
 
- <Button size="lg" onClick={startQuiz} loading={starting} className="px-6 sm:px-8">
+ <Button
+ size="lg"
+ onClick={startQuiz}
+ loading={starting}
+ disabled={questions.length < 1}
+ className="px-6 sm:px-8"
+ >
  {t('quiz.startQuiz')}
  </Button>
  </CardContent>

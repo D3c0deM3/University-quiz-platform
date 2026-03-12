@@ -1,1 +1,1 @@
-{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../../src/quizzes/dto/index.ts"],"names":[],"mappings":";;;AAAA,2DAAsE;AAA7D,mHAAA,aAAa,OAAA;AAAE,qHAAA,eAAe,OAAA;AACvC,6DAAuD;AAA9C,qHAAA,cAAc,OAAA"}
+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../../src/quizzes/dto/index.ts"],"names":[],"mappings":";;;AAAA,2DAAsE;AAA7D,mHAAA,aAAa,OAAA;AAAE,qHAAA,eAAe,OAAA;AACvC,6DAAuD;AAA9C,qHAAA,cAAc,OAAA;AACvB,+DAAyD;AAAhD,uHAAA,eAAe,OAAA"}

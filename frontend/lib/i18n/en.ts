@@ -104,7 +104,7 @@ const en = {
 
   // ───── Sidebar ─────
   'sidebar.dashboard': 'Dashboard',
-  'sidebar.subjects': 'Subjects',
+  'sidebar.subjects': 'Quiz',
   'sidebar.qaBank': 'Q&A Bank',
   'sidebar.search': 'Search',
   'sidebar.quizHistory': 'Quiz History',
@@ -364,6 +364,14 @@ const en = {
   'quiz.minutes': 'minutes',
   'quiz.notAnswered': 'Not answered',
   'quiz.answered': 'answered',
+  'quiz.questionSetupLabel': 'Question setup',
+  'quiz.rangeStart': 'Range start',
+  'quiz.rangeEnd': 'Range end',
+  'quiz.questionCountLabel': 'Number of questions',
+  'quiz.availableInRange': 'Available in selected range: {count}',
+  'quiz.questionSetupHint': 'Questions will be randomly selected from the chosen range.',
+  'quiz.invalidRange': 'Enter a valid question range.',
+  'quiz.invalidQuestionCount': 'Question count must be between 1 and {max}.',
   'quiz.feedbackModeLabel': 'Choose feedback mode',
   'quiz.instantFeedback': 'Instant Feedback',
   'quiz.instantFeedbackDesc': 'See the correct answer right after you move to the next question',

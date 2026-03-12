@@ -216,7 +216,10 @@ export const quizzesApi = {
     api.get(`/subjects/${subjectId}/quizzes`, { params: { page, limit } }),
   get: (id: string) => api.get(`/quizzes/${id}`),
   delete: (id: string) => api.delete(`/quizzes/${id}`),
-  startAttempt: (quizId: string) => api.post(`/quizzes/${quizId}/attempts`),
+  startAttempt: (
+    quizId: string,
+    settings?: { questionCount?: number; rangeStart?: number; rangeEnd?: number },
+  ) => api.post(`/quizzes/${quizId}/attempts`, settings || {}),
   submitAttempt: (attemptId: string, answers: { questionId: string; selectedOptionId?: string; textAnswer?: string }[]) =>
     api.post(`/quiz-attempts/${attemptId}/submit`, { answers }),
   getResults: (attemptId: string) => api.get(`/quiz-attempts/${attemptId}/results`),

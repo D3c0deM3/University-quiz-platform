@@ -104,7 +104,7 @@ const ru: Record<string, string> = {
 
   // ───── Боковая панель ─────
   'sidebar.dashboard': 'Главная',
-  'sidebar.subjects': 'Предметы',
+  'sidebar.subjects': 'Quiz',
   'sidebar.qaBank': 'База вопросов',
   'sidebar.search': 'Поиск',
   'sidebar.quizHistory': 'История тестов',
@@ -364,6 +364,14 @@ const ru: Record<string, string> = {
   'quiz.minutes': 'минут',
   'quiz.notAnswered': 'Без ответа',
   'quiz.answered': 'отвечено',
+  'quiz.questionSetupLabel': 'Настройка вопросов',
+  'quiz.rangeStart': 'Начало диапазона',
+  'quiz.rangeEnd': 'Конец диапазона',
+  'quiz.questionCountLabel': 'Количество вопросов',
+  'quiz.availableInRange': 'Доступно в выбранном диапазоне: {count}',
+  'quiz.questionSetupHint': 'Вопросы будут случайно выбраны из указанного диапазона.',
+  'quiz.invalidRange': 'Укажите корректный диапазон вопросов.',
+  'quiz.invalidQuestionCount': 'Количество вопросов должно быть от 1 до {max}.',
   'quiz.feedbackModeLabel': 'Выберите режим обратной связи',
   'quiz.instantFeedback': 'Мгновенная проверка',
   'quiz.instantFeedbackDesc': 'Увидеть правильный ответ сразу после перехода к следующему вопросу',

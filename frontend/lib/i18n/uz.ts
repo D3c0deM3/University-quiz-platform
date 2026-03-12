@@ -104,7 +104,7 @@ const uz: Record<string, string> = {
 
   // ───── Yon panel ─────
   'sidebar.dashboard': 'Bosh sahifa',
-  'sidebar.subjects': 'Fanlar',
+  'sidebar.subjects': 'Quiz',
   'sidebar.qaBank': 'Savol-javoblar',
   'sidebar.search': 'Qidiruv',
   'sidebar.quizHistory': 'Test tarixi',
@@ -364,6 +364,14 @@ const uz: Record<string, string> = {
   'quiz.minutes': 'daqiqa',
   'quiz.notAnswered': 'Javob berilmagan',
   'quiz.answered': 'javob berilgan',
+  'quiz.questionSetupLabel': 'Savol sozlamalari',
+  'quiz.rangeStart': 'Oraliq boshi',
+  'quiz.rangeEnd': 'Oraliq oxiri',
+  'quiz.questionCountLabel': 'Savollar soni',
+  'quiz.availableInRange': 'Tanlangan oraliqda mavjud: {count}',
+  'quiz.questionSetupHint': 'Savollar tanlangan oraliqdan tasodifiy tanlanadi.',
+  'quiz.invalidRange': 'Savollar oraliqini to\'g\'ri kiriting.',
+  'quiz.invalidQuestionCount': 'Savollar soni 1 dan {max} gacha bo\'lishi kerak.',
   'quiz.feedbackModeLabel': 'Natija ko\'rsatish turini tanlang',
   'quiz.instantFeedback': 'Darhol natija',
   'quiz.instantFeedbackDesc': 'Keyingi savolga o\'tganingizda to\'g\'ri javobni ko\'ring',

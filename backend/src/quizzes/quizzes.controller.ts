@@ -16,6 +16,7 @@ import { CurrentUser, Roles } from '../auth/decorators/index.js';
 import { Role } from '@prisma/client';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
 import { CheckAnswerDto } from './dto/check-answer.dto.js';
+import { StartAttemptDto } from './dto/start-attempt.dto.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { ForbiddenException } from '@nestjs/common';
 
@@ -41,8 +42,14 @@ export class QuizzesController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
     if (role === Role.STUDENT) {
-      const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
-      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+      const hasAccess = await this.subscriptionsService.hasAccess(
+        userId,
+        subjectId,
+      );
+      if (!hasAccess)
+        throw new ForbiddenException(
+          'You do not have a subscription for this subject',
+        );
     }
     return this.quizzesService.findBySubject(subjectId, page, limit);
   }
@@ -58,8 +65,14 @@ export class QuizzesController {
   ) {
     const quiz = await this.quizzesService.findOne(quizId);
     if (role === Role.STUDENT && quiz.subjectId) {
-      const hasAccess = await this.subscriptionsService.hasAccess(userId, quiz.subjectId);
-      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+      const hasAccess = await this.subscriptionsService.hasAccess(
+        userId,
+        quiz.subjectId,
+      );
+      if (!hasAccess)
+        throw new ForbiddenException(
+          'You do not have a subscription for this subject',
+        );
     }
     return quiz;
   }
@@ -72,15 +85,22 @@ export class QuizzesController {
     @Param('id') quizId: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
+    @Body() dto: StartAttemptDto,
   ) {
     if (role === Role.STUDENT) {
       const quiz = await this.quizzesService.findOne(quizId);
       if (quiz.subjectId) {
-        const hasAccess = await this.subscriptionsService.hasAccess(userId, quiz.subjectId);
-        if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+        const hasAccess = await this.subscriptionsService.hasAccess(
+          userId,
+          quiz.subjectId,
+        );
+        if (!hasAccess)
+          throw new ForbiddenException(
+            'You do not have a subscription for this subject',
+          );
       }
     }
-    return this.quizzesService.startAttempt(quizId, userId);
+    return this.quizzesService.startAttempt(quizId, userId, dto);
   }
 
   /**

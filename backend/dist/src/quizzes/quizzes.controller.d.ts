@@ -2,6 +2,7 @@ import { QuizzesService } from './quizzes.service.js';
 import { Role } from '@prisma/client';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
 import { CheckAnswerDto } from './dto/check-answer.dto.js';
+import { StartAttemptDto } from './dto/start-attempt.dto.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 export declare class QuizzesController {
     private quizzesService;
@@ -59,7 +60,7 @@ export declare class QuizzesController {
         subjectId: string;
         materialId: string | null;
     }>;
-    startAttempt(quizId: string, userId: string, role: Role): Promise<{
+    startAttempt(quizId: string, userId: string, role: Role, dto: StartAttemptDto): Promise<{
         quiz: {
             id: string;
             title: string;
