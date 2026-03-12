@@ -251,7 +251,7 @@ export class UsersService {
           recentDeviceCount,
           activeSessionCount,
           blockedDeviceCount: user.blockedDevices.length,
-          autoBlocked: !user.isActive && recentDeviceCount > MAX_ALLOWED_RECENT_DEVICES,
+          autoBlocked: false,
         };
       })
       .filter((user) => {

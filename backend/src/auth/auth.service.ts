@@ -22,8 +22,6 @@ export interface SessionContext {
   deviceName?: string;
 }
 
-const MAX_ALLOWED_RECENT_DEVICES = 2;
-const DEVICE_WINDOW_DAYS = 7;
 const ACCOUNT_BLOCKED_MESSAGE =
   'Because suspicious activity was detected on your account, it has been blocked. If you have any inquiries about your blocking, please contact the admins.';
 const BLOCKED_DEVICE_MESSAGE =
@@ -50,48 +48,6 @@ export class AuthService {
     return e.code === 'P2021' && e.meta?.modelName === 'BlockedDevice';
   }
 
-  private normalizeUserAgent(userAgent?: string | null) {
-    if (!userAgent) return '';
-    return userAgent
-      .toLowerCase()
-      .replace(/[0-9._]+/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 120);
-  }
-
-  private isAutomatedUserAgent(userAgent?: string | null) {
-    if (!userAgent) return false;
-    return /(curl|postmanruntime|insomnia|httpie|python-requests|wget|go-http-client|node-fetch)/i.test(
-      userAgent,
-    );
-  }
-
-  private getRelaxedDeviceSignature(session: {
-    fingerprintHash: string | null;
-    deviceName: string | null;
-    userAgent: string | null;
-    ipFirstSeen: string | null;
-    ipLastSeen: string | null;
-  }) {
-    const deviceName = (session.deviceName || '').trim().toLowerCase();
-    const normalizedAgent = this.normalizeUserAgent(session.userAgent);
-
-    if (deviceName) {
-      return `sig:${deviceName}`;
-    }
-
-    if (normalizedAgent) {
-      return `ua:${normalizedAgent}`;
-    }
-
-    if (session.fingerprintHash) {
-      return `fp:${session.fingerprintHash}`;
-    }
-
-    return `legacy:${session.ipFirstSeen || session.ipLastSeen || 'unknown'}`;
-  }
-
   private async assertDeviceNotBlocked(userId: string, fingerprint?: string) {
     if (!fingerprint) return;
 
@@ -116,71 +72,6 @@ export class AuthService {
     if (blockedDevice) {
       throw new ForbiddenException(BLOCKED_DEVICE_MESSAGE);
     }
-  }
-
-  private async enforceRecentDeviceLimit(userId: string, sessionId: string) {
-    if (this.configService.get<string>('NODE_ENV') !== 'production') {
-      return;
-    }
-
-    const windowStart = new Date(
-      Date.now() - DEVICE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-    );
-
-    const recentSessions = await this.prisma.userSession.findMany({
-      where: {
-        userId,
-        createdAt: { gte: windowStart },
-      },
-      select: {
-        fingerprintHash: true,
-        deviceName: true,
-        userAgent: true,
-        ipFirstSeen: true,
-        ipLastSeen: true,
-      },
-    });
-
-    const countableRecentSessions = recentSessions.filter(
-      (session) => !this.isAutomatedUserAgent(session.userAgent),
-    );
-
-    if (countableRecentSessions.length === 0) {
-      return;
-    }
-
-    const distinctSignatures = new Set(
-      countableRecentSessions.map((session) =>
-        this.getRelaxedDeviceSignature(session),
-      ),
-    );
-
-    if (distinctSignatures.size <= MAX_ALLOWED_RECENT_DEVICES) {
-      return;
-    }
-
-    await this.prisma.sessionEvent.create({
-      data: {
-        sessionId,
-        eventType: SessionEventType.DEVICE_LIMIT_EXCEEDED,
-        metadata: {
-          distinctRecentDevices: distinctSignatures.size,
-          rawRecentSessions: recentSessions.length,
-          countableRecentSessions: countableRecentSessions.length,
-          maxAllowedDevices: MAX_ALLOWED_RECENT_DEVICES,
-          windowDays: DEVICE_WINDOW_DAYS,
-        },
-      },
-    });
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { isActive: false },
-    });
-
-    await this.revokeAllUserSessions(userId);
-
-    throw new ForbiddenException(ACCOUNT_BLOCKED_MESSAGE);
   }
 
   private async generateTokens(payload: JwtPayload) {
@@ -258,10 +149,6 @@ export class AuthService {
         status: SessionStatus.ACTIVE,
       },
     });
-
-    if (user.role !== Role.ADMIN) {
-      await this.enforceRecentDeviceLimit(user.id, session.id);
-    }
 
     // Now generate tokens with sessionId embedded
     const tokens = await this.generateTokens({
