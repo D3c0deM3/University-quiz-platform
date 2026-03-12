@@ -422,10 +422,8 @@ export class AuthService {
     });
 
     if (!session) {
-      // Token reuse detected — potential theft. Revoke all sessions for safety.
-      await this.revokeAllUserSessions(user.id);
-
-      // Log suspicious event
+      // Soft handling: stale/rotated refresh tokens can happen on mobile/webview flows.
+      // Keep UX smooth by requiring re-login without force-revoking all user sessions.
       const anySession = await this.prisma.userSession.findFirst({
         where: { userId: user.id },
         orderBy: { createdAt: 'desc' },
@@ -441,7 +439,7 @@ export class AuthService {
         });
       }
 
-      throw new UnauthorizedException('Session invalid. All sessions revoked for security. Please log in again.');
+      throw new UnauthorizedException('Session expired. Please log in again.');
     }
 
     if (session.fingerprintHash) {
@@ -469,11 +467,10 @@ export class AuthService {
       }
     }
 
-    // Fingerprint risk check: if a fingerprint was stored and the new one differs significantly
+    // Fingerprint drift can happen on mobile browsers. Log it, but do not force logout.
     if (session.fingerprintHash && ctx.fingerprint) {
       const newFpHash = this.hashToken(ctx.fingerprint);
       if (newFpHash !== session.fingerprintHash) {
-        // Suspicious — different device using the same refresh token
         await this.prisma.sessionEvent.create({
           data: {
             sessionId: session.id,
@@ -486,16 +483,6 @@ export class AuthService {
             },
           },
         });
-
-        // Revoke this session and force re-login
-        await this.prisma.userSession.update({
-          where: { id: session.id },
-          data: { status: SessionStatus.REVOKED, revokedAt: new Date() },
-        });
-
-        throw new UnauthorizedException(
-          'Device fingerprint mismatch detected. Please log in again.',
-        );
       }
     }
 
@@ -641,7 +628,7 @@ export class AuthService {
    * Called from JwtStrategy on every request.
    */
   async validateSession(userId: string, sessionId?: string): Promise<boolean> {
-    if (!sessionId) return true; // fallback for old tokens without sessionId
+    if (!sessionId) return false;
 
     const session = await this.prisma.userSession.findFirst({
       where: {

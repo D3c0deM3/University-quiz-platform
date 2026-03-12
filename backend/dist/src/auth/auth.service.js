@@ -359,7 +359,6 @@ let AuthService = class AuthService {
             },
         });
         if (!session) {
-            await this.revokeAllUserSessions(user.id);
             const anySession = await this.prisma.userSession.findFirst({
                 where: { userId: user.id },
                 orderBy: { createdAt: 'desc' },
@@ -374,7 +373,7 @@ let AuthService = class AuthService {
                     },
                 });
             }
-            throw new common_1.UnauthorizedException('Session invalid. All sessions revoked for security. Please log in again.');
+            throw new common_1.UnauthorizedException('Session expired. Please log in again.');
         }
         if (session.fingerprintHash) {
             let blockedDevice = null;
@@ -416,11 +415,6 @@ let AuthService = class AuthService {
                         },
                     },
                 });
-                await this.prisma.userSession.update({
-                    where: { id: session.id },
-                    data: { status: client_1.SessionStatus.REVOKED, revokedAt: new Date() },
-                });
-                throw new common_1.UnauthorizedException('Device fingerprint mismatch detected. Please log in again.');
             }
         }
         if (session.ipLastSeen && ctx.ip && session.ipLastSeen !== ctx.ip) {
@@ -533,7 +527,7 @@ let AuthService = class AuthService {
     }
     async validateSession(userId, sessionId) {
         if (!sessionId)
-            return true;
+            return false;
         const session = await this.prisma.userSession.findFirst({
             where: {
                 id: sessionId,

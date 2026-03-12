@@ -43,17 +43,18 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         if (!user.isActive) {
             throw new common_1.UnauthorizedException(ACCOUNT_BLOCKED_MESSAGE);
         }
-        if (payload.sessionId) {
-            const session = await this.prisma.userSession.findFirst({
-                where: {
-                    id: payload.sessionId,
-                    userId: user.id,
-                    status: 'ACTIVE',
-                },
-            });
-            if (!session) {
-                throw new common_1.UnauthorizedException('Session has been revoked. Please log in again.');
-            }
+        if (!payload.sessionId) {
+            throw new common_1.UnauthorizedException('Session is invalid. Please log in again.');
+        }
+        const session = await this.prisma.userSession.findFirst({
+            where: {
+                id: payload.sessionId,
+                userId: user.id,
+                status: 'ACTIVE',
+            },
+        });
+        if (!session) {
+            throw new common_1.UnauthorizedException('Session has been revoked. Please log in again.');
         }
         return {
             id: user.id,

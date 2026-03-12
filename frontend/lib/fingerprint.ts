@@ -3,37 +3,54 @@
  * This is NOT meant to be a hard block — it's a risk signal.
  * 
  * Components:
+ * - Generated device ID (persisted in localStorage when available)
  * - Browser family (user agent)
  * - OS / platform
  * - Timezone
  * - Language
- * - Screen info (resolution, color depth)
- * - Generated device ID (persisted in localStorage)
+ *
+ * Volatile values (like screen size/orientation) are intentionally excluded
+ * to prevent false fingerprint changes on mobile devices.
  */
+
+let memoryDeviceId: string | null = null;
+
+function createId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 function getOrCreateDeviceId(): string {
   const key = '__device_id';
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(key, id);
+
+  try {
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = createId();
+      localStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    // Ignore storage-denied contexts (private mode / strict browsers).
   }
-  return id;
+
+  if (!memoryDeviceId) {
+    memoryDeviceId = createId();
+  }
+  return memoryDeviceId;
 }
 
 export function generateFingerprint(): string {
   if (typeof window === 'undefined') return '';
 
   const components = [
-    navigator.userAgent,
-    navigator.language,
-    navigator.languages?.join(',') || '',
-    Intl.DateTimeFormat().resolvedOptions().timeZone,
-    `${screen.width}x${screen.height}`,
-    `${screen.colorDepth}`,
-    navigator.hardwareConcurrency?.toString() || '',
-    navigator.platform || '',
     getOrCreateDeviceId(),
+    navigator.userAgent,
+    navigator.platform || '',
+    navigator.language,
+    Intl.DateTimeFormat().resolvedOptions().timeZone || '',
   ];
 
   return components.join('|');

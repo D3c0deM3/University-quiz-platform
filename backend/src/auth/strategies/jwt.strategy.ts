@@ -46,21 +46,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException(ACCOUNT_BLOCKED_MESSAGE);
     }
 
-    // Validate that the session is still active (if sessionId is in the token)
-    if (payload.sessionId) {
-      const session = await this.prisma.userSession.findFirst({
-        where: {
-          id: payload.sessionId,
-          userId: user.id,
-          status: 'ACTIVE',
-        },
-      });
+    // Enforce session-bound access tokens so one-device policy applies immediately.
+    if (!payload.sessionId) {
+      throw new UnauthorizedException('Session is invalid. Please log in again.');
+    }
 
-      if (!session) {
-        throw new UnauthorizedException(
-          'Session has been revoked. Please log in again.',
-        );
-      }
+    const session = await this.prisma.userSession.findFirst({
+      where: {
+        id: payload.sessionId,
+        userId: user.id,
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!session) {
+      throw new UnauthorizedException(
+        'Session has been revoked. Please log in again.',
+      );
     }
 
     return {
