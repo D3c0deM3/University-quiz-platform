@@ -539,6 +539,9 @@ const ru: Record<string, string> = {
   'adminUpload.studyMaterialFile': 'Файл учебного материала',
   'adminUpload.studyMaterialFileDesc': 'Загрузите учебный материал, из которого будут найдены ответы на вопросы',
   'adminUpload.chooseStudyMaterial': 'Выберите учебный материал или перетащите сюда',
+  'adminUpload.studyMaterialFiles': 'Файлы учебного материала',
+  'adminUpload.studyMaterialFilesDesc': 'Загрузите один или несколько файлов учебных материалов, из которых будут найдены ответы',
+  'adminUpload.chooseStudyMaterials': 'Выберите учебные материалы или перетащите сюда',
   'adminUpload.errorBothFiles': 'Необходимы оба файла: файл вопросов и файл учебного материала',
 
   // ───── Подписки (админ) ─────

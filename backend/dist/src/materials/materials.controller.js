@@ -30,8 +30,19 @@ const update_metadata_dto_js_1 = require("./dto/update-metadata.dto.js");
 const update_quiz_dto_js_1 = require("./dto/update-quiz.dto.js");
 const quiz_question_dto_js_1 = require("./dto/quiz-question.dto.js");
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
-const resolvedUploadDir = (0, path_1.isAbsolute)(uploadDir) ? uploadDir : (0, path_1.join)(process.cwd(), uploadDir);
-const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xlsx', '.xls', '.txt'];
+const resolvedUploadDir = (0, path_1.isAbsolute)(uploadDir)
+    ? uploadDir
+    : (0, path_1.join)(process.cwd(), uploadDir);
+const ALLOWED_EXTENSIONS = [
+    '.pdf',
+    '.doc',
+    '.docx',
+    '.ppt',
+    '.pptx',
+    '.xlsx',
+    '.xls',
+    '.txt',
+];
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const storage = (0, multer_1.diskStorage)({
     destination: resolvedUploadDir,
@@ -65,7 +76,11 @@ let MaterialsController = class MaterialsController {
             throw new common_1.BadRequestException('subjectId is required');
         }
         const numQuestions = parseInt(numQuestionsRaw, 10);
-        const validNumQuestions = isNaN(numQuestions) ? 10 : (numQuestions === 0 ? 0 : Math.max(numQuestions, 1));
+        const validNumQuestions = isNaN(numQuestions)
+            ? 10
+            : numQuestions === 0
+                ? 0
+                : Math.max(numQuestions, 1);
         const material = await this.materialsService.upload(file, subjectId, userId);
         await this.processingQueue.add('process', {
             materialId: material.id,
@@ -87,19 +102,27 @@ let MaterialsController = class MaterialsController {
     }
     async uploadWithQuestions(files, subjectId, numQuestionsRaw, userId) {
         const questionsFile = files?.questionsFile?.[0];
-        const materialFile = files?.materialFile?.[0];
+        const materialFiles = files?.materialFiles?.length
+            ? files.materialFiles
+            : files?.materialFile || [];
         if (!questionsFile) {
             throw new common_1.BadRequestException('Questions file is required');
         }
-        if (!materialFile) {
-            throw new common_1.BadRequestException('Study material file is required');
+        if (!materialFiles.length) {
+            throw new common_1.BadRequestException('At least one study material file is required');
         }
         if (!subjectId) {
             throw new common_1.BadRequestException('subjectId is required');
         }
         const numQuestions = parseInt(numQuestionsRaw, 10);
-        const validNumQuestions = isNaN(numQuestions) ? 10 : (numQuestions === 0 ? 0 : Math.max(numQuestions, 1));
-        const material = await this.materialsService.upload(materialFile, subjectId, userId);
+        const validNumQuestions = isNaN(numQuestions)
+            ? 10
+            : numQuestions === 0
+                ? 0
+                : Math.max(numQuestions, 1);
+        const primaryMaterialFile = materialFiles[0];
+        const additionalMaterialFiles = materialFiles.slice(1);
+        const material = await this.materialsService.upload(primaryMaterialFile, subjectId, userId);
         await this.processingQueue.add('process', {
             materialId: material.id,
             filePath: material.filePath,
@@ -109,7 +132,12 @@ let MaterialsController = class MaterialsController {
             uploadedById: userId,
             mode: 'questions_with_material',
             questionsFilePath: questionsFile.path,
-            questionsFileType: (0, path_1.extname)(questionsFile.originalname).toLowerCase().replace('.', '').toUpperCase(),
+            questionsFileType: (0, path_1.extname)(questionsFile.originalname)
+                .toLowerCase()
+                .replace('.', '')
+                .toUpperCase(),
+            additionalMaterialFilePaths: additionalMaterialFiles.map((f) => f.path),
+            additionalMaterialFileTypes: additionalMaterialFiles.map((f) => (0, path_1.extname)(f.originalname).toLowerCase().replace('.', '').toUpperCase()),
         }, {
             attempts: 3,
             backoff: { type: 'exponential', delay: 5000 },
@@ -117,7 +145,7 @@ let MaterialsController = class MaterialsController {
             removeOnFail: false,
         });
         return {
-            message: 'Questions and material uploaded successfully. Processing will begin shortly.',
+            message: 'Questions and study materials uploaded successfully. Processing will begin shortly.',
             material,
         };
     }
@@ -225,6 +253,7 @@ __decorate([
     (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileFieldsInterceptor)([
         { name: 'questionsFile', maxCount: 1 },
+        { name: 'materialFiles', maxCount: 10 },
         { name: 'materialFile', maxCount: 1 },
     ], multerOptions)),
     __param(0, (0, common_1.UploadedFiles)()),

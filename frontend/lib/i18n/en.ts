@@ -539,6 +539,9 @@ const en = {
   'adminUpload.studyMaterialFile': 'Study Material File',
   'adminUpload.studyMaterialFileDesc': 'Upload the study material from which answers to the questions will be found',
   'adminUpload.chooseStudyMaterial': 'Choose study material or drag and drop',
+  'adminUpload.studyMaterialFiles': 'Study Material Files',
+  'adminUpload.studyMaterialFilesDesc': 'Upload one or more study material files from which answers will be found',
+  'adminUpload.chooseStudyMaterials': 'Choose study materials or drag and drop',
   'adminUpload.errorBothFiles': 'Both questions file and study material file are required',
 
   // ───── Admin Subscriptions ─────

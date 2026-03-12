@@ -168,10 +168,10 @@ export const materialsApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
-  uploadWithQuestions: (questionsFile: File, materialFile: File, subjectId: string, numQuestions: number = 10) => {
+  uploadWithQuestions: (questionsFile: File, materialFiles: File[], subjectId: string, numQuestions: number = 10) => {
     const form = new FormData();
     form.append('questionsFile', questionsFile);
-    form.append('materialFile', materialFile);
+    materialFiles.forEach((file) => form.append('materialFiles', file));
     form.append('subjectId', subjectId);
     form.append('numQuestions', String(numQuestions));
     return api.post('/materials/upload-with-questions', form, {

@@ -41,6 +41,7 @@ export declare class MaterialsController {
     }>;
     uploadWithQuestions(files: {
         questionsFile?: Express.Multer.File[];
+        materialFiles?: Express.Multer.File[];
         materialFile?: Express.Multer.File[];
     }, subjectId: string, numQuestionsRaw: string, userId: string): Promise<{
         message: string;

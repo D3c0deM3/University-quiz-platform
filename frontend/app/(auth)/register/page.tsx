@@ -19,7 +19,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { GraduationCap, ArrowLeft, MessageCircle, ShieldCheck } from 'lucide-react';
+import {
+  GraduationCap,
+  ArrowLeft,
+  MessageCircle,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 
 // ─── OTP Input length ─────────────────────────────────
 const OTP_LENGTH = 6;
@@ -51,7 +58,8 @@ export default function RegisterPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [formData, setFormData] = useState<RegisterForm | null>(null);
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
-  const [deepLink, setDeepLink] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const {
@@ -67,8 +75,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       // Check phone availability and get bot link preemptively
-      const { data: linkData } = await authApi.getOtpLink(data.phone);
-      setDeepLink(linkData.deepLink);
+      await authApi.getOtpLink(data.phone);
       setFormData(data);
       setStep(2);
     } catch (err: unknown) {
@@ -88,7 +95,6 @@ export default function RegisterPage() {
     try {
       // Re-fetch the link in case it changed
       const { data: linkData } = await authApi.getOtpLink(formData.phone);
-      setDeepLink(linkData.deepLink);
 
       // Open Telegram bot in new tab
       window.open(linkData.deepLink, '_blank');
@@ -260,12 +266,23 @@ export default function RegisterPage() {
               >
                 {t('register.password')}
               </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                {...register('password')}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className="pr-10"
+                  {...register('password')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 px-3 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 cursor-pointer"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-xs text-red-500">
                   {errors.password.message}
@@ -279,12 +296,23 @@ export default function RegisterPage() {
               >
                 {t('register.confirmPassword')}
               </label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                {...register('confirmPassword')}
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className="pr-10"
+                  {...register('confirmPassword')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 px-3 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 cursor-pointer"
+                  aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}
+                >
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
               {errors.confirmPassword && (
                 <p className="text-xs text-red-500">
                   {errors.confirmPassword.message}

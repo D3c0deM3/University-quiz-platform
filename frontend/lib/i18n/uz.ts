@@ -539,6 +539,9 @@ const uz: Record<string, string> = {
   'adminUpload.studyMaterialFile': 'O\'quv materiali fayli',
   'adminUpload.studyMaterialFileDesc': 'Savollarga javoblar topiladigan o\'quv materialini yuklang',
   'adminUpload.chooseStudyMaterial': 'O\'quv materialini tanlang yoki shu yerga tashlang',
+  'adminUpload.studyMaterialFiles': 'O\'quv materiali fayllari',
+  'adminUpload.studyMaterialFilesDesc': 'Javoblar topiladigan bir yoki bir nechta o\'quv materiali fayllarini yuklang',
+  'adminUpload.chooseStudyMaterials': 'O\'quv materiallarini tanlang yoki shu yerga tashlang',
   'adminUpload.errorBothFiles': 'Ikkala fayl ham kerak: savollar fayli va o\'quv materiali fayli',
 
   // ───── Admin obunalar ─────

@@ -22,6 +22,8 @@ export interface MaterialProcessingJobData {
   mode?: 'standard' | 'questions_with_material';
   questionsFilePath?: string;
   questionsFileType?: string;
+  additionalMaterialFilePaths?: string[];
+  additionalMaterialFileTypes?: string[];
 }
 
 interface PythonQuizOption {
@@ -74,6 +76,8 @@ export class MaterialProcessingProcessor extends WorkerHost {
       mode,
       questionsFilePath,
       questionsFileType,
+      additionalMaterialFilePaths,
+      additionalMaterialFileTypes,
     } = job.data;
 
     this.logger.log(
@@ -129,6 +133,14 @@ export class MaterialProcessingProcessor extends WorkerHost {
       ) {
         requestBody.questions_file_path = questionsFilePath;
         requestBody.questions_file_type = questionsFileType;
+        requestBody.material_file_paths = [
+          filePath,
+          ...(additionalMaterialFilePaths || []),
+        ];
+        requestBody.material_file_types = [
+          fileType,
+          ...(additionalMaterialFileTypes || []),
+        ];
       }
 
       const response = await this.postJson(endpoint, requestBody);

@@ -11,6 +11,8 @@ export interface MaterialProcessingJobData {
     mode?: 'standard' | 'questions_with_material';
     questionsFilePath?: string;
     questionsFileType?: string;
+    additionalMaterialFilePaths?: string[];
+    additionalMaterialFileTypes?: string[];
 }
 export declare class MaterialProcessingProcessor extends WorkerHost {
     private prisma;

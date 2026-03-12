@@ -48,6 +48,8 @@ class QuestionsWithMaterialRequest(BaseModel):
     material_id: str
     file_path: str
     file_type: str
+    material_file_paths: Optional[List[str]] = None
+    material_file_types: Optional[List[str]] = None
     questions_file_path: str
     questions_file_type: str
     num_questions: int = 10
@@ -203,12 +205,28 @@ async def process_questions_with_material(request: QuestionsWithMaterialRequest)
        in the study material (AI does NOT generate answers from its own knowledge)
     4. Return all processed data
     """
+    material_paths = request.material_file_paths or [request.file_path]
+    material_types = request.material_file_types or [request.file_type]
+
     logger.info(
         f"Processing questions+material for {request.material_id} | "
-        f"questions: {request.questions_file_path} | material: {request.file_path}"
+        f"questions: {request.questions_file_path} | study_material_files: {len(material_paths)}"
     )
 
     try:
+        if len(material_paths) != len(material_types):
+            return ProcessingResponse(
+                material_id=request.material_id,
+                status="failed",
+                error="Study material paths/types count mismatch.",
+            )
+        if len(material_paths) == 0:
+            return ProcessingResponse(
+                material_id=request.material_id,
+                status="failed",
+                error="At least one study material file is required.",
+            )
+
         await _report_processing_progress(request.material_id, 10, "Extracting questions file")
 
         # Step 1a: Extract text from the questions file
@@ -224,18 +242,37 @@ async def process_questions_with_material(request: QuestionsWithMaterialRequest)
         logger.info(f"Extracted {len(questions_text)} characters from questions file")
         await _report_processing_progress(request.material_id, 20, "Questions file extracted")
 
-        # Step 1b: Extract text from the study material file
-        await _report_processing_progress(request.material_id, 25, "Extracting study material")
-        material_text = await extract_text(request.file_path, request.file_type)
+        # Step 1b: Extract text from one or more study material files
+        await _report_processing_progress(request.material_id, 25, "Extracting study materials")
+        material_text_parts: list[str] = []
+        for idx, (material_path, material_type) in enumerate(
+            zip(material_paths, material_types),
+            start=1,
+        ):
+            part = await extract_text(material_path, material_type)
+            if part and part.strip():
+                material_text_parts.append(
+                    f"[Study Material {idx}]\n{part.strip()}"
+                )
+            progress = 25 + int((idx / max(1, len(material_paths))) * 10)
+            await _report_processing_progress(
+                request.material_id,
+                progress,
+                f"Extracted study material {idx}/{len(material_paths)}",
+            )
 
+        material_text = "\n\n\n".join(material_text_parts)
         if not material_text or len(material_text.strip()) < 50:
             return ProcessingResponse(
                 material_id=request.material_id,
                 status="failed",
-                error="Could not extract sufficient text from the study material file. The file may be empty or corrupted.",
+                error="Could not extract sufficient text from the provided study material files. Files may be empty or corrupted.",
             )
 
-        logger.info(f"Extracted {len(material_text)} characters from study material")
+        logger.info(
+            f"Extracted {len(material_text)} characters from "
+            f"{len(material_text_parts)} study material file(s)"
+        )
         await _report_processing_progress(request.material_id, 35, "Study material extracted")
 
         # Step 2: Chunk the study material text for storage

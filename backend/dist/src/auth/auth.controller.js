@@ -20,16 +20,26 @@ const index_js_1 = require("./dto/index.js");
 const index_js_2 = require("./guards/index.js");
 const index_js_3 = require("./decorators/index.js");
 const REFRESH_COOKIE_NAME = '__refresh_token';
+const isProduction = process.env.NODE_ENV === 'production';
+const cookieDomain = process.env.COOKIE_DOMAIN?.trim();
+const refreshCookieSameSite = isProduction ? 'none' : 'lax';
 const REFRESH_COOKIE_OPTIONS = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProduction,
+    sameSite: refreshCookieSameSite,
     path: '/api/auth',
     maxAge: 7 * 24 * 60 * 60 * 1000,
+    ...(cookieDomain ? { domain: cookieDomain } : {}),
+};
+const REFRESH_COOKIE_CLEAR_OPTIONS = {
+    path: '/api/auth',
+    ...(cookieDomain ? { domain: cookieDomain } : {}),
 };
 function extractSessionContext(req) {
     return {
-        ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket?.remoteAddress,
+        ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+            req.ip ||
+            req.socket?.remoteAddress,
         userAgent: req.headers['user-agent'] || undefined,
         fingerprint: req.headers['x-device-fingerprint'],
         deviceName: req.headers['x-device-name'],
@@ -75,7 +85,9 @@ let AuthController = class AuthController {
             req.headers['x-refresh-token'] ||
             req.body?.refreshToken;
         if (!refreshToken) {
-            res.status(401).json({ message: 'No refresh token provided' });
+            res
+                .status(401)
+                .json({ message: 'No refresh token provided' });
             return;
         }
         const ctx = extractSessionContext(req);
@@ -91,12 +103,12 @@ let AuthController = class AuthController {
             req.headers['x-refresh-token'] ||
             req.body?.refreshToken;
         const result = await this.authService.logout(refreshToken, sessionId);
-        res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth' });
+        res.clearCookie(REFRESH_COOKIE_NAME, REFRESH_COOKIE_CLEAR_OPTIONS);
         return result;
     }
     async logoutAll(userId, res) {
         const result = await this.authService.logoutAllDevices(userId);
-        res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth' });
+        res.clearCookie(REFRESH_COOKIE_NAME, REFRESH_COOKIE_CLEAR_OPTIONS);
         return result;
     }
     async getSessions(userId) {

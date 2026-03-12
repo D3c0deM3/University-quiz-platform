@@ -27,7 +27,7 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
         this.prisma = prisma;
     }
     async process(job) {
-        const { materialId, filePath, fileType, originalName, numQuestions, uploadedById, mode, questionsFilePath, questionsFileType, } = job.data;
+        const { materialId, filePath, fileType, originalName, numQuestions, uploadedById, mode, questionsFilePath, questionsFileType, additionalMaterialFilePaths, additionalMaterialFileTypes, } = job.data;
         this.logger.log(`Processing material ${materialId} (${originalName}) [mode: ${mode || 'standard'}]`);
         const materialExists = await this.prisma.material.findUnique({
             where: { id: materialId },
@@ -62,6 +62,14 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
                 questionsFileType) {
                 requestBody.questions_file_path = questionsFilePath;
                 requestBody.questions_file_type = questionsFileType;
+                requestBody.material_file_paths = [
+                    filePath,
+                    ...(additionalMaterialFilePaths || []),
+                ];
+                requestBody.material_file_types = [
+                    fileType,
+                    ...(additionalMaterialFileTypes || []),
+                ];
             }
             const response = await this.postJson(endpoint, requestBody);
             if (response.statusCode < 200 || response.statusCode >= 300) {

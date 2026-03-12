@@ -23,17 +23,30 @@ import { JwtAuthGuard } from './guards/index.js';
 import { CurrentUser } from './decorators/index.js';
 
 const REFRESH_COOKIE_NAME = '__refresh_token';
+const isProduction = process.env.NODE_ENV === 'production';
+const cookieDomain = process.env.COOKIE_DOMAIN?.trim();
+const refreshCookieSameSite: 'none' | 'lax' = isProduction ? 'none' : 'lax';
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  secure: isProduction,
+  // In production frontend/backend are often on different subdomains.
+  // sameSite=None is required for cross-site refresh cookie usage.
+  sameSite: refreshCookieSameSite,
   path: '/api/auth',
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  ...(cookieDomain ? { domain: cookieDomain } : {}),
+};
+const REFRESH_COOKIE_CLEAR_OPTIONS = {
+  path: '/api/auth',
+  ...(cookieDomain ? { domain: cookieDomain } : {}),
 };
 
 function extractSessionContext(req: Request) {
   return {
-    ip: (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || req.socket?.remoteAddress,
+    ip:
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.ip ||
+      req.socket?.remoteAddress,
     userAgent: req.headers['user-agent'] || undefined,
     fingerprint: req.headers['x-device-fingerprint'] as string | undefined,
     deviceName: req.headers['x-device-name'] as string | undefined,
@@ -46,20 +59,36 @@ export class AuthController {
 
   @Post('register')
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async register(@Body() dto: RegisterDto, @Req() req: any, @Res({ passthrough: true }) res: any) {
+  async register(
+    @Body() dto: RegisterDto,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: any,
+  ) {
     const ctx = extractSessionContext(req as Request);
     const result = await this.authService.register(dto, ctx);
-    (res as Response).cookie(REFRESH_COOKIE_NAME, result._refreshToken, REFRESH_COOKIE_OPTIONS);
+    (res as Response).cookie(
+      REFRESH_COOKIE_NAME,
+      result._refreshToken,
+      REFRESH_COOKIE_OPTIONS,
+    );
     const { _refreshToken, ...response } = result;
     return response;
   }
 
   @Post('register-with-otp')
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async registerWithOtp(@Body() dto: RegisterWithOtpDto, @Req() req: any, @Res({ passthrough: true }) res: any) {
+  async registerWithOtp(
+    @Body() dto: RegisterWithOtpDto,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: any,
+  ) {
     const ctx = extractSessionContext(req as Request);
     const result = await this.authService.registerWithOtp(dto, ctx);
-    (res as Response).cookie(REFRESH_COOKIE_NAME, result._refreshToken, REFRESH_COOKIE_OPTIONS);
+    (res as Response).cookie(
+      REFRESH_COOKIE_NAME,
+      result._refreshToken,
+      REFRESH_COOKIE_OPTIONS,
+    );
     const { _refreshToken, ...response } = result;
     return response;
   }
@@ -81,10 +110,18 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 10 } })
-  async login(@Body() dto: LoginDto, @Req() req: any, @Res({ passthrough: true }) res: any) {
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: any,
+  ) {
     const ctx = extractSessionContext(req as Request);
     const result = await this.authService.login(dto, ctx);
-    (res as Response).cookie(REFRESH_COOKIE_NAME, result._refreshToken, REFRESH_COOKIE_OPTIONS);
+    (res as Response).cookie(
+      REFRESH_COOKIE_NAME,
+      result._refreshToken,
+      REFRESH_COOKIE_OPTIONS,
+    );
     const { _refreshToken, ...response } = result;
     return response;
   }
@@ -101,11 +138,13 @@ export class AuthController {
     // Get refresh token from HttpOnly cookie OR from header (backwards compat)
     const refreshToken =
       (req as Request).cookies?.[REFRESH_COOKIE_NAME] ||
-      (req as Request).headers['x-refresh-token'] as string ||
+      ((req as Request).headers['x-refresh-token'] as string) ||
       (req as Request).body?.refreshToken;
 
     if (!refreshToken) {
-      (res as Response).status(401).json({ message: 'No refresh token provided' });
+      (res as Response)
+        .status(401)
+        .json({ message: 'No refresh token provided' });
       return;
     }
 
@@ -113,7 +152,11 @@ export class AuthController {
     const result = await this.authService.refreshToken(refreshToken, ctx);
 
     // Set new refresh token cookie
-    (res as Response).cookie(REFRESH_COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS);
+    (res as Response).cookie(
+      REFRESH_COOKIE_NAME,
+      result.refreshToken,
+      REFRESH_COOKIE_OPTIONS,
+    );
 
     return {
       accessToken: result.accessToken,
@@ -131,13 +174,16 @@ export class AuthController {
   ) {
     const refreshToken =
       (req as Request).cookies?.[REFRESH_COOKIE_NAME] ||
-      (req as Request).headers['x-refresh-token'] as string ||
+      ((req as Request).headers['x-refresh-token'] as string) ||
       (req as Request).body?.refreshToken;
 
     const result = await this.authService.logout(refreshToken, sessionId);
 
     // Clear cookie
-    (res as Response).clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth' });
+    (res as Response).clearCookie(
+      REFRESH_COOKIE_NAME,
+      REFRESH_COOKIE_CLEAR_OPTIONS,
+    );
 
     return result;
   }
@@ -145,9 +191,15 @@ export class AuthController {
   @Post('logout-all')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async logoutAll(@CurrentUser('id') userId: string, @Res({ passthrough: true }) res: any) {
+  async logoutAll(
+    @CurrentUser('id') userId: string,
+    @Res({ passthrough: true }) res: any,
+  ) {
     const result = await this.authService.logoutAllDevices(userId);
-    (res as Response).clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth' });
+    (res as Response).clearCookie(
+      REFRESH_COOKIE_NAME,
+      REFRESH_COOKIE_CLEAR_OPTIONS,
+    );
     return result;
   }
 

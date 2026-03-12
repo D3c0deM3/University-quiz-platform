@@ -16,7 +16,10 @@ import {
   DefaultValuePipe,
   BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
+import {
+  FileInterceptor,
+  FileFieldsInterceptor,
+} from '@nestjs/platform-express';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { diskStorage } from 'multer';
@@ -30,13 +33,27 @@ import { ForbiddenException } from '@nestjs/common';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { UpdateMetadataDto } from './dto/update-metadata.dto.js';
 import { UpdateQuizDto } from './dto/update-quiz.dto.js';
-import { CreateQuizQuestionDto, UpdateSingleQuestionDto } from './dto/quiz-question.dto.js';
+import {
+  CreateQuizQuestionDto,
+  UpdateSingleQuestionDto,
+} from './dto/quiz-question.dto.js';
 import type { MaterialProcessingJobData } from './processors/material-processing.processor.js';
 
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
-const resolvedUploadDir = isAbsolute(uploadDir) ? uploadDir : join(process.cwd(), uploadDir);
+const resolvedUploadDir = isAbsolute(uploadDir)
+  ? uploadDir
+  : join(process.cwd(), uploadDir);
 
-const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xlsx', '.xls', '.txt'];
+const ALLOWED_EXTENSIONS = [
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.ppt',
+  '.pptx',
+  '.xlsx',
+  '.xls',
+  '.txt',
+];
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 const storage = diskStorage({
@@ -44,7 +61,12 @@ const storage = diskStorage({
   filename: (_req, file, callback) => {
     const ext = extname(file.originalname).toLowerCase();
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      return callback(new Error(`File type ${ext} is not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`), '');
+      return callback(
+        new Error(
+          `File type ${ext} is not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`,
+        ),
+        '',
+      );
     }
     const uniqueName = `${uuidv4()}${ext}`;
     callback(null, uniqueName);
@@ -83,9 +105,17 @@ export class MaterialsController {
 
     const numQuestions = parseInt(numQuestionsRaw, 10);
     // 0 means "all questions", otherwise at least 1
-    const validNumQuestions = isNaN(numQuestions) ? 10 : (numQuestions === 0 ? 0 : Math.max(numQuestions, 1));
+    const validNumQuestions = isNaN(numQuestions)
+      ? 10
+      : numQuestions === 0
+        ? 0
+        : Math.max(numQuestions, 1);
 
-    const material = await this.materialsService.upload(file, subjectId, userId);
+    const material = await this.materialsService.upload(
+      file,
+      subjectId,
+      userId,
+    );
 
     // Enqueue background processing job
     await this.processingQueue.add(
@@ -114,37 +144,59 @@ export class MaterialsController {
 
   @Post('upload-with-questions')
   @Roles(Role.ADMIN, Role.TEACHER)
-  @UseInterceptors(FileFieldsInterceptor(
-    [
-      { name: 'questionsFile', maxCount: 1 },
-      { name: 'materialFile', maxCount: 1 },
-    ],
-    multerOptions,
-  ))
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'questionsFile', maxCount: 1 },
+        { name: 'materialFiles', maxCount: 10 },
+        { name: 'materialFile', maxCount: 1 }, // Backward compatibility
+      ],
+      multerOptions,
+    ),
+  )
   async uploadWithQuestions(
-    @UploadedFiles() files: { questionsFile?: Express.Multer.File[]; materialFile?: Express.Multer.File[] },
+    @UploadedFiles()
+    files: {
+      questionsFile?: Express.Multer.File[];
+      materialFiles?: Express.Multer.File[];
+      materialFile?: Express.Multer.File[];
+    },
     @Body('subjectId') subjectId: string,
     @Body('numQuestions') numQuestionsRaw: string,
     @CurrentUser('id') userId: string,
   ) {
     const questionsFile = files?.questionsFile?.[0];
-    const materialFile = files?.materialFile?.[0];
+    const materialFiles = files?.materialFiles?.length
+      ? files.materialFiles
+      : files?.materialFile || [];
 
     if (!questionsFile) {
       throw new BadRequestException('Questions file is required');
     }
-    if (!materialFile) {
-      throw new BadRequestException('Study material file is required');
+    if (!materialFiles.length) {
+      throw new BadRequestException(
+        'At least one study material file is required',
+      );
     }
     if (!subjectId) {
       throw new BadRequestException('subjectId is required');
     }
 
     const numQuestions = parseInt(numQuestionsRaw, 10);
-    const validNumQuestions = isNaN(numQuestions) ? 10 : (numQuestions === 0 ? 0 : Math.max(numQuestions, 1));
+    const validNumQuestions = isNaN(numQuestions)
+      ? 10
+      : numQuestions === 0
+        ? 0
+        : Math.max(numQuestions, 1);
 
-    // Upload the material file as the primary material
-    const material = await this.materialsService.upload(materialFile, subjectId, userId);
+    // Upload the first study material as the primary material record
+    const primaryMaterialFile = materialFiles[0];
+    const additionalMaterialFiles = materialFiles.slice(1);
+    const material = await this.materialsService.upload(
+      primaryMaterialFile,
+      subjectId,
+      userId,
+    );
 
     // Enqueue background processing job with dual-file mode
     await this.processingQueue.add(
@@ -158,7 +210,14 @@ export class MaterialsController {
         uploadedById: userId,
         mode: 'questions_with_material',
         questionsFilePath: questionsFile.path,
-        questionsFileType: extname(questionsFile.originalname).toLowerCase().replace('.', '').toUpperCase(),
+        questionsFileType: extname(questionsFile.originalname)
+          .toLowerCase()
+          .replace('.', '')
+          .toUpperCase(),
+        additionalMaterialFilePaths: additionalMaterialFiles.map((f) => f.path),
+        additionalMaterialFileTypes: additionalMaterialFiles.map((f) =>
+          extname(f.originalname).toLowerCase().replace('.', '').toUpperCase(),
+        ),
       } satisfies MaterialProcessingJobData,
       {
         attempts: 3,
@@ -169,7 +228,8 @@ export class MaterialsController {
     );
 
     return {
-      message: 'Questions and material uploaded successfully. Processing will begin shortly.',
+      message:
+        'Questions and study materials uploaded successfully. Processing will begin shortly.',
       material,
     };
   }
@@ -186,11 +246,23 @@ export class MaterialsController {
     if (role === Role.STUDENT) {
       if (subjectId) {
         // Specific subject requested — verify access
-        const hasAccess = await this.subscriptionsService.hasAccess(userId!, subjectId);
-        if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+        const hasAccess = await this.subscriptionsService.hasAccess(
+          userId!,
+          subjectId,
+        );
+        if (!hasAccess)
+          throw new ForbiddenException(
+            'You do not have a subscription for this subject',
+          );
       }
       // Students can only see materials from their subscribed subjects
-      return this.materialsService.findAllForStudent(page, limit, userId!, status, subjectId);
+      return this.materialsService.findAllForStudent(
+        page,
+        limit,
+        userId!,
+        status,
+        subjectId,
+      );
     }
     return this.materialsService.findAll(page, limit, status, subjectId);
   }
@@ -203,8 +275,14 @@ export class MaterialsController {
   ) {
     const material = await this.materialsService.findOne(id);
     if (role === Role.STUDENT && material.subjectId) {
-      const hasAccess = await this.subscriptionsService.hasAccess(userId, material.subjectId);
-      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+      const hasAccess = await this.subscriptionsService.hasAccess(
+        userId,
+        material.subjectId,
+      );
+      if (!hasAccess)
+        throw new ForbiddenException(
+          'You do not have a subscription for this subject',
+        );
     }
     return material;
   }
@@ -224,7 +302,10 @@ export class MaterialsController {
 
   @Put(':id/metadata')
   @Roles(Role.ADMIN, Role.TEACHER)
-  async updateMetadata(@Param('id') id: string, @Body() dto: UpdateMetadataDto) {
+  async updateMetadata(
+    @Param('id') id: string,
+    @Body() dto: UpdateMetadataDto,
+  ) {
     return this.materialsService.updateMetadata(id, dto);
   }
 
@@ -235,7 +316,10 @@ export class MaterialsController {
 
   @Put('quizzes/:quizId')
   @Roles(Role.ADMIN, Role.TEACHER)
-  async updateQuiz(@Param('quizId') quizId: string, @Body() dto: UpdateQuizDto) {
+  async updateQuiz(
+    @Param('quizId') quizId: string,
+    @Body() dto: UpdateQuizDto,
+  ) {
     return this.materialsService.updateQuiz(quizId, dto);
   }
 

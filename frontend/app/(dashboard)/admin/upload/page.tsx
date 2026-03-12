@@ -25,7 +25,9 @@ export default function UploadPage() {
  const [allQuestions, setAllQuestions] = useState(false);
  const [questionsWithMaterial, setQuestionsWithMaterial] = useState(false);
  const [questionsFile, setQuestionsFile] = useState<File | null>(null);
+ const [studyMaterialFiles, setStudyMaterialFiles] = useState<File[]>([]);
  const [dragOverQuestions, setDragOverQuestions] = useState(false);
+ const [dragOverStudyMaterials, setDragOverStudyMaterials] = useState(false);
 
  useEffect(() => {
  subjectsApi.list(1, 100).then((res) => {
@@ -48,15 +50,49 @@ export default function UploadPage() {
  if (f) setQuestionsFile(f);
  };
 
+ const mergeUniqueFiles = (existing: File[], incoming: File[]) => {
+ const seen = new Set(
+ existing.map((f) => `${f.name}-${f.size}-${f.lastModified}`),
+ );
+ const uniqueIncoming = incoming.filter((f) => {
+ const key = `${f.name}-${f.size}-${f.lastModified}`;
+ if (seen.has(key)) return false;
+ seen.add(key);
+ return true;
+ });
+ return [...existing, ...uniqueIncoming];
+ };
+
+ const addStudyMaterialFiles = (incoming: File[]) => {
+ if (incoming.length === 0) return;
+ setStudyMaterialFiles((prev) => mergeUniqueFiles(prev, incoming));
+ };
+
+ const handleDropStudyMaterials = (e: React.DragEvent) => {
+ e.preventDefault();
+ setDragOverStudyMaterials(false);
+ const incoming = Array.from(e.dataTransfer.files || []);
+ addStudyMaterialFiles(incoming);
+ };
+
+ const removeStudyMaterialFile = (index: number) => {
+ setStudyMaterialFiles((prev) => prev.filter((_, i) => i !== index));
+ };
+
  const handleUpload = async () => {
  if (questionsWithMaterial) {
- if (!questionsFile || !file || !subjectId) {
+ if (!questionsFile || studyMaterialFiles.length === 0 || !subjectId) {
  toast.error(t('adminUpload.errorBothFiles'));
  return;
  }
  setUploading(true);
  try {
- await materialsApi.uploadWithQuestions(questionsFile, file, subjectId, allQuestions ? 0 : numQuestions);
+ await materialsApi.uploadWithQuestions(
+ questionsFile,
+ studyMaterialFiles,
+ subjectId,
+ allQuestions ? 0 : numQuestions,
+ );
  toast.success(t('adminUpload.success'));
  router.push('/admin/materials');
  } catch (err: unknown) {
@@ -87,6 +123,91 @@ export default function UploadPage() {
  }
  }
  };
+
+ const MultiFileUploadZone = ({
+ id,
+ files,
+ onAddFiles,
+ onRemoveFile,
+ onDrop,
+ isDragOver,
+ onDragOver,
+ onDragLeave,
+ label,
+ description,
+ }: {
+ id: string;
+ files: File[];
+ onAddFiles: (files: File[]) => void;
+ onRemoveFile: (index: number) => void;
+ onDrop: (e: React.DragEvent) => void;
+ isDragOver: boolean;
+ onDragOver: () => void;
+ onDragLeave: () => void;
+ label: string;
+ description: string;
+ }) => (
+ <div className="space-y-3">
+ <div
+ onDragOver={(e) => { e.preventDefault(); onDragOver(); }}
+ onDragLeave={onDragLeave}
+ onDrop={onDrop}
+ className={cn(
+ 'flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition-colors cursor-pointer',
+ isDragOver
+ ? 'border-blue-400 bg-blue-50 dark:bg-blue-500/8'
+ : 'border-gray-300 dark:border-zinc-600 hover:border-gray-400',
+ )}
+ onClick={() => document.getElementById(id)?.click()}
+ >
+ <Upload size={40} className="text-gray-400 dark:text-zinc-500 mb-3" />
+ <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">{label}</p>
+ <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">{description}</p>
+ <input
+ id={id}
+ type="file"
+ multiple
+ className="hidden"
+ accept=".pdf,.docx,.pptx,.xlsx,.xls,.png,.jpg,.jpeg"
+ onChange={(e) => {
+ const incoming = Array.from(e.target.files || []);
+ onAddFiles(incoming);
+ if (e.target) e.target.value = '';
+ }}
+ />
+ </div>
+
+ {files.length > 0 && (
+ <div className="space-y-2">
+ {files.map((f, index) => (
+ <div
+ key={`${f.name}-${f.size}-${f.lastModified}-${index}`}
+ className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-zinc-700 p-3"
+ >
+ <div className="flex h-9 w-9 items-center justify-center rounded bg-blue-100 dark:bg-blue-500/10">
+ <FileText size={18} className="text-blue-600 dark:text-blue-400" />
+ </div>
+ <div className="flex-1 min-w-0">
+ <p className="font-medium text-sm text-gray-900 dark:text-zinc-100 truncate">
+ {f.name}
+ </p>
+ <p className="text-xs text-gray-500 dark:text-zinc-400">
+ {(f.size / 1024).toFixed(1)} KB
+ </p>
+ </div>
+ <button
+ type="button"
+ onClick={() => onRemoveFile(index)}
+ className="rounded-lg p-1.5 text-gray-400 dark:text-zinc-500 hover:bg-gray-100 dark:hover:bg-zinc-700 hover:text-gray-600 dark:hover:text-zinc-300 cursor-pointer"
+ >
+ <X size={16} />
+ </button>
+ </div>
+ ))}
+ </div>
+ )}
+ </div>
+ );
 
  const FileUploadZone = ({
  id,
@@ -192,6 +313,7 @@ export default function UploadPage() {
  setQuestionsWithMaterial(e.target.checked);
  if (!e.target.checked) {
  setQuestionsFile(null);
+ setStudyMaterialFiles([]);
  }
  }}
  className="mt-0.5 h-5 w-5 rounded border-gray-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
@@ -235,20 +357,34 @@ export default function UploadPage() {
  </Card>
  )}
 
+ {questionsWithMaterial ? (
  <Card>
  <CardHeader>
- <CardTitle>
- {questionsWithMaterial
- ? (t('adminUpload.studyMaterialFile') || 'Study Material File')
- : t('adminUpload.selectedFile')
- }
- </CardTitle>
+ <CardTitle>{t('adminUpload.studyMaterialFiles') || 'Study Material Files'}</CardTitle>
  <CardDescription>
- {questionsWithMaterial
- ? (t('adminUpload.studyMaterialFileDesc') || 'Upload the study material from which answers to the questions will be found')
- : t('adminUpload.supported')
- }
+ {t('adminUpload.studyMaterialFilesDesc') || 'Upload one or more study material files from which answers will be found'}
  </CardDescription>
+ </CardHeader>
+ <CardContent>
+ <MultiFileUploadZone
+ id="study-material-files-input"
+ files={studyMaterialFiles}
+ onAddFiles={addStudyMaterialFiles}
+ onRemoveFile={removeStudyMaterialFile}
+ onDrop={handleDropStudyMaterials}
+ isDragOver={dragOverStudyMaterials}
+ onDragOver={() => setDragOverStudyMaterials(true)}
+ onDragLeave={() => setDragOverStudyMaterials(false)}
+ label={t('adminUpload.chooseStudyMaterials') || 'Choose study materials or drag and drop'}
+ description={t('adminUpload.supported')}
+ />
+ </CardContent>
+ </Card>
+ ) : (
+ <Card>
+ <CardHeader>
+ <CardTitle>{t('adminUpload.selectedFile')}</CardTitle>
+ <CardDescription>{t('adminUpload.supported')}</CardDescription>
  </CardHeader>
  <CardContent>
  <FileUploadZone
@@ -259,14 +395,12 @@ export default function UploadPage() {
  isDragOver={dragOver}
  onDragOver={() => setDragOver(true)}
  onDragLeave={() => setDragOver(false)}
- label={questionsWithMaterial
- ? (t('adminUpload.chooseStudyMaterial') || 'Choose study material or drag and drop')
- : t('adminUpload.chooseFile')
- }
+ label={t('adminUpload.chooseFile')}
  description={t('adminUpload.supported')}
  />
  </CardContent>
  </Card>
+ )}
 
  <Card>
  <CardHeader>
@@ -313,7 +447,7 @@ export default function UploadPage() {
  <Button
  onClick={handleUpload}
  loading={uploading}
- disabled={questionsWithMaterial ? (!questionsFile || !file || !subjectId) : (!file || !subjectId)}
+ disabled={questionsWithMaterial ? (!questionsFile || studyMaterialFiles.length === 0 || !subjectId) : (!file || !subjectId)}
  className="w-full"
  size="lg"
  >
