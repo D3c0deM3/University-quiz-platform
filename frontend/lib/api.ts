@@ -2,14 +2,34 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { generateFingerprint, getDeviceName } from './fingerprint';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const ACCESS_TOKEN_STORAGE_KEY = '__access_token';
+
+function readStoredAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
 
 // ─── In-Memory Access Token ────────────────────────────
-// Access token is NEVER stored in localStorage — only in memory.
-// This prevents trivial token theft via copy-paste.
-let accessToken: string | null = null;
+// Access token is stored in memory + sessionStorage (tab lifetime only).
+// It is still never written to localStorage.
+let accessToken: string | null = readStoredAccessToken();
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
+  if (typeof window === 'undefined') return;
+  try {
+    if (token) {
+      sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+    } else {
+      sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage-denied environments.
+  }
 }
 
 export function getAccessToken(): string | null {
@@ -39,6 +59,16 @@ api.interceptors.request.use((config) => {
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
 
+function isAuthEndpoint(url?: string): boolean {
+  if (!url) return false;
+  return (
+    url.includes('/auth/login') ||
+    url.includes('/auth/register') ||
+    url.includes('/auth/register-with-otp') ||
+    url.includes('/auth/refresh')
+  );
+}
+
 function subscribeTokenRefresh(cb: (token: string) => void) {
   refreshSubscribers.push(cb);
 }
@@ -57,7 +87,8 @@ api.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       typeof window !== 'undefined' &&
-      !originalRequest._retry
+      !originalRequest._retry &&
+      !isAuthEndpoint(originalRequest?.url)
     ) {
       const path = window.location.pathname;
 
@@ -100,9 +131,13 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed — session is invalid, redirect to login
-        setAccessToken(null);
-        window.location.href = '/login';
+        const refreshStatus = (refreshError as AxiosError)?.response?.status;
+        // Redirect only for explicit auth failures. For transient network
+        // issues, keep current page/state and let caller handle the error.
+        if (refreshStatus === 401 || refreshStatus === 403) {
+          setAccessToken(null);
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
