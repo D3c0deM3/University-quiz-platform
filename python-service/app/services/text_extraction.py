@@ -124,9 +124,15 @@ async def extract_from_doc(file_path: str) -> str:
 
     # Try antiword first (lightweight, works on Heroku)
     try:
+        env = os.environ.copy()
+        # heroku-buildpack-apt installs mapping files under .apt prefix
+        for candidate in ["/app/.apt/usr/share/antiword", "/usr/share/antiword"]:
+            if os.path.isdir(candidate):
+                env["ANTIWORDDIR"] = candidate
+                break
         result = subprocess.run(
             ["antiword", file_path],
-            capture_output=True, timeout=60,
+            capture_output=True, timeout=60, env=env,
         )
         if result.returncode == 0:
             text = result.stdout.decode("utf-8", errors="replace").strip()
