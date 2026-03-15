@@ -147,8 +147,8 @@ export declare class MaterialsService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string | null;
             description: string | null;
+            code: string | null;
         };
         metadata: {
             id: string;

@@ -181,6 +181,7 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
                                         answerText,
                                         subjectId: material.subjectId,
                                         createdById: uploadedById,
+                                        materialId,
                                         status: client_1.QuestionStatus.APPROVED,
                                     },
                                 });

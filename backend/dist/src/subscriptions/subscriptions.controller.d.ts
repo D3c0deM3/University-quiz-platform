@@ -77,8 +77,8 @@ export declare class SubscriptionsController {
         subject: {
             id: string;
             name: string;
-            code: string | null;
             description: string | null;
+            code: string | null;
         };
     } & {
         id: string;
@@ -94,8 +94,8 @@ export declare class SubscriptionsController {
             subject: {
                 id: string;
                 name: string;
-                code: string | null;
                 description: string | null;
+                code: string | null;
             };
         } & {
             id: string;
@@ -113,8 +113,8 @@ export declare class SubscriptionsController {
             subject: {
                 id: string;
                 name: string;
-                code: string | null;
                 description: string | null;
+                code: string | null;
             };
         } & {
             id: string;

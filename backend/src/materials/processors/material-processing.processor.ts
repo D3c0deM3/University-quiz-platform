@@ -294,6 +294,7 @@ export class MaterialProcessingProcessor extends WorkerHost {
                     answerText,
                     subjectId: material.subjectId,
                     createdById: uploadedById,
+                    materialId,
                     status: QuestionStatus.APPROVED,
                   },
                 });

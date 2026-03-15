@@ -311,6 +311,12 @@ export class MaterialsService {
     const filePath = this.resolveMaterialFilePath(material.filePath, material.fileName);
     await fs.unlink(filePath).catch(() => undefined);
 
+    // Delete associated quizzes (cascade deletes questions, options, attempts)
+    await this.prisma.quiz.deleteMany({ where: { materialId: id } });
+
+    // Delete associated Q&A bank entries created from this material
+    await this.prisma.manualQuestion.deleteMany({ where: { materialId: id } });
+
     await this.prisma.material.delete({ where: { id } });
     return { message: 'Material deleted successfully' };
   }
@@ -778,6 +784,9 @@ export class MaterialsService {
     });
 
     if (material) {
+      // Delete associated quizzes and Q&A bank entries before deleting material
+      await this.prisma.quiz.deleteMany({ where: { materialId: material.id } });
+      await this.prisma.manualQuestion.deleteMany({ where: { materialId: material.id } });
       await this.prisma.material.delete({ where: { id: material.id } });
     }
 

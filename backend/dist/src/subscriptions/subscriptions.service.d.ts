@@ -117,8 +117,8 @@ export declare class SubscriptionsService {
         subject: {
             id: string;
             name: string;
-            code: string | null;
             description: string | null;
+            code: string | null;
         };
     } & {
         id: string;
@@ -134,8 +134,8 @@ export declare class SubscriptionsService {
             subject: {
                 id: string;
                 name: string;
-                code: string | null;
                 description: string | null;
+                code: string | null;
             };
         } & {
             id: string;

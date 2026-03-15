@@ -281,7 +281,7 @@ async def generate_quiz_questions(
     if num_questions <= 0:
         return await _generate_all_questions(text, progress_callback=progress_callback)
 
-    batch_size = 50
+    batch_size = 30
     if num_questions <= batch_size:
         await _emit_progress(progress_callback, 20, "Generating quiz batch 1/1")
         result = await _generate_quiz_batch(truncated, num_questions)
@@ -359,7 +359,7 @@ async def _generate_all_questions(
     """Extract all questions found in the material with stepwise batching."""
     stepwise_questions = await generate_all_quiz_questions_stepwise(
         text,
-        batch_size=50,
+        batch_size=30,
         progress_callback=progress_callback,
     )
     if stepwise_questions:
@@ -597,6 +597,74 @@ def _find_covered_input_indices(
     return covered
 
 
+def _create_fallback_quiz(question_text: str) -> dict:
+    """Create a minimal quiz object from raw question text when AI generation fails.
+    This ensures ZERO question loss — every detected question gets a quiz entry."""
+    return {
+        "question_text": question_text.strip(),
+        "question_type": "MCQ",
+        "options": [
+            {"text": "A", "is_correct": False},
+            {"text": "B", "is_correct": False},
+            {"text": "C", "is_correct": False},
+            {"text": "D", "is_correct": False},
+        ],
+        "explanation": "Auto-generated placeholder — AI could not generate options for this question.",
+    }
+
+
+def _create_fallback_quizzes_for_missing(
+    detected_questions: list[str],
+    all_quizzes: list[dict],
+    seen_question_keys: set[str],
+) -> int:
+    """For every detected question that has no corresponding quiz object,
+    create a fallback quiz entry so nothing is lost.
+    Returns the number of fallback entries added."""
+    existing_keys = {_question_key(q.get("question_text", "")) for q in all_quizzes}
+    existing_word_sets = [_normalize_words(q.get("question_text", "")) for q in all_quizzes]
+    added = 0
+
+    for q_text in detected_questions:
+        q_key = _question_key(q_text)
+
+        # Skip if already covered by exact key
+        if q_key in existing_keys:
+            continue
+
+        # Skip if already covered by fuzzy match
+        input_words = _normalize_words(q_text)
+        is_covered = False
+        if input_words:
+            for ews in existing_word_sets:
+                if not ews:
+                    continue
+                overlap = len(input_words & ews)
+                union = len(input_words | ews)
+                if union > 0 and (overlap / union) > 0.45:
+                    is_covered = True
+                    break
+
+        if is_covered:
+            continue
+
+        # Not covered — create a fallback
+        if q_key and q_key not in seen_question_keys:
+            fallback = _create_fallback_quiz(q_text)
+            all_quizzes.append(fallback)
+            seen_question_keys.add(q_key)
+            existing_keys.add(q_key)
+            existing_word_sets.append(_normalize_words(q_text))
+            added += 1
+
+    if added > 0:
+        logger.warning(
+            f"FALLBACK: Created {added} placeholder quiz entries for questions "
+            f"that AI could not generate (total quizzes now: {len(all_quizzes)})"
+        )
+    return added
+
+
 def _dedupe_question_texts(questions: list[str]) -> list[str]:
     deduped: list[str] = []
     seen: set[str] = set()
@@ -667,7 +735,7 @@ async def generate_quiz_from_questions_and_material(
             return await _generate_quiz_for_question_list_with_material(
                 target_questions,
                 truncated_material,
-                batch_size=50,
+                batch_size=30,
                 progress_callback=progress_callback,
             )
         logger.warning("No questions detected for stepwise questions+material generation; falling back to single-shot.")
@@ -713,7 +781,7 @@ async def generate_quiz_from_questions_and_material(
 async def _generate_quiz_for_question_list_with_material(
     question_texts: list[str],
     material_context: str,
-    batch_size: int = 50,
+    batch_size: int = 30,
     progress_callback: ProgressCallback = None,
 ) -> list:
     """Generate quiz answers/options for known questions in batches using material context.
@@ -843,11 +911,21 @@ QUESTIONS (generate one quiz object per question):
                     )
                     break
 
+    # ── ZERO-LOSS FALLBACK: create placeholder quizzes for any remaining missing questions ──
+    fallback_count = _create_fallback_quizzes_for_missing(
+        question_texts, all_quizzes, seen_question_keys,
+    )
+    if fallback_count > 0:
+        logger.info(
+            f"Questions+material: {fallback_count} fallback quizzes added to ensure zero loss "
+            f"(total: {len(all_quizzes)}/{len(question_texts)})"
+        )
+
     final_missing = len(question_texts) - len(all_quizzes)
     if final_missing > 0:
-        logger.warning(
-            f"Questions+material finished with {final_missing} unrecoverable missing question(s) "
-            f"out of {len(question_texts)} detected"
+        logger.error(
+            f"CRITICAL: Questions+material STILL has {final_missing} missing question(s) after fallback "
+            f"out of {len(question_texts)} detected — this should never happen"
         )
 
     await _emit_progress(
@@ -970,7 +1048,7 @@ TEXT TO REVIEW:
 
 async def generate_all_quiz_questions_stepwise(
     text: str,
-    batch_size: int = 50,
+    batch_size: int = 30,
     progress_callback: ProgressCallback = None,
 ) -> list:
     """Step-by-step: detect all questions, then batch quiz generation.
@@ -1107,11 +1185,21 @@ QUESTIONS (generate one quiz object per question):
                     logger.error(f"Reconciliation batch {i//reconcile_batch_size + 1} attempt {attempt + 1} failed: {e}")
                     break
 
+    # ── ZERO-LOSS FALLBACK: create placeholder quizzes for any remaining missing questions ──
+    fallback_count = _create_fallback_quizzes_for_missing(
+        detected_questions, all_quizzes, seen_question_keys,
+    )
+    if fallback_count > 0:
+        logger.info(
+            f"Stepwise: {fallback_count} fallback quizzes added to ensure zero loss "
+            f"(total: {len(all_quizzes)}/{len(detected_questions)})"
+        )
+
     final_missing = len(detected_questions) - len(all_quizzes)
     if final_missing > 0:
-        logger.warning(
-            f"Stepwise finished with {final_missing} unrecoverable missing question(s) "
-            f"out of {len(detected_questions)} detected"
+        logger.error(
+            f"CRITICAL: Stepwise STILL has {final_missing} missing question(s) after fallback "
+            f"out of {len(detected_questions)} detected — this should never happen"
         )
 
     logger.info(f"Stepwise generated {len(all_quizzes)} quizzes out of {len(detected_questions)} detected")

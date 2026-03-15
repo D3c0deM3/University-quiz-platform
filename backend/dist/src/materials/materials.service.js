@@ -252,6 +252,8 @@ let MaterialsService = class MaterialsService {
         }
         const filePath = this.resolveMaterialFilePath(material.filePath, material.fileName);
         await fs_1.promises.unlink(filePath).catch(() => undefined);
+        await this.prisma.quiz.deleteMany({ where: { materialId: id } });
+        await this.prisma.manualQuestion.deleteMany({ where: { materialId: id } });
         await this.prisma.material.delete({ where: { id } });
         return { message: 'Material deleted successfully' };
     }
@@ -636,6 +638,8 @@ let MaterialsService = class MaterialsService {
             select: { id: true },
         });
         if (material) {
+            await this.prisma.quiz.deleteMany({ where: { materialId: material.id } });
+            await this.prisma.manualQuestion.deleteMany({ where: { materialId: material.id } });
             await this.prisma.material.delete({ where: { id: material.id } });
         }
         await fs_1.promises.unlink(absolutePath);

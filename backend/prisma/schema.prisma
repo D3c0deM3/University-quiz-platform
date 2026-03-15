@@ -130,6 +130,7 @@ model Material {
   uploadedBy User              @relation("UploadedBy", fields: [uploadedById], references: [id])
   metadata   MaterialMetadata?
   textChunks MaterialTextChunk[]
+  manualQuestions ManualQuestion[]
 
   @@index([subjectId])
   @@index([status])
@@ -288,17 +289,20 @@ model ManualQuestion {
   imagePath    String?        @map("image_path")
   subjectId    String         @map("subject_id")
   createdById  String         @map("created_by_id")
+  materialId   String?        @map("material_id")
   status       QuestionStatus @default(PENDING)
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
 
   // Relations
-  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  createdBy User    @relation("CreatedQuestions", fields: [createdById], references: [id])
+  subject   Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdBy User      @relation("CreatedQuestions", fields: [createdById], references: [id])
+  material  Material? @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
   @@index([subjectId])
   @@index([status])
   @@index([createdById])
+  @@index([materialId])
   @@map("manual_questions")
 }
 

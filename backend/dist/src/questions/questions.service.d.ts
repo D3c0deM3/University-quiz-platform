@@ -26,6 +26,7 @@ export declare class QuestionsService {
         createdById: string;
         questionText: string;
         subjectId: string;
+        materialId: string | null;
         answerText: string;
         imagePath: string | null;
     }>;
@@ -54,6 +55,7 @@ export declare class QuestionsService {
             createdById: string;
             questionText: string;
             subjectId: string;
+            materialId: string | null;
             answerText: string;
             imagePath: string | null;
         })[];
@@ -83,6 +85,7 @@ export declare class QuestionsService {
         createdById: string;
         questionText: string;
         subjectId: string;
+        materialId: string | null;
         answerText: string;
         imagePath: string | null;
     }>;
@@ -105,6 +108,7 @@ export declare class QuestionsService {
         createdById: string;
         questionText: string;
         subjectId: string;
+        materialId: string | null;
         answerText: string;
         imagePath: string | null;
     }>;
@@ -130,6 +134,7 @@ export declare class QuestionsService {
         createdById: string;
         questionText: string;
         subjectId: string;
+        materialId: string | null;
         answerText: string;
         imagePath: string | null;
     }>;
