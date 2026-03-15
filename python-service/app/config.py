@@ -10,7 +10,7 @@ class Settings:
     NESTJS_BACKEND_URL: str = os.getenv("NESTJS_BACKEND_URL", "http://localhost:3000/api")
     INTERNAL_PROCESSING_KEY: str = os.getenv("INTERNAL_PROCESSING_KEY", "local-processing-key")
     AI_API_KEY: str = os.getenv("AI_API_KEY", "")
-    AI_MODEL: str = os.getenv("AI_MODEL", "gemini-2.0-flash")
+    AI_MODEL: str = os.getenv("AI_MODEL", "gemini-3.1-flash-lite")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     TESSERACT_CMD: str = os.getenv("TESSERACT_CMD", "/usr/bin/tesseract")
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "../uploads")
