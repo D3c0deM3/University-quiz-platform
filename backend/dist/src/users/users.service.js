@@ -601,7 +601,15 @@ let UsersService = class UsersService {
     }
     async remove(id) {
         await this.findOne(id);
-        await this.prisma.user.delete({ where: { id } });
+        await this.prisma.$transaction(async (tx) => {
+            await tx.quizAttemptAnswer.deleteMany({
+                where: { attempt: { userId: id } },
+            });
+            await tx.quizAttempt.deleteMany({ where: { userId: id } });
+            await tx.material.deleteMany({ where: { uploadedById: id } });
+            await tx.manualQuestion.deleteMany({ where: { createdById: id } });
+            await tx.user.delete({ where: { id } });
+        });
         return { message: 'User deleted successfully' };
     }
     async assignRole(id, dto) {

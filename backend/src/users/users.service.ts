@@ -687,7 +687,26 @@ export class UsersService {
 
   async remove(id: string) {
     await this.findOne(id);
-    await this.prisma.user.delete({ where: { id } });
+
+    await this.prisma.$transaction(async (tx) => {
+      // Delete quiz attempt answers for the user's attempts
+      await tx.quizAttemptAnswer.deleteMany({
+        where: { attempt: { userId: id } },
+      });
+
+      // Delete quiz attempts
+      await tx.quizAttempt.deleteMany({ where: { userId: id } });
+
+      // Delete materials uploaded by the user
+      await tx.material.deleteMany({ where: { uploadedById: id } });
+
+      // Delete manual questions created by the user
+      await tx.manualQuestion.deleteMany({ where: { createdById: id } });
+
+      // Now delete the user (sessions, subscriptions, blockedDevices cascade automatically)
+      await tx.user.delete({ where: { id } });
+    });
+
     return { message: 'User deleted successfully' };
   }
 
