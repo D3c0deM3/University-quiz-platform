@@ -104,8 +104,10 @@ export class QuestionsController {
 
     // Subscription check for students accessing a specific subject
     if (userRole === Role.STUDENT && subjectId) {
-      const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
-      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+      const accessStatus = await this.subscriptionsService.hasAccessOrTrial(userId, subjectId);
+      if (!accessStatus.hasAccess && !accessStatus.isTrial) {
+        throw new ForbiddenException('You do not have access to this subject');
+      }
     }
 
     if (userRole === Role.ADMIN || userRole === Role.TEACHER) {
@@ -152,8 +154,10 @@ export class QuestionsController {
   ) {
     const question = await this.questionsService.findOne(id);
     if (role === Role.STUDENT && question.subjectId) {
-      const hasAccess = await this.subscriptionsService.hasAccess(userId, question.subjectId);
-      if (!hasAccess) throw new ForbiddenException('You do not have a subscription for this subject');
+      const accessStatus = await this.subscriptionsService.hasAccessOrTrial(userId, question.subjectId);
+      if (!accessStatus.hasAccess && !accessStatus.isTrial) {
+        throw new ForbiddenException('You do not have access to this subject');
+      }
     }
     return question;
   }

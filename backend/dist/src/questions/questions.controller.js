@@ -67,9 +67,10 @@ let QuestionsController = class QuestionsController {
         if (search)
             filters.search = search;
         if (userRole === client_1.Role.STUDENT && subjectId) {
-            const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
-            if (!hasAccess)
-                throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+            const accessStatus = await this.subscriptionsService.hasAccessOrTrial(userId, subjectId);
+            if (!accessStatus.hasAccess && !accessStatus.isTrial) {
+                throw new common_2.ForbiddenException('You do not have access to this subject');
+            }
         }
         if (userRole === client_1.Role.ADMIN || userRole === client_1.Role.TEACHER) {
             if (status)
@@ -96,9 +97,10 @@ let QuestionsController = class QuestionsController {
     async findOne(id, userId, role) {
         const question = await this.questionsService.findOne(id);
         if (role === client_1.Role.STUDENT && question.subjectId) {
-            const hasAccess = await this.subscriptionsService.hasAccess(userId, question.subjectId);
-            if (!hasAccess)
-                throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+            const accessStatus = await this.subscriptionsService.hasAccessOrTrial(userId, question.subjectId);
+            if (!accessStatus.hasAccess && !accessStatus.isTrial) {
+                throw new common_2.ForbiddenException('You do not have access to this subject');
+            }
         }
         return question;
     }
