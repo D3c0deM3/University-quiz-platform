@@ -537,6 +537,66 @@ def _merge_unique_questions(target: list, incoming: list, seen_keys: set[str]) -
     return added
 
 
+def _normalize_words(text: str) -> set[str]:
+    """Extract normalized word set from question text for fuzzy matching."""
+    text = text.lower().strip()
+    text = re.sub(r'^[\d]+[.\)]\s*', '', text)
+    text = re.sub(r'^[a-z][.\)]\s*', '', text)
+    # Remove punctuation and split
+    words = re.sub(r'[^\w\s]', '', text).split()
+    # Filter out very short words (articles, etc.) to avoid noise
+    return {w for w in words if len(w) > 2}
+
+
+def _find_covered_input_indices(
+    input_questions: list[str],
+    generated_questions: list[dict],
+) -> set[int]:
+    """Find which input question indices were covered by generated quiz objects.
+
+    Uses a two-pass strategy:
+    1. Exact key match (fast)
+    2. Fuzzy word-overlap match (catches AI rephrasing)
+
+    Returns set of input indices that are considered covered.
+    """
+    covered: set[int] = set()
+    gen_keys = {_question_key(q.get("question_text", "")) for q in generated_questions}
+    gen_word_sets = [_normalize_words(q.get("question_text", "")) for q in generated_questions]
+    used_gen_indices: set[int] = set()
+
+    for i, input_q in enumerate(input_questions):
+        input_key = _question_key(input_q)
+
+        # Pass 1: exact key match
+        if input_key in gen_keys:
+            covered.add(i)
+            continue
+
+        # Pass 2: fuzzy word overlap (Jaccard similarity > 0.45)
+        input_words = _normalize_words(input_q)
+        if not input_words:
+            continue
+
+        best_score = 0.0
+        best_gen_idx = -1
+        for gi, gen_words in enumerate(gen_word_sets):
+            if gi in used_gen_indices or not gen_words:
+                continue
+            overlap = len(input_words & gen_words)
+            union = len(input_words | gen_words)
+            score = overlap / union if union > 0 else 0.0
+            if score > best_score:
+                best_score = score
+                best_gen_idx = gi
+
+        if best_score > 0.45 and best_gen_idx >= 0:
+            covered.add(i)
+            used_gen_indices.add(best_gen_idx)
+
+    return covered
+
+
 def _dedupe_question_texts(questions: list[str]) -> list[str]:
     deduped: list[str] = []
     seen: set[str] = set()
@@ -699,14 +759,16 @@ Rules:
                 validated_batch = _validate_questions(batch_quizzes)
                 _merge_unique_questions(all_quizzes, validated_batch, seen_question_keys)
 
-                generated_keys = {_question_key(q["question_text"]) for q in validated_batch}
+                # Use fuzzy matching to find which input questions were covered
+                covered_indices = _find_covered_input_indices(missing_questions, validated_batch)
                 missing_questions = [
-                    q_text for q_text in missing_questions
-                    if _question_key(q_text) not in generated_keys
+                    q_text for idx, q_text in enumerate(missing_questions)
+                    if idx not in covered_indices
                 ]
                 logger.info(
                     f"Questions+material batch {i//batch_size + 1} attempt {attempts}: "
-                    f"generated {len(validated_batch)}, missing {len(missing_questions)}"
+                    f"generated {len(validated_batch)}, covered {len(covered_indices)}, "
+                    f"still missing {len(missing_questions)}"
                 )
                 progress = int(((i + len(question_texts[i:i + batch_size]) - len(missing_questions)) / max(1, len(question_texts))) * 85)
                 await _emit_progress(
@@ -765,10 +827,10 @@ QUESTIONS (generate one quiz object per question):
                     if isinstance(reconciled, list):
                         validated = _validate_questions(reconciled)
                         added = _merge_unique_questions(all_quizzes, validated, seen_question_keys)
-                        generated_keys = {_question_key(q["question_text"]) for q in validated}
+                        covered_indices = _find_covered_input_indices(still_missing, validated)
                         still_missing = [
-                            q for q in still_missing
-                            if _question_key(q) not in generated_keys
+                            q for idx, q in enumerate(still_missing)
+                            if idx not in covered_indices
                         ]
                         logger.info(
                             f"Questions+material reconciliation batch {i//reconcile_batch_size + 1} "
@@ -968,14 +1030,16 @@ QUESTIONS:
                 validated_batch = _validate_questions(batch_quizzes)
                 _merge_unique_questions(all_quizzes, validated_batch, seen_question_keys)
 
-                generated_keys = {_question_key(q["question_text"]) for q in validated_batch}
+                # Use fuzzy matching to find which input questions were covered
+                covered_indices = _find_covered_input_indices(missing_questions, validated_batch)
                 missing_questions = [
-                    q_text for q_text in missing_questions
-                    if _question_key(q_text) not in generated_keys
+                    q_text for idx, q_text in enumerate(missing_questions)
+                    if idx not in covered_indices
                 ]
                 logger.info(
                     f"Batch {i//batch_size + 1} attempt {attempts}: "
-                    f"generated {len(validated_batch)}, missing {len(missing_questions)}"
+                    f"generated {len(validated_batch)}, covered {len(covered_indices)}, "
+                    f"still missing {len(missing_questions)}"
                 )
                 progress = 30 + int((len(all_quizzes) / max(1, len(detected_questions))) * 55)
                 await _emit_progress(
@@ -1030,10 +1094,10 @@ QUESTIONS (generate one quiz object per question):
                     if isinstance(reconciled, list):
                         validated = _validate_questions(reconciled)
                         added = _merge_unique_questions(all_quizzes, validated, seen_question_keys)
-                        generated_keys = {_question_key(q["question_text"]) for q in validated}
+                        covered_indices = _find_covered_input_indices(still_missing, validated)
                         still_missing = [
-                            q for q in still_missing
-                            if _question_key(q) not in generated_keys
+                            q for idx, q in enumerate(still_missing)
+                            if idx not in covered_indices
                         ]
                         logger.info(
                             f"Reconciliation batch {i//reconcile_batch_size + 1} attempt {attempt + 1}: "
