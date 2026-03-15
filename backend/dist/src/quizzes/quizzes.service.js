@@ -473,15 +473,14 @@ let QuizzesService = QuizzesService_1 = class QuizzesService {
             throw new common_1.NotFoundException('Question not found');
         }
         if (role !== client_1.Role.ADMIN && role !== client_1.Role.TEACHER) {
-            const completedAttempt = await this.prisma.quizAttempt.findFirst({
+            const attempt = await this.prisma.quizAttempt.findFirst({
                 where: {
                     userId,
                     quizId: question.quiz.id,
-                    completedAt: { not: null },
                 },
             });
-            if (!completedAttempt) {
-                throw new common_1.ForbiddenException('You can only check answers after submitting a quiz attempt.');
+            if (!attempt) {
+                throw new common_1.ForbiddenException('You must have started a quiz attempt to check answers.');
             }
         }
         const correctOption = question.options.find((o) => o.isCorrect);
@@ -633,8 +632,8 @@ Rules:
 - Distractors should be similar in length and style to the correct answer
 - The explanation should be 1-2 sentences
 - Return exactly ${questions.length} elements in the array, one per question, in the same order`;
-        const primaryModel = this.configService.get('AI_MODEL', 'gemini-3.1-flash-lite-preview');
-        const fallbackModels = [primaryModel, 'gemini-2.5-flash-lite'].filter((m, i, arr) => arr.indexOf(m) === i);
+        const primaryModel = this.configService.get('AI_MODEL', 'gemini-2.0-flash');
+        const fallbackModels = [primaryModel, 'gemini-2.0-flash-lite', 'gemini-1.5-flash'].filter((m, i, arr) => arr.indexOf(m) === i);
         let lastError = null;
         for (const model of fallbackModels) {
             for (let attempt = 0; attempt < 2; attempt++) {
@@ -660,14 +659,16 @@ Rules:
                     }
                     if (!response.ok) {
                         const errorBody = await response.text();
-                        this.logger.error(`Gemini API error: ${response.status} - ${errorBody}`);
-                        throw new common_1.BadRequestException('AI service returned an error');
+                        this.logger.error(`Gemini API error on ${model}: ${response.status} - ${errorBody}`);
+                        lastError = new Error(`Gemini API ${response.status} on ${model}`);
+                        break;
                     }
                     const data = (await response.json());
                     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (!text) {
-                        this.logger.error('Empty response from Gemini');
-                        throw new common_1.BadRequestException('AI service returned empty response');
+                        this.logger.error(`Empty response from Gemini on ${model}`);
+                        lastError = new Error(`Empty response from ${model}`);
+                        continue;
                     }
                     const cleaned = text
                         .replace(/```json\s*\n?/g, '')
@@ -686,8 +687,6 @@ Rules:
                     return valid;
                 }
                 catch (innerErr) {
-                    if (innerErr instanceof common_1.BadRequestException)
-                        throw innerErr;
                     lastError = innerErr;
                     this.logger.warn(`Model ${model} attempt ${attempt + 1} failed: ${lastError.message}`);
                 }

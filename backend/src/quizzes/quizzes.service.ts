@@ -622,18 +622,17 @@ export class QuizzesService {
 
     // Admin/Teacher can check freely
     if (role !== Role.ADMIN && role !== Role.TEACHER) {
-      // Student: must have a COMPLETED attempt for the quiz containing this question
-      const completedAttempt = await this.prisma.quizAttempt.findFirst({
+      // Student: must have an attempt (active or completed) for the quiz
+      const attempt = await this.prisma.quizAttempt.findFirst({
         where: {
           userId,
           quizId: question.quiz.id,
-          completedAt: { not: null },
         },
       });
 
-      if (!completedAttempt) {
+      if (!attempt) {
         throw new ForbiddenException(
-          'You can only check answers after submitting a quiz attempt.',
+          'You must have started a quiz attempt to check answers.',
         );
       }
     }
@@ -824,8 +823,8 @@ Rules:
 - The explanation should be 1-2 sentences
 - Return exactly ${questions.length} elements in the array, one per question, in the same order`;
 
-    const primaryModel = this.configService.get<string>('AI_MODEL', 'gemini-3.1-flash-lite-preview');
-    const fallbackModels = [primaryModel, 'gemini-2.5-flash-lite'].filter(
+    const primaryModel = this.configService.get<string>('AI_MODEL', 'gemini-2.0-flash');
+    const fallbackModels = [primaryModel, 'gemini-2.0-flash-lite', 'gemini-1.5-flash'].filter(
       (m, i, arr) => arr.indexOf(m) === i,
     );
 
@@ -858,16 +857,18 @@ Rules:
 
           if (!response.ok) {
             const errorBody = await response.text();
-            this.logger.error(`Gemini API error: ${response.status} - ${errorBody}`);
-            throw new BadRequestException('AI service returned an error');
+            this.logger.error(`Gemini API error on ${model}: ${response.status} - ${errorBody}`);
+            lastError = new Error(`Gemini API ${response.status} on ${model}`);
+            break; // Skip retries for this model, try next fallback
           }
 
           const data = (await response.json()) as GeminiResponse;
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
           if (!text) {
-            this.logger.error('Empty response from Gemini');
-            throw new BadRequestException('AI service returned empty response');
+            this.logger.error(`Empty response from Gemini on ${model}`);
+            lastError = new Error(`Empty response from ${model}`);
+            continue;
           }
 
           const cleaned = text
@@ -895,7 +896,6 @@ Rules:
 
           return valid;
         } catch (innerErr) {
-          if (innerErr instanceof BadRequestException) throw innerErr;
           lastError = innerErr as Error;
           this.logger.warn(`Model ${model} attempt ${attempt + 1} failed: ${lastError.message}`);
         }

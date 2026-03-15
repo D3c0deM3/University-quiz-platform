@@ -68,7 +68,7 @@ export default function QuizTakePage() {
  setQuestionCount(totalQuizQuestions);
  }, [quizId, totalQuizQuestions]);
 
- // Reveal answer when navigating away in instant mode
+ // Reveal answer when navigating away in instant mode (belt-and-suspenders)
  useEffect(() => {
  if (feedbackMode !== 'instant' || !quiz) return;
  const questions = quiz.questions || [];
@@ -87,11 +87,33 @@ export default function QuizTakePage() {
  },
  }));
  })
- .catch(() => {});
+ .catch((err) => {
+ console.error('Navigation reveal checkAnswer failed:', err?.response?.status, err?.response?.data?.message || err.message);
+ });
  }
  }
  prevIndexRef.current = currentIndex;
  }, [currentIndex, feedbackMode, quiz, answers, revealed]);
+
+ // Instant feedback: reveal answer immediately when user selects an option
+ const revealInstant = useCallback((questionId: string, selectedOptionId: string) => {
+ if (feedbackMode !== 'instant') return;
+ if (revealed[questionId]) return;
+ quizzesApi
+ .checkAnswer(questionId, selectedOptionId)
+ .then((res) => {
+ setRevealed((prev) => ({
+ ...prev,
+ [questionId]: {
+ correctOptionId: res.data.correctOptionId,
+ isCorrect: res.data.isCorrect,
+ },
+ }));
+ })
+ .catch((err) => {
+ console.error('Instant feedback checkAnswer failed:', err?.response?.status, err?.response?.data?.message || err.message);
+ });
+ }, [feedbackMode, revealed]);
 
  const startQuiz = useCallback(async () => {
  if (!id || !quiz) return;
@@ -152,6 +174,10 @@ export default function QuizTakePage() {
  ...prev,
  [questionId]: { ...prev[questionId], ...value },
  }));
+ // Trigger instant feedback immediately
+ if (value.selectedOptionId) {
+ revealInstant(questionId, value.selectedOptionId);
+ }
  };
 
  const submitQuiz = async () => {

@@ -22,11 +22,11 @@ export declare class QuestionsController {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        createdById: string;
         questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;
-        createdById: string;
     }>;
     findAll(userId: string, userRole: Role, page: number, limit: number, subjectId?: string, status?: QuestionStatus, search?: string, mine?: string): Promise<{
         data: ({
@@ -45,11 +45,11 @@ export declare class QuestionsController {
             createdAt: Date;
             updatedAt: Date;
             status: import("@prisma/client").$Enums.QuestionStatus;
+            createdById: string;
             questionText: string;
             subjectId: string;
             answerText: string;
             imagePath: string | null;
-            createdById: string;
         })[];
         meta: {
             total: number;
@@ -86,11 +86,11 @@ export declare class QuestionsController {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        createdById: string;
         questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;
-        createdById: string;
     }>;
     update(id: string, dto: UpdateQuestionDto, userId: string, userRole: Role, image?: Express.Multer.File): Promise<{
         subject: {
@@ -108,11 +108,11 @@ export declare class QuestionsController {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        createdById: string;
         questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;
-        createdById: string;
     }>;
     remove(id: string, userId: string, userRole: Role): Promise<{
         message: string;
@@ -133,11 +133,11 @@ export declare class QuestionsController {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        createdById: string;
         questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;
-        createdById: string;
     }>;
     generateQuiz(dto: GenerateQuizFromQADto): Promise<{
         message: string;

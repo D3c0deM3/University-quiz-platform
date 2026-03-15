@@ -23,11 +23,11 @@ export declare class QuestionsService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        createdById: string;
         questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;
-        createdById: string;
     }>;
     findAll(page?: number, limit?: number, filters?: {
         subjectId?: string;
@@ -51,11 +51,11 @@ export declare class QuestionsService {
             createdAt: Date;
             updatedAt: Date;
             status: import("@prisma/client").$Enums.QuestionStatus;
+            createdById: string;
             questionText: string;
             subjectId: string;
             answerText: string;
             imagePath: string | null;
-            createdById: string;
         })[];
         meta: {
             total: number;
@@ -80,11 +80,11 @@ export declare class QuestionsService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        createdById: string;
         questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;
-        createdById: string;
     }>;
     update(id: string, dto: UpdateQuestionDto, userId: string, userRole: Role, imagePath?: string): Promise<{
         subject: {
@@ -102,11 +102,11 @@ export declare class QuestionsService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        createdById: string;
         questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;
-        createdById: string;
     }>;
     remove(id: string, userId: string, userRole: Role): Promise<{
         message: string;
@@ -127,11 +127,11 @@ export declare class QuestionsService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.QuestionStatus;
+        createdById: string;
         questionText: string;
         subjectId: string;
         answerText: string;
         imagePath: string | null;
-        createdById: string;
     }>;
     generateQuizFromQA(dto: GenerateQuizFromQADto): Promise<{
         message: string;

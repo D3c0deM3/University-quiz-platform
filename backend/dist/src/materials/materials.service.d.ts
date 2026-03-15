@@ -24,6 +24,7 @@ export declare class MaterialsService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.MaterialStatus;
+        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
@@ -33,7 +34,6 @@ export declare class MaterialsService {
         processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
-        uploadedById: string;
     }>;
     uploadFromText(filePath: string, fileName: string, fileSize: number, subjectId: string, uploadedById: string): Promise<{
         subject: {
@@ -50,6 +50,7 @@ export declare class MaterialsService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.MaterialStatus;
+        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
@@ -59,7 +60,6 @@ export declare class MaterialsService {
         processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
-        uploadedById: string;
     }>;
     findAll(page?: number, limit?: number, status?: MaterialStatus, subjectId?: string): Promise<{
         data: ({
@@ -83,6 +83,7 @@ export declare class MaterialsService {
             createdAt: Date;
             updatedAt: Date;
             status: import("@prisma/client").$Enums.MaterialStatus;
+            uploadedById: string;
             fileName: string;
             originalName: string;
             filePath: string;
@@ -92,7 +93,6 @@ export declare class MaterialsService {
             processingStage: string | null;
             errorMessage: string | null;
             subjectId: string;
-            uploadedById: string;
         })[];
         meta: {
             total: number;
@@ -123,6 +123,7 @@ export declare class MaterialsService {
             createdAt: Date;
             updatedAt: Date;
             status: import("@prisma/client").$Enums.MaterialStatus;
+            uploadedById: string;
             fileName: string;
             originalName: string;
             filePath: string;
@@ -132,7 +133,6 @@ export declare class MaterialsService {
             processingStage: string | null;
             errorMessage: string | null;
             subjectId: string;
-            uploadedById: string;
         })[];
         meta: {
             total: number;
@@ -180,6 +180,7 @@ export declare class MaterialsService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.MaterialStatus;
+        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
@@ -189,13 +190,13 @@ export declare class MaterialsService {
         processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
-        uploadedById: string;
     }>;
     updateStatus(id: string, status: MaterialStatus, errorMessage?: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.MaterialStatus;
+        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
@@ -205,7 +206,6 @@ export declare class MaterialsService {
         processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
-        uploadedById: string;
     }>;
     updateProcessingProgress(materialId: string, progress: number, stage?: string): Promise<{
         id: string;
@@ -261,10 +261,10 @@ export declare class MaterialsService {
             createdAt: Date;
             updatedAt: Date;
             explanation: string | null;
+            quizId: string;
             orderIndex: number;
             questionText: string;
             questionType: import("@prisma/client").$Enums.QuestionType;
-            quizId: string;
         })[];
     } & {
         id: string;
@@ -291,10 +291,10 @@ export declare class MaterialsService {
             createdAt: Date;
             updatedAt: Date;
             explanation: string | null;
+            quizId: string;
             orderIndex: number;
             questionText: string;
             questionType: import("@prisma/client").$Enums.QuestionType;
-            quizId: string;
         })[];
     } & {
         id: string;
@@ -325,6 +325,7 @@ export declare class MaterialsService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.MaterialStatus;
+        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
@@ -334,7 +335,6 @@ export declare class MaterialsService {
         processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
-        uploadedById: string;
     }>;
     publishMaterial(materialId: string, publish: boolean): Promise<{
         metadata: {
@@ -355,6 +355,7 @@ export declare class MaterialsService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.MaterialStatus;
+        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
@@ -364,13 +365,13 @@ export declare class MaterialsService {
         processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
-        uploadedById: string;
     }>;
     reprocessMaterial(materialId: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.MaterialStatus;
+        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
@@ -380,7 +381,6 @@ export declare class MaterialsService {
         processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
-        uploadedById: string;
     }>;
     getQuizQuestions(quizId: string): Promise<({
         options: {
@@ -396,10 +396,10 @@ export declare class MaterialsService {
         createdAt: Date;
         updatedAt: Date;
         explanation: string | null;
+        quizId: string;
         orderIndex: number;
         questionText: string;
         questionType: import("@prisma/client").$Enums.QuestionType;
-        quizId: string;
     })[]>;
     createQuizQuestion(dto: CreateQuizQuestionDto): Promise<({
         options: {
@@ -415,10 +415,10 @@ export declare class MaterialsService {
         createdAt: Date;
         updatedAt: Date;
         explanation: string | null;
+        quizId: string;
         orderIndex: number;
         questionText: string;
         questionType: import("@prisma/client").$Enums.QuestionType;
-        quizId: string;
     }) | null>;
     updateQuizQuestion(questionId: string, dto: UpdateSingleQuestionDto): Promise<({
         options: {
@@ -434,10 +434,10 @@ export declare class MaterialsService {
         createdAt: Date;
         updatedAt: Date;
         explanation: string | null;
+        quizId: string;
         orderIndex: number;
         questionText: string;
         questionType: import("@prisma/client").$Enums.QuestionType;
-        quizId: string;
     }) | null>;
     deleteQuizQuestion(questionId: string): Promise<{
         message: string;
@@ -464,6 +464,7 @@ export declare class MaterialsService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.MaterialStatus;
+        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
@@ -473,7 +474,6 @@ export declare class MaterialsService {
         processingStage: string | null;
         errorMessage: string | null;
         subjectId: string;
-        uploadedById: string;
     }>;
     listStoredFiles(page?: number, limit?: number, search?: string): Promise<{
         data: {

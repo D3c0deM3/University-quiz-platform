@@ -246,6 +246,8 @@ async def extract_text(file_path: str, file_type: str) -> str:
         "image/png": "image",
         "image/jpeg": "image",
         "image/jpg": "image",
+        "txt": "txt",
+        "text/plain": "txt",
     }
 
     normalized = mime_map.get(ext, ext)
@@ -262,5 +264,8 @@ async def extract_text(file_path: str, file_type: str) -> str:
         return await extract_from_excel(abs_path)
     elif normalized == "image":
         return await extract_with_ocr(abs_path)
+    elif normalized == "txt":
+        with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
+            return f.read()
     else:
         raise ValueError(f"Unsupported file type: {file_type}")

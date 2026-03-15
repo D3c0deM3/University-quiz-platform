@@ -24,7 +24,8 @@ client = genai.Client(api_key=settings.AI_API_KEY)
 # Fallback model chain - try primary model first, then fallbacks
 FALLBACK_MODELS = [
     settings.AI_MODEL,
-    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
 ]
 # Deduplicate while preserving order
 _seen = set()
