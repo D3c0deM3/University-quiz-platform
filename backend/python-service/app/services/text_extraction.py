@@ -6,7 +6,6 @@ Uses standard parsers (pdfplumber, python-docx, python-pptx, openpyxl/xlrd, pyte
 import os
 import logging
 import subprocess
-import tempfile
 from typing import List
 
 import pdfplumber
@@ -122,32 +121,37 @@ async def extract_from_docx(file_path: str) -> str:
 
 
 async def extract_from_doc(file_path: str) -> str:
-    """Extract text from a legacy .doc file by converting to .docx via LibreOffice."""
+    """Extract text from a legacy .doc file using antiword, with python-docx fallback."""
     logger.info(f"Extracting text from DOC: {file_path}")
 
+    # Try antiword first (lightweight, works on Heroku)
     try:
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            result = subprocess.run(
-                [
-                    "libreoffice", "--headless", "--convert-to", "docx",
-                    "--outdir", tmp_dir, file_path,
-                ],
-                capture_output=True, timeout=120,
-            )
-            if result.returncode != 0:
-                logger.error(f"LibreOffice conversion failed: {result.stderr.decode(errors='replace')}")
-                return ""
-
-            base_name = os.path.splitext(os.path.basename(file_path))[0]
-            converted_path = os.path.join(tmp_dir, f"{base_name}.docx")
-            if not os.path.exists(converted_path):
-                logger.error(f"Converted file not found at {converted_path}")
-                return ""
-
-            return await extract_from_docx(converted_path)
+        result = subprocess.run(
+            ["antiword", file_path],
+            capture_output=True, timeout=60,
+        )
+        if result.returncode == 0:
+            text = result.stdout.decode("utf-8", errors="replace").strip()
+            if text:
+                logger.info(f"antiword extracted {len(text)} characters")
+                return text
+        else:
+            logger.warning(f"antiword failed: {result.stderr.decode(errors='replace')}")
+    except FileNotFoundError:
+        logger.warning("antiword not installed, trying python-docx fallback")
     except Exception as e:
-        logger.error(f"DOC extraction failed: {e}")
-        return ""
+        logger.warning(f"antiword failed: {e}")
+
+    # Fallback: some .doc files are actually OOXML with wrong extension
+    try:
+        text = await extract_from_docx(file_path)
+        if text and text.strip():
+            logger.info(f"python-docx fallback extracted {len(text)} characters")
+            return text
+    except Exception as e:
+        logger.warning(f"python-docx fallback also failed: {e}")
+
+    return ""
 
 
 async def extract_from_pptx(file_path: str) -> str:
