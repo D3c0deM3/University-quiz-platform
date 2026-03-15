@@ -47,6 +47,11 @@ export default function SubjectsPage() {
  for (const subject of data) {
  try {
  const checkRes = await subscriptionsApi.check(subject.id);
+ console.log(`🔍 Subject ${subject.name} (${subject.id}):`, {
+ hasAccess: checkRes.data.hasAccess,
+ isTrial: checkRes.data.isTrial,
+ trialUsed: checkRes.data.trialUsed,
+ });
  trialMap.set(subject.id, {
  hasAccess: checkRes.data.hasAccess === true,
  isTrial: checkRes.data.isTrial === true,
@@ -54,6 +59,7 @@ export default function SubjectsPage() {
  });
  } catch {
  // Default to no access if check fails
+ console.error(`❌ Failed to check trial status for ${subject.name}`);
  trialMap.set(subject.id, { hasAccess: false, isTrial: false, trialUsed: true });
  }
  }

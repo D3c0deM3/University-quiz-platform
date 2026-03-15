@@ -75,10 +75,13 @@ export default function SubjectQuestionsPage() {
  subscriptionsApi
  .check(subjectId)
  .then((res) => {
+ console.log('🔍 Trial Status Check:', { isTrial: res.data.isTrial, trialUsed: res.data.trialUsed, hasAccess: res.data.hasAccess });
  setIsTrial(res.data.isTrial === true);
  setTrialUsed(res.data.trialUsed === true);
  })
- .catch(() => {});
+ .catch((err) => {
+ console.error('❌ Trial Status Check Failed:', err.message);
+ });
  }
  }, [subjectId, user]);
 
@@ -93,13 +96,17 @@ export default function SubjectQuestionsPage() {
  subjectId,
  status: 'APPROVED',
  };
+ console.log('📋 Loading questions with params:', { ...params, isTrial, trialUsed });
  if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
  if (showMine) params.mine = 'true';
  const { data } = await questionsApi.list(params);
+ console.log('✅ Questions loaded:', { total: data.meta?.total, count: data.data?.length });
  setQuestions(data.data || []);
  setTotal(data.meta?.total || 0);
  setTotalPages(data.meta?.totalPages || 1);
  setPage(p);
+ } catch (error: any) {
+ console.error('❌ Failed to load questions:', error.message);
  } finally {
  setLoading(false);
  }
@@ -108,6 +115,7 @@ export default function SubjectQuestionsPage() {
  );
 
  useEffect(() => {
+ console.log('🔄 Load effect triggered. isTrial:', isTrial);
  load();
  }, [load]);
 
