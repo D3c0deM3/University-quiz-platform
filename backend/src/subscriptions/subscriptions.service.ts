@@ -195,23 +195,45 @@ export class SubscriptionsService {
   }
 
   /**
+   * Check if user has completed a trial attempt for a specific subject.
+   * A trial is considered used once they complete a quiz for that subject.
+   */
+  async hasCompletedTrialAttempt(userId: string, subjectId: string): Promise<boolean> {
+    const attempt = await this.prisma.quizAttempt.findFirst({
+      where: {
+        userId,
+        completedAt: { not: null },
+        quiz: {
+          subjectId: subjectId,
+        },
+      },
+      take: 1,
+    });
+    return !!attempt;
+  }
+
+  /**
    * Check access or trial eligibility for a student on a specific subject.
    * Returns { hasAccess, isTrial, trialUsed }.
+   * Now tracks per-subject trial usage instead of global.
    */
   async hasAccessOrTrial(
     userId: string,
     subjectId: string,
   ): Promise<{ hasAccess: boolean; isTrial: boolean; trialUsed: boolean }> {
+    // 1. Check if user has paid subscription for this subject
     const subscribed = await this.hasAccess(userId, subjectId);
     if (subscribed) {
       return { hasAccess: true, isTrial: false, trialUsed: false };
     }
 
-    const completedCount = await this.getCompletedAttemptCount(userId);
-    if (completedCount === 0) {
-      return { hasAccess: false, isTrial: true, trialUsed: false };
+    // 2. Check if user has already used their trial for this subject
+    const hasTrialUsed = await this.hasCompletedTrialAttempt(userId, subjectId);
+    if (hasTrialUsed) {
+      return { hasAccess: false, isTrial: false, trialUsed: true };
     }
 
-    return { hasAccess: false, isTrial: false, trialUsed: true };
+    // 3. Trial is available for this subject
+    return { hasAccess: false, isTrial: true, trialUsed: false };
   }
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { subjectsApi, subscriptionsApi } from '@/lib/api';
+import { subjectsApi, subscriptionsApi, quizzesApi } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 import { useAuthStore } from '@/stores/auth-store';
 import type { Subject } from '@/lib/types';
@@ -13,17 +14,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
 import { BookOpen, Search, ArrowRight, Lock, MessageCircle, Phone, X, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 export default function SubjectsPage() {
  const { t } = useTranslation();
+ const router = useRouter();
  const { user } = useAuthStore();
  const [subjects, setSubjects] = useState<Subject[]>([]);
  const [filtered, setFiltered] = useState<Subject[]>([]);
  const [search, setSearch] = useState('');
  const [loading, setLoading] = useState(true);
  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
- const [trialAvailable, setTrialAvailable] = useState(false);
+ const [trialStatus, setTrialStatus] = useState<Map<string, { hasAccess: boolean; isTrial: boolean; trialUsed: boolean }>>(new Map());
  const [modalSubject, setModalSubject] = useState<Subject | null>(null);
+ const [startingTrialFor, setStartingTrialFor] = useState<string | null>(null);
 
  useEffect(() => {
  async function load() {
@@ -38,7 +42,23 @@ export default function SubjectsPage() {
  const subRes = await subscriptionsApi.my();
  const ids: string[] = subRes.data.subjectIds || [];
  setSubscribedIds(new Set(ids));
- setTrialAvailable(subRes.data.trialAvailable === true);
+
+ // Fetch per-subject trial status for each subject
+ const trialMap = new Map();
+ for (const subject of data) {
+ try {
+ const checkRes = await subscriptionsApi.check(subject.id);
+ trialMap.set(subject.id, {
+ hasAccess: checkRes.data.hasAccess === true,
+ isTrial: checkRes.data.isTrial === true,
+ trialUsed: checkRes.data.trialUsed === true,
+ });
+ } catch {
+ // Default to no access if check fails
+ trialMap.set(subject.id, { hasAccess: false, isTrial: false, trialUsed: true });
+ }
+ }
+ setTrialStatus(trialMap);
  } catch {
  // no subscriptions
  }
@@ -66,6 +86,30 @@ export default function SubjectsPage() {
  }, [search, subjects]);
 
  const isStudent = user?.role === 'STUDENT';
+
+ const handleTryQuizForFree = async (subject: Subject) => {
+ setStartingTrialFor(subject.id);
+ try {
+ // Get first available quiz for this subject
+ const quizzesRes = await quizzesApi.listBySubject(subject.id, 1, 1);
+ const quiz = quizzesRes.data.data?.[0];
+
+ if (!quiz) {
+ toast.error(t('subjects.noQuizzesAvailable'));
+ return;
+ }
+
+ // Start attempt with 10 question limit (backend will enforce this)
+ const attemptRes = await quizzesApi.startAttempt(quiz.id, { questionCount: 10 });
+
+ // Navigate to quiz
+ router.push(`/quizzes/${attemptRes.data.id}`);
+ } catch (error: any) {
+ toast.error(error.response?.data?.message || t('subjects.failedToStartTrial'));
+ } finally {
+ setStartingTrialFor(null);
+ }
+ };
 
  return (
  <div className="space-y-6">
@@ -104,12 +148,45 @@ export default function SubjectsPage() {
  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
  {filtered.map((subject) => {
  const hasAccess = subscribedIds.has(subject.id);
- const isLocked = isStudent && !hasAccess && !trialAvailable;
- const isTrial = isStudent && !hasAccess && trialAvailable;
+ const status = trialStatus.get(subject.id);
+ const isTrial = status?.isTrial === true;
+ const trialUsed = status?.trialUsed === true;
+ const isLocked = isStudent && !hasAccess && !isTrial;
 
- return isTrial ? (
+ return hasAccess ? (
+ // SUBSCRIBED - clickable card
  <Link key={subject.id} href={`/subjects/${subject.id}`}>
- <Card className="h-full transition-shadow hover:shadow-md cursor-pointer border-amber-200 dark:border-amber-500/20">
+ <Card className="h-full transition-shadow hover:shadow-md cursor-pointer">
+ <CardContent className="flex flex-col gap-3 p-6">
+ <div className="flex items-start justify-between">
+ <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-500/10">
+ <BookOpen size={20} className="text-blue-600 dark:text-blue-400" />
+ </div>
+ <div className="flex items-center gap-1.5">
+ {subject.code && (
+ <Badge variant="outline">{subject.code}</Badge>
+ )}
+ {isStudent && <Badge variant="success" className="text-xs">Subscribed</Badge>}
+ </div>
+ </div>
+ <div>
+ <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{subject.name}</h3>
+ {subject.description && (
+ <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400 line-clamp-2">
+ {subject.description}
+ </p>
+ )}
+ </div>
+ <div className="mt-auto flex items-center text-sm text-blue-600 dark:text-blue-400 font-medium">
+ {t('subjects.viewSubject')} <ArrowRight size={14} className="ml-1" />
+ </div>
+ </CardContent>
+ </Card>
+ </Link>
+ ) : isTrial && !trialUsed ? (
+ // TRIAL AVAILABLE - show card with Try Quiz and Subscribe buttons
+ <div key={subject.id}>
+ <Card className="h-full border-amber-200 dark:border-amber-500/20">
  <CardContent className="flex flex-col gap-3 p-6">
  <div className="flex items-start justify-between">
  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/10">
@@ -130,13 +207,30 @@ export default function SubjectsPage() {
  </p>
  )}
  </div>
- <div className="mt-auto flex items-center text-sm text-amber-600 dark:text-amber-400 font-medium">
- {t('subjects.tryFree')} <ArrowRight size={14} className="ml-1" />
+ <div className="mt-auto flex gap-2">
+ <Button
+ variant="outline"
+ size="sm"
+ className="flex-1 border-amber-200 dark:border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/15 hover:text-amber-700 dark:hover:text-amber-300 cursor-pointer"
+ onClick={() => handleTryQuizForFree(subject)}
+ disabled={startingTrialFor === subject.id}
+ >
+ <Sparkles size={14} className="mr-1.5" />
+ {startingTrialFor === subject.id ? t('common.starting') : t('subjects.tryQuizFree')}
+ </Button>
+ <Button
+ size="sm"
+ className="flex-1"
+ onClick={() => setModalSubject(subject)}
+ >
+ Subscribe
+ </Button>
  </div>
  </CardContent>
  </Card>
- </Link>
- ) : isLocked ? (
+ </div>
+ ) : (
+ // LOCKED - show only Subscribe button
  <div key={subject.id}>
  <Card className="h-full relative overflow-hidden border-gray-200 dark:border-zinc-700 opacity-80">
  <CardContent className="flex flex-col gap-3 p-6">
@@ -172,35 +266,6 @@ export default function SubjectsPage() {
  </CardContent>
  </Card>
  </div>
- ) : (
- <Link key={subject.id} href={`/subjects/${subject.id}`}>
- <Card className="h-full transition-shadow hover:shadow-md cursor-pointer">
- <CardContent className="flex flex-col gap-3 p-6">
- <div className="flex items-start justify-between">
- <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-500/10">
- <BookOpen size={20} className="text-blue-600 dark:text-blue-400" />
- </div>
- <div className="flex items-center gap-1.5">
- {subject.code && (
- <Badge variant="outline">{subject.code}</Badge>
- )}
- {isStudent && <Badge variant="success" className="text-xs">Subscribed</Badge>}
- </div>
- </div>
- <div>
- <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{subject.name}</h3>
- {subject.description && (
- <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400 line-clamp-2">
- {subject.description}
- </p>
- )}
- </div>
- <div className="mt-auto flex items-center text-sm text-blue-600 dark:text-blue-400 font-medium">
- {t('subjects.viewSubject')} <ArrowRight size={14} className="ml-1" />
- </div>
- </CardContent>
- </Card>
- </Link>
  );
  })}
  </div>

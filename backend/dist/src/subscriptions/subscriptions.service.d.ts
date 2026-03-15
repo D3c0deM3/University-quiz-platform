@@ -150,6 +150,7 @@ export declare class SubscriptionsService {
     }>;
     hasAccess(userId: string, subjectId: string): Promise<boolean>;
     getCompletedAttemptCount(userId: string): Promise<number>;
+    hasCompletedTrialAttempt(userId: string, subjectId: string): Promise<boolean>;
     hasAccessOrTrial(userId: string, subjectId: string): Promise<{
         hasAccess: boolean;
         isTrial: boolean;

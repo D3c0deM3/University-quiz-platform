@@ -46,6 +46,7 @@ const ru: Record<string, string> = {
   'common.type': 'Тип',
   'common.or': 'или',
   'common.joined': 'Присоединился',
+  'common.starting': 'Начинаю...',
 
   // ───── Theme ─────
   'theme.light': 'Светлая тема',
@@ -152,6 +153,9 @@ const ru: Record<string, string> = {
   'subjects.viewSubject': 'Открыть предмет',
   'subjects.trial': 'Пробный',
   'subjects.tryFree': 'Попробовать бесплатно',
+  'subjects.tryQuizFree': 'Попробовать тест бесплатно',
+  'subjects.noQuizzesAvailable': 'Нет доступных тестов для этого предмета',
+  'subjects.failedToStartTrial': 'Не удалось начать пробный тест',
 
   // ───── Детали предмета ─────
   'subjectDetail.back': 'К предметам',

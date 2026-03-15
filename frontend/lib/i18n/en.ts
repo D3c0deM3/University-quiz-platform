@@ -46,6 +46,7 @@ const en = {
   'common.type': 'Type',
   'common.or': 'or',
   'common.joined': 'Joined',
+  'common.starting': 'Starting...',
 
   // ───── Theme ─────
   'theme.light': 'Light Mode',
@@ -152,6 +153,9 @@ const en = {
   'subjects.viewSubject': 'View Subject',
   'subjects.trial': 'Trial',
   'subjects.tryFree': 'Try Free',
+  'subjects.tryQuizFree': 'Try Quiz for Free',
+  'subjects.noQuizzesAvailable': 'No quizzes available for this subject',
+  'subjects.failedToStartTrial': 'Failed to start trial quiz',
 
   // ───── Subject Detail ─────
   'subjectDetail.back': 'Back to Subjects',

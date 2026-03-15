@@ -46,6 +46,7 @@ const uz: Record<string, string> = {
   'common.type': 'Turi',
   'common.or': 'yoki',
   'common.joined': "Qo'shilgan",
+  'common.starting': 'Boshlanmoqda...',
 
   // ───── Theme ─────
   'theme.light': "Yorug' rejim",
@@ -152,6 +153,9 @@ const uz: Record<string, string> = {
   'subjects.viewSubject': 'Fanni ko\'rish',
   'subjects.trial': 'Sinov',
   'subjects.tryFree': 'Bepul sinab ko\'ring',
+  'subjects.tryQuizFree': 'Sinovni bepul sinab ko\'ring',
+  'subjects.noQuizzesAvailable': "Bu fan uchun testlar mavjud emas",
+  'subjects.failedToStartTrial': 'Sinov testini boshlashda xatolik yuz berdi',
 
   // ───── Fan tafsilotlari ─────
   'subjectDetail.back': 'Fanlarga qaytish',

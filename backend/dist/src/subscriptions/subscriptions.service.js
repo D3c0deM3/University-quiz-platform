@@ -165,16 +165,29 @@ let SubscriptionsService = class SubscriptionsService {
             where: { userId, completedAt: { not: null } },
         });
     }
+    async hasCompletedTrialAttempt(userId, subjectId) {
+        const attempt = await this.prisma.quizAttempt.findFirst({
+            where: {
+                userId,
+                completedAt: { not: null },
+                quiz: {
+                    subjectId: subjectId,
+                },
+            },
+            take: 1,
+        });
+        return !!attempt;
+    }
     async hasAccessOrTrial(userId, subjectId) {
         const subscribed = await this.hasAccess(userId, subjectId);
         if (subscribed) {
             return { hasAccess: true, isTrial: false, trialUsed: false };
         }
-        const completedCount = await this.getCompletedAttemptCount(userId);
-        if (completedCount === 0) {
-            return { hasAccess: false, isTrial: true, trialUsed: false };
+        const hasTrialUsed = await this.hasCompletedTrialAttempt(userId, subjectId);
+        if (hasTrialUsed) {
+            return { hasAccess: false, isTrial: false, trialUsed: true };
         }
-        return { hasAccess: false, isTrial: false, trialUsed: true };
+        return { hasAccess: false, isTrial: true, trialUsed: false };
     }
 };
 exports.SubscriptionsService = SubscriptionsService;
