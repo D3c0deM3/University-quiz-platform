@@ -471,6 +471,11 @@ def _validate_questions(questions: list) -> list:
     validated = []
     skipped = 0
     for q in questions:
+        # AI sometimes returns plain strings instead of dicts — skip them
+        if not isinstance(q, dict):
+            skipped += 1
+            continue
+
         if not q.get("question_text"):
             skipped += 1
             continue
