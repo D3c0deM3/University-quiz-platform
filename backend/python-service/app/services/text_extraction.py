@@ -1,7 +1,7 @@
 """
 Text extraction service.
-Extracts text from PDF, DOCX, PPTX, XLSX/XLS, and image files.
-Uses standard parsers (pdfplumber, python-docx, python-pptx, openpyxl/xlrd, pytesseract).
+Extracts text from PDF, DOC, DOCX, PPTX, and image files.
+Uses standard parsers (pdfplumber, python-docx, python-pptx, pytesseract).
 """
 import os
 import logging
@@ -13,8 +13,6 @@ from PyPDF2 import PdfReader
 from docx import Document as DocxDocument
 from pptx import Presentation
 from PIL import Image
-from openpyxl import load_workbook
-import xlrd
 
 from app.config import settings
 
@@ -216,6 +214,66 @@ async def extract_from_pptx(file_path: str) -> str:
     return "\n\n".join(text_parts)
 
 
+async def extract_from_ppt(file_path: str) -> str:
+    """Extract text from a legacy .ppt file.
+    Strategy: try python-pptx first (some .ppt files are actually OOXML),
+    then try LibreOffice conversion to .pptx, then fall back to catppt."""
+    logger.info(f"Extracting text from PPT: {file_path}")
+
+    # Try python-pptx first — some .ppt files are actually OOXML with wrong extension
+    try:
+        text = await extract_from_pptx(file_path)
+        if text and text.strip():
+            logger.info(f"python-pptx extracted {len(text)} characters from .ppt")
+            return text
+    except Exception as e:
+        logger.info(f"python-pptx failed on .ppt (expected for binary format): {e}")
+
+    # Try LibreOffice conversion to PPTX
+    try:
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                ["libreoffice", "--headless", "--convert-to", "pptx", "--outdir", tmpdir, file_path],
+                capture_output=True, timeout=120,
+            )
+            if result.returncode == 0:
+                base_name = os.path.splitext(os.path.basename(file_path))[0]
+                converted_path = os.path.join(tmpdir, base_name + ".pptx")
+                if os.path.exists(converted_path):
+                    text = await extract_from_pptx(converted_path)
+                    if text and text.strip():
+                        logger.info(f"LibreOffice PPT->PPTX conversion extracted {len(text)} characters")
+                        return text
+            else:
+                logger.warning(f"LibreOffice conversion failed: {result.stderr.decode(errors='replace')}")
+    except FileNotFoundError:
+        logger.warning("LibreOffice not installed, trying catppt fallback")
+    except Exception as e:
+        logger.warning(f"LibreOffice conversion failed: {e}")
+
+    # Fallback: catppt (part of catdoc package)
+    try:
+        result = subprocess.run(
+            ["catppt", file_path],
+            capture_output=True, timeout=60,
+        )
+        if result.returncode == 0:
+            text = result.stdout.decode("utf-8", errors="replace").strip()
+            if text:
+                logger.info(f"catppt extracted {len(text)} characters")
+                return text
+        else:
+            logger.warning(f"catppt failed: {result.stderr.decode(errors='replace')}")
+    except FileNotFoundError:
+        logger.warning("catppt not installed")
+    except Exception as e:
+        logger.warning(f"catppt failed: {e}")
+
+    logger.error("All PPT extraction methods failed")
+    return ""
+
+
 async def extract_with_ocr(file_path: str) -> str:
     """Extract text from an image file using OCR (pytesseract + Pillow)."""
     logger.info(f"Extracting text via OCR from: {file_path}")
@@ -232,46 +290,28 @@ async def extract_with_ocr(file_path: str) -> str:
         return ""
 
 
-async def extract_from_xlsx(file_path: str) -> str:
-    """Extract text from an XLSX file using openpyxl."""
-    logger.info(f"Extracting text from XLSX: {file_path}")
+async def extract_from_excel(file_path: str) -> str:
+    """Extract text from an Excel file (XLSX/XLS) using openpyxl."""
+    logger.info(f"Extracting text from Excel: {file_path}")
     text_parts = []
 
     try:
-        wb = load_workbook(filename=file_path, read_only=True, data_only=True)
-        for sheet in wb.worksheets:
-            sheet_rows: list[str] = []
-            for row in sheet.iter_rows(values_only=True):
-                cells = [str(cell).strip() for cell in row if cell is not None and str(cell).strip()]
-                if cells:
-                    sheet_rows.append(" | ".join(cells))
-            if sheet_rows:
-                text_parts.append(f"[Sheet: {sheet.title}]\n" + "\n".join(sheet_rows))
+        import openpyxl
+        wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+        for sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+            sheet_texts = [f"[Sheet: {sheet_name}]"]
+            for row in ws.iter_rows(values_only=True):
+                row_text = " | ".join(
+                    str(cell).strip() for cell in row if cell is not None and str(cell).strip()
+                )
+                if row_text:
+                    sheet_texts.append(row_text)
+            if len(sheet_texts) > 1:  # more than just the header
+                text_parts.append("\n".join(sheet_texts))
         wb.close()
     except Exception as e:
-        logger.error(f"XLSX extraction failed: {e}")
-
-    return "\n\n".join(text_parts)
-
-
-async def extract_from_xls(file_path: str) -> str:
-    """Extract text from an XLS file using xlrd."""
-    logger.info(f"Extracting text from XLS: {file_path}")
-    text_parts = []
-
-    try:
-        wb = xlrd.open_workbook(file_path)
-        for sheet in wb.sheets():
-            sheet_rows: list[str] = []
-            for row_idx in range(sheet.nrows):
-                row_vals = sheet.row_values(row_idx)
-                cells = [str(cell).strip() for cell in row_vals if str(cell).strip()]
-                if cells:
-                    sheet_rows.append(" | ".join(cells))
-            if sheet_rows:
-                text_parts.append(f"[Sheet: {sheet.name}]\n" + "\n".join(sheet_rows))
-    except Exception as e:
-        logger.error(f"XLS extraction failed: {e}")
+        logger.error(f"Excel extraction failed: {e}")
 
     return "\n\n".join(text_parts)
 
@@ -294,10 +334,12 @@ async def extract_text(file_path: str, file_type: str) -> str:
         "docx": "docx",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
         "pptx": "pptx",
+        "ppt": "ppt",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+        "application/vnd.ms-powerpoint": "ppt",
         "xlsx": "xlsx",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
         "xls": "xls",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
         "application/vnd.ms-excel": "xls",
         "png": "image",
         "jpg": "image",
@@ -319,11 +361,10 @@ async def extract_text(file_path: str, file_type: str) -> str:
         return await extract_from_docx(abs_path)
     elif normalized == "pptx":
         return await extract_from_pptx(abs_path)
+    elif normalized == "ppt":
+        return await extract_from_ppt(abs_path)
     elif normalized in ("xlsx", "xls"):
-        if normalized == "xlsx":
-            return await extract_from_xlsx(abs_path)
-        else:
-            return await extract_from_xls(abs_path)
+        return await extract_from_excel(abs_path)
     elif normalized == "image":
         return await extract_with_ocr(abs_path)
     elif normalized == "txt":

@@ -6,6 +6,7 @@ Includes retry logic with model fallback.
 import json
 import logging
 import asyncio
+import re
 from typing import Awaitable, Callable, List, Optional
 
 from google import genai
@@ -23,7 +24,8 @@ client = genai.Client(api_key=settings.AI_API_KEY)
 # Fallback model chain - try primary model first, then fallbacks
 FALLBACK_MODELS = [
     settings.AI_MODEL,
-    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
 ]
 # Deduplicate while preserving order
 _seen = set()
@@ -279,7 +281,7 @@ async def generate_quiz_questions(
     if num_questions <= 0:
         return await _generate_all_questions(text, progress_callback=progress_callback)
 
-    batch_size = 50
+    batch_size = 30
     if num_questions <= batch_size:
         await _emit_progress(progress_callback, 20, "Generating quiz batch 1/1")
         result = await _generate_quiz_batch(truncated, num_questions)
@@ -290,7 +292,7 @@ async def generate_quiz_questions(
     seen_question_keys: set[str] = set()
     batch_num = 0
     stalled_batches = 0
-    max_stalled_batches = 3
+    max_stalled_batches = 5
 
     while len(all_questions) < num_questions and stalled_batches < max_stalled_batches:
         remaining = num_questions - len(all_questions)
@@ -357,7 +359,7 @@ async def _generate_all_questions(
     """Extract all questions found in the material with stepwise batching."""
     stepwise_questions = await generate_all_quiz_questions_stepwise(
         text,
-        batch_size=50,
+        batch_size=30,
         progress_callback=progress_callback,
     )
     if stepwise_questions:
@@ -468,12 +470,15 @@ async def _generate_quiz_batch(
 def _validate_questions(questions: list) -> list:
     """Validate and normalize a list of raw question dicts from the AI."""
     validated = []
+    skipped = 0
     for q in questions:
         if not q.get("question_text"):
+            skipped += 1
             continue
 
         question_text = str(q["question_text"]).strip()
         if not question_text:
+            skipped += 1
             continue
 
         validated_q = {
@@ -494,22 +499,171 @@ def _validate_questions(questions: list) -> list:
             ]
 
         validated.append(validated_q)
+
+    if skipped > 0:
+        logger.warning(f"_validate_questions: skipped {skipped} questions with empty question_text (kept {len(validated)}/{len(questions)})")
     return validated
 
 
 def _question_key(question_text: str) -> str:
-    return " ".join(question_text.lower().strip().split())
+    """Normalize for dedup.  Uses first 120 non-whitespace characters
+    after stripping leading numbering.  This avoids false collisions
+    between short but genuinely different questions while still catching
+    true duplicates."""
+    text = question_text.lower().strip()
+    # Remove leading question numbers/letters: "1.", "1)", "a)", "A.", etc.
+    text = re.sub(r'^[\d]+[.\)]\s*', '', text)
+    text = re.sub(r'^[a-z][.\)]\s*', '', text)
+    # Collapse whitespace
+    normalized = " ".join(text.split())
+    # Use a longer prefix to reduce false collisions
+    return normalized[:120] if normalized else ""
 
 
 def _merge_unique_questions(target: list, incoming: list, seen_keys: set[str]) -> int:
     added = 0
+    dedup_skipped = 0
     for question in incoming:
         key = _question_key(question.get("question_text", ""))
         if not key or key in seen_keys:
+            if key in seen_keys:
+                dedup_skipped += 1
             continue
         seen_keys.add(key)
         target.append(question)
         added += 1
+    if dedup_skipped > 0:
+        logger.info(f"_merge_unique_questions: added {added}, skipped {dedup_skipped} duplicates (total: {len(target)})")
+    return added
+
+
+def _normalize_words(text: str) -> set[str]:
+    """Extract normalized word set from question text for fuzzy matching."""
+    text = text.lower().strip()
+    text = re.sub(r'^[\d]+[.\)]\s*', '', text)
+    text = re.sub(r'^[a-z][.\)]\s*', '', text)
+    # Remove punctuation and split
+    words = re.sub(r'[^\w\s]', '', text).split()
+    # Filter out very short words (articles, etc.) to avoid noise
+    return {w for w in words if len(w) > 2}
+
+
+def _find_covered_input_indices(
+    input_questions: list[str],
+    generated_questions: list[dict],
+) -> set[int]:
+    """Find which input question indices were covered by generated quiz objects.
+
+    Uses a two-pass strategy:
+    1. Exact key match (fast)
+    2. Fuzzy word-overlap match (catches AI rephrasing)
+
+    Returns set of input indices that are considered covered.
+    """
+    covered: set[int] = set()
+    gen_keys = {_question_key(q.get("question_text", "")) for q in generated_questions}
+    gen_word_sets = [_normalize_words(q.get("question_text", "")) for q in generated_questions]
+    used_gen_indices: set[int] = set()
+
+    for i, input_q in enumerate(input_questions):
+        input_key = _question_key(input_q)
+
+        # Pass 1: exact key match
+        if input_key in gen_keys:
+            covered.add(i)
+            continue
+
+        # Pass 2: fuzzy word overlap (Jaccard similarity > 0.45)
+        input_words = _normalize_words(input_q)
+        if not input_words:
+            continue
+
+        best_score = 0.0
+        best_gen_idx = -1
+        for gi, gen_words in enumerate(gen_word_sets):
+            if gi in used_gen_indices or not gen_words:
+                continue
+            overlap = len(input_words & gen_words)
+            union = len(input_words | gen_words)
+            score = overlap / union if union > 0 else 0.0
+            if score > best_score:
+                best_score = score
+                best_gen_idx = gi
+
+        if best_score > 0.45 and best_gen_idx >= 0:
+            covered.add(i)
+            used_gen_indices.add(best_gen_idx)
+
+    return covered
+
+
+def _create_fallback_quiz(question_text: str) -> dict:
+    """Create a minimal quiz object from raw question text when AI generation fails.
+    This ensures ZERO question loss — every detected question gets a quiz entry."""
+    return {
+        "question_text": question_text.strip(),
+        "question_type": "MCQ",
+        "options": [
+            {"text": "A", "is_correct": False},
+            {"text": "B", "is_correct": False},
+            {"text": "C", "is_correct": False},
+            {"text": "D", "is_correct": False},
+        ],
+        "explanation": "Auto-generated placeholder — AI could not generate options for this question.",
+    }
+
+
+def _create_fallback_quizzes_for_missing(
+    detected_questions: list[str],
+    all_quizzes: list[dict],
+    seen_question_keys: set[str],
+) -> int:
+    """For every detected question that has no corresponding quiz object,
+    create a fallback quiz entry so nothing is lost.
+    Returns the number of fallback entries added."""
+    existing_keys = {_question_key(q.get("question_text", "")) for q in all_quizzes}
+    existing_word_sets = [_normalize_words(q.get("question_text", "")) for q in all_quizzes]
+    added = 0
+
+    for q_text in detected_questions:
+        q_key = _question_key(q_text)
+
+        # Skip if already covered by exact key
+        if q_key in existing_keys:
+            continue
+
+        # Skip if already covered by fuzzy match — use HIGH threshold (0.70)
+        # to avoid false positives. Better to create a duplicate fallback
+        # than to lose a question.
+        input_words = _normalize_words(q_text)
+        is_covered = False
+        if input_words:
+            for ews in existing_word_sets:
+                if not ews:
+                    continue
+                overlap = len(input_words & ews)
+                union = len(input_words | ews)
+                if union > 0 and (overlap / union) > 0.70:
+                    is_covered = True
+                    break
+
+        if is_covered:
+            continue
+
+        # Not covered — create a fallback
+        if q_key and q_key not in seen_question_keys:
+            fallback = _create_fallback_quiz(q_text)
+            all_quizzes.append(fallback)
+            seen_question_keys.add(q_key)
+            existing_keys.add(q_key)
+            existing_word_sets.append(_normalize_words(q_text))
+            added += 1
+
+    if added > 0:
+        logger.warning(
+            f"FALLBACK: Created {added} placeholder quiz entries for questions "
+            f"that AI could not generate (total quizzes now: {len(all_quizzes)})"
+        )
     return added
 
 
@@ -524,7 +678,7 @@ def _dedupe_question_texts(questions: list[str]) -> list[str]:
     return deduped
 
 
-def _chunk_text_for_detection(text: str, chunk_chars: int = 12000, overlap_chars: int = 800) -> list[str]:
+def _chunk_text_for_detection(text: str, chunk_chars: int = 15000, overlap_chars: int = 3000) -> list[str]:
     clean_text = text.strip()
     if not clean_text:
         return []
@@ -559,9 +713,10 @@ async def generate_quiz_from_questions_and_material(
         raise ValueError("AI_API_KEY is not configured")
 
     max_len = settings.MAX_TEXT_LENGTH
-    # Split the budget between questions and material text
-    questions_max = max_len // 3  # ~1/3 for questions
-    material_max = max_len - questions_max  # ~2/3 for material (answers need more context)
+    # Give the questions file enough room — it must NOT be truncated when possible
+    # since every question matters.  Material can afford truncation more gracefully.
+    questions_max = min(len(questions_text), max(max_len // 2, 30000))
+    material_max = max(max_len - questions_max, max_len // 3)
 
     truncated_questions = questions_text[:questions_max] if len(questions_text) > questions_max else questions_text
     truncated_material = material_text[:material_max] if len(material_text) > material_max else material_text
@@ -582,7 +737,7 @@ async def generate_quiz_from_questions_and_material(
             return await _generate_quiz_for_question_list_with_material(
                 target_questions,
                 truncated_material,
-                batch_size=50,
+                batch_size=30,
                 progress_callback=progress_callback,
             )
         logger.warning("No questions detected for stepwise questions+material generation; falling back to single-shot.")
@@ -628,18 +783,20 @@ async def generate_quiz_from_questions_and_material(
 async def _generate_quiz_for_question_list_with_material(
     question_texts: list[str],
     material_context: str,
-    batch_size: int = 50,
+    batch_size: int = 30,
     progress_callback: ProgressCallback = None,
 ) -> list:
-    """Generate quiz answers/options for known questions in batches using material context."""
+    """Generate quiz answers/options for known questions in batches using material context.
+    Includes a final reconciliation pass for any questions the AI missed."""
     all_quizzes: list[dict] = []
     seen_question_keys: set[str] = set()
+    globally_missing: list[str] = []
 
     for i in range(0, len(question_texts), batch_size):
         missing_questions = question_texts[i:i + batch_size]
         attempts = 0
 
-        while missing_questions and attempts < 3:
+        while missing_questions and attempts < 4:
             attempts += 1
             batch_prompt = """
 You are an expert educational quiz creator.
@@ -650,6 +807,7 @@ Rules:
 - Use the study material as the primary source for selecting the correct answer.
 - Return ONLY valid JSON (no markdown, no code fences) as an array.
 - Include exactly 4 options per question and exactly 1 correct option.
+- You MUST return exactly one quiz object for EACH question. Do NOT skip any.
 
 ===== STUDY MATERIAL =====
 """ + material_context + """
@@ -671,16 +829,18 @@ Rules:
                 validated_batch = _validate_questions(batch_quizzes)
                 _merge_unique_questions(all_quizzes, validated_batch, seen_question_keys)
 
-                generated_keys = {_question_key(q["question_text"]) for q in validated_batch}
+                # Use fuzzy matching to find which input questions were covered
+                covered_indices = _find_covered_input_indices(missing_questions, validated_batch)
                 missing_questions = [
-                    q_text for q_text in missing_questions
-                    if _question_key(q_text) not in generated_keys
+                    q_text for idx, q_text in enumerate(missing_questions)
+                    if idx not in covered_indices
                 ]
                 logger.info(
                     f"Questions+material batch {i//batch_size + 1} attempt {attempts}: "
-                    f"generated {len(validated_batch)}, missing {len(missing_questions)}"
+                    f"generated {len(validated_batch)}, covered {len(covered_indices)}, "
+                    f"still missing {len(missing_questions)}"
                 )
-                progress = int(((i + len(question_texts[i:i + batch_size]) - len(missing_questions)) / max(1, len(question_texts))) * 100)
+                progress = int(((i + len(question_texts[i:i + batch_size]) - len(missing_questions)) / max(1, len(question_texts))) * 85)
                 await _emit_progress(
                     progress_callback,
                     progress,
@@ -693,10 +853,82 @@ Rules:
                 break
 
         if missing_questions:
+            globally_missing.extend(missing_questions)
             logger.warning(
                 f"Questions+material batch {i//batch_size + 1}: "
                 f"could not generate {len(missing_questions)} question(s) after retries"
             )
+
+    # ── Final reconciliation pass for globally missing questions ──
+    if globally_missing:
+        logger.info(
+            f"Questions+material reconciliation: retrying {len(globally_missing)} globally missing question(s)"
+        )
+        await _emit_progress(
+            progress_callback,
+            88,
+            f"Reconciliation: retrying {len(globally_missing)} missing questions",
+        )
+
+        reconcile_batch_size = 20
+        for i in range(0, len(globally_missing), reconcile_batch_size):
+            still_missing = globally_missing[i:i + reconcile_batch_size]
+            for attempt in range(3):
+                if not still_missing:
+                    break
+                reconcile_prompt = """You are an expert educational quiz creator. You MUST generate exactly one MCQ quiz object for EACH question below using the study material as the answer source. Do NOT skip any questions.
+
+Return ONLY valid JSON as an array of question objects. Each object must have: question_text, question_type ("MCQ"), options (array of 4), explanation.
+
+===== STUDY MATERIAL =====
+""" + material_context + """
+
+QUESTIONS (generate one quiz object per question):
+""" + json.dumps(still_missing, ensure_ascii=False)
+
+                try:
+                    raw = await _call_gemini_with_fallback(
+                        reconcile_prompt,
+                        temperature=0.3,
+                        max_output_tokens=65536,
+                    )
+                    cleaned = _clean_json_response(raw)
+                    reconciled = json.loads(cleaned)
+                    if isinstance(reconciled, list):
+                        validated = _validate_questions(reconciled)
+                        added = _merge_unique_questions(all_quizzes, validated, seen_question_keys)
+                        covered_indices = _find_covered_input_indices(still_missing, validated)
+                        still_missing = [
+                            q for idx, q in enumerate(still_missing)
+                            if idx not in covered_indices
+                        ]
+                        logger.info(
+                            f"Questions+material reconciliation batch {i//reconcile_batch_size + 1} "
+                            f"attempt {attempt + 1}: recovered {added}, still missing {len(still_missing)}"
+                        )
+                except Exception as e:
+                    logger.error(
+                        f"Questions+material reconciliation batch {i//reconcile_batch_size + 1} "
+                        f"attempt {attempt + 1} failed: {e}"
+                    )
+                    break
+
+    # ── ZERO-LOSS FALLBACK: create placeholder quizzes for any remaining missing questions ──
+    fallback_count = _create_fallback_quizzes_for_missing(
+        question_texts, all_quizzes, seen_question_keys,
+    )
+    if fallback_count > 0:
+        logger.info(
+            f"Questions+material: {fallback_count} fallback quizzes added to ensure zero loss "
+            f"(total: {len(all_quizzes)}/{len(question_texts)})"
+        )
+
+    final_missing = len(question_texts) - len(all_quizzes)
+    if final_missing > 0:
+        logger.error(
+            f"CRITICAL: Questions+material STILL has {final_missing} missing question(s) after fallback "
+            f"out of {len(question_texts)} detected — this should never happen"
+        )
 
     await _emit_progress(
         progress_callback,
@@ -710,28 +942,39 @@ async def detect_questions(
     text: str,
     progress_callback: ProgressCallback = None,
 ) -> list:
-    """Detect question texts from a document, chunking long inputs."""
-    chunks = _chunk_text_for_detection(text, chunk_chars=12000, overlap_chars=800)
+    """Detect question texts from a document, chunking long inputs.
+    Uses two passes to maximize detection coverage."""
+    chunks = _chunk_text_for_detection(text, chunk_chars=10000, overlap_chars=2000)
     if not chunks:
         return []
 
     detected_questions: list[str] = []
 
     for idx, chunk in enumerate(chunks):
-        prompt = """
-You are an expert at extracting exam questions. Analyze the following material and return ONLY a JSON array of question texts you find. Do NOT generate answers or options. Example:
+        prompt = """You are an expert at extracting exam questions from documents. Your task is to find and extract EVERY question in the text below.
+
+RULES:
+- Extract ALL questions, even if they seem similar or repetitive
+- Include questions of all types: multiple choice, true/false, short answer, essay, fill-in-the-blank
+- Preserve the original question text exactly as written
+- Look for numbered questions (1. 2. 3.), lettered questions (a) b) c)), questions with question marks, and imperative prompts ("Explain...", "Describe...", "Define...", "List...", "Compare...")
+- Do NOT skip any questions. It is critical that every single question is extracted
+- Do NOT generate new questions — only extract existing ones from the text
+
+Return ONLY a valid JSON array of question text strings. Example:
 [
   "What is the capital of France?",
   "Explain the process of photosynthesis.",
-  ...
+  "Define the term 'mitosis'."
 ]
+
 TEXT TO ANALYZE:
 """ + chunk
 
         try:
             raw = await _call_gemini_with_fallback(
                 prompt,
-                temperature=0.2,
+                temperature=0.0,
                 max_output_tokens=32768,
             )
             cleaned = _clean_json_response(raw)
@@ -743,7 +986,7 @@ TEXT TO ANALYZE:
                 f"Question detection chunk {idx + 1}/{len(chunks)} found {len(chunk_questions)} questions"
             )
             detected_questions.extend(chunk_questions)
-            progress = int(((idx + 1) / max(1, len(chunks))) * 100)
+            progress = int(((idx + 1) / max(1, len(chunks))) * 80)
             await _emit_progress(
                 progress_callback,
                 progress,
@@ -754,17 +997,66 @@ TEXT TO ANALYZE:
 
     deduped = _dedupe_question_texts(detected_questions)
     logger.info(f"Detected {len(deduped)} unique questions across {len(chunks)} chunk(s)")
+
+    # Verification pass: re-scan the full text (or large portion) to catch any missed questions
+    if len(text) > 5000:
+        verification_sample = text[:80000] if len(text) > 80000 else text
+        # Send all detected questions (not just 100) so the verifier knows what exists
+        existing_sample = json.dumps(deduped, ensure_ascii=False)
+        # Truncate the existing list if it's too large for the prompt
+        if len(existing_sample) > 30000:
+            existing_sample = json.dumps(deduped[:200], ensure_ascii=False)
+        verify_prompt = f"""You are an expert at extracting exam questions. The following text was already analyzed and {len(deduped)} questions were found.
+
+Review the text below CAREFULLY and find any questions that were MISSED in the first pass. Only return questions that are NOT already in the existing list.
+
+Look especially for:
+- Questions near page breaks or section boundaries
+- Questions that don't follow the standard numbering pattern
+- Questions inside tables, sidebars, or boxed sections
+- Multi-part questions where sub-parts were missed
+- Short one-line questions that might have been overlooked
+
+ALREADY EXTRACTED ({len(deduped)} questions):
+{existing_sample}
+
+Return ONLY a valid JSON array of any ADDITIONAL question text strings that were missed. Return an empty array [] if none were missed.
+
+TEXT TO REVIEW:
+{verification_sample}"""
+
+        try:
+            raw = await _call_gemini_with_fallback(
+                verify_prompt,
+                temperature=0.0,
+                max_output_tokens=32768,
+            )
+            cleaned = _clean_json_response(raw)
+            additional = json.loads(cleaned)
+            if isinstance(additional, list):
+                additional_questions = [q for q in additional if isinstance(q, str) and q.strip()]
+                if additional_questions:
+                    existing_keys = {_question_key(q) for q in deduped}
+                    newly_found = [q.strip() for q in additional_questions if _question_key(q) not in existing_keys]
+                    if newly_found:
+                        deduped.extend(newly_found)
+                        logger.info(f"Verification pass found {len(newly_found)} additional questions (total: {len(deduped)})")
+        except Exception as e:
+            logger.warning(f"Verification pass failed (non-critical): {e}")
+
+    await _emit_progress(progress_callback, 100, f"Detected {len(deduped)} questions total")
     return deduped
 
 
 async def generate_all_quiz_questions_stepwise(
     text: str,
-    batch_size: int = 50,
+    batch_size: int = 30,
     progress_callback: ProgressCallback = None,
 ) -> list:
-    """Step-by-step: detect all questions, then batch quiz generation."""
+    """Step-by-step: detect all questions, then batch quiz generation.
+    Includes a final reconciliation pass for any questions the AI missed."""
     async def detection_progress(p: int, stage: str):
-        mapped = int(p * 0.35)
+        mapped = int(p * 0.30)
         await _emit_progress(progress_callback, mapped, stage)
 
     detected_questions = await detect_questions(text, progress_callback=detection_progress)
@@ -774,13 +1066,14 @@ async def generate_all_quiz_questions_stepwise(
 
     all_quizzes: list[dict] = []
     seen_question_keys: set[str] = set()
+    globally_missing: list[str] = []
 
     for i in range(0, len(detected_questions), batch_size):
         batch_questions = detected_questions[i:i+batch_size]
         missing_questions = batch_questions[:]
         attempts = 0
 
-        while missing_questions and attempts < 3:
+        while missing_questions and attempts < 4:
             attempts += 1
             batch_prompt = """
 You are an expert educational quiz creator. For each question below, generate MCQ options and explanations. Return ONLY valid JSON as an array of question objects:
@@ -797,6 +1090,9 @@ You are an expert educational quiz creator. For each question below, generate MC
     "explanation": "..."
   }
 ]
+
+IMPORTANT: You MUST return exactly one quiz object for EACH question below. Do NOT skip any questions.
+
 QUESTIONS:
 """ + json.dumps(missing_questions, ensure_ascii=False)
 
@@ -814,16 +1110,18 @@ QUESTIONS:
                 validated_batch = _validate_questions(batch_quizzes)
                 _merge_unique_questions(all_quizzes, validated_batch, seen_question_keys)
 
-                generated_keys = {_question_key(q["question_text"]) for q in validated_batch}
+                # Use fuzzy matching to find which input questions were covered
+                covered_indices = _find_covered_input_indices(missing_questions, validated_batch)
                 missing_questions = [
-                    q_text for q_text in missing_questions
-                    if _question_key(q_text) not in generated_keys
+                    q_text for idx, q_text in enumerate(missing_questions)
+                    if idx not in covered_indices
                 ]
                 logger.info(
                     f"Batch {i//batch_size + 1} attempt {attempts}: "
-                    f"generated {len(validated_batch)}, missing {len(missing_questions)}"
+                    f"generated {len(validated_batch)}, covered {len(covered_indices)}, "
+                    f"still missing {len(missing_questions)}"
                 )
-                progress = 35 + int((len(all_quizzes) / max(1, len(detected_questions))) * 65)
+                progress = 30 + int((len(all_quizzes) / max(1, len(detected_questions))) * 55)
                 await _emit_progress(
                     progress_callback,
                     progress,
@@ -834,12 +1132,79 @@ QUESTIONS:
                 break
 
         if missing_questions:
+            globally_missing.extend(missing_questions)
             logger.warning(
                 f"Batch {i//batch_size + 1}: could not generate "
                 f"{len(missing_questions)} question(s) after retries"
             )
 
-    logger.info(f"Stepwise generated {len(all_quizzes)} quizzes")
+    # ── Final reconciliation pass for all globally missing questions ──
+    if globally_missing:
+        logger.info(
+            f"Reconciliation: retrying {len(globally_missing)} globally missing question(s)"
+        )
+        await _emit_progress(
+            progress_callback,
+            88,
+            f"Reconciliation: retrying {len(globally_missing)} missing questions",
+        )
+
+        # Process missing questions in small batches for higher success rate
+        reconcile_batch_size = 20
+        for i in range(0, len(globally_missing), reconcile_batch_size):
+            still_missing = globally_missing[i:i + reconcile_batch_size]
+            for attempt in range(3):
+                if not still_missing:
+                    break
+                reconcile_prompt = """You are an expert educational quiz creator. You MUST generate exactly one MCQ quiz object for EACH question below. Do NOT skip any questions.
+
+Return ONLY valid JSON as an array of question objects. Each object must have: question_text, question_type ("MCQ"), options (array of 4), explanation.
+
+QUESTIONS (generate one quiz object per question):
+""" + json.dumps(still_missing, ensure_ascii=False)
+
+                try:
+                    raw = await _call_gemini_with_fallback(
+                        reconcile_prompt,
+                        temperature=0.3,
+                        max_output_tokens=65536,
+                    )
+                    cleaned = _clean_json_response(raw)
+                    reconciled = json.loads(cleaned)
+                    if isinstance(reconciled, list):
+                        validated = _validate_questions(reconciled)
+                        added = _merge_unique_questions(all_quizzes, validated, seen_question_keys)
+                        covered_indices = _find_covered_input_indices(still_missing, validated)
+                        still_missing = [
+                            q for idx, q in enumerate(still_missing)
+                            if idx not in covered_indices
+                        ]
+                        logger.info(
+                            f"Reconciliation batch {i//reconcile_batch_size + 1} attempt {attempt + 1}: "
+                            f"recovered {added}, still missing {len(still_missing)}"
+                        )
+                except Exception as e:
+                    logger.error(f"Reconciliation batch {i//reconcile_batch_size + 1} attempt {attempt + 1} failed: {e}")
+                    break
+
+    # ── ZERO-LOSS FALLBACK: create placeholder quizzes for any remaining missing questions ──
+    fallback_count = _create_fallback_quizzes_for_missing(
+        detected_questions, all_quizzes, seen_question_keys,
+    )
+    if fallback_count > 0:
+        logger.info(
+            f"Stepwise: {fallback_count} fallback quizzes added to ensure zero loss "
+            f"(total: {len(all_quizzes)}/{len(detected_questions)})"
+        )
+
+    final_missing = len(detected_questions) - len(all_quizzes)
+    if final_missing > 0:
+        logger.error(
+            f"CRITICAL: Stepwise STILL has {final_missing} missing question(s) after fallback "
+            f"out of {len(detected_questions)} detected — this should never happen"
+        )
+
+    logger.info(f"Stepwise generated {len(all_quizzes)} quizzes out of {len(detected_questions)} detected")
     await _emit_progress(
         progress_callback,
         100,
