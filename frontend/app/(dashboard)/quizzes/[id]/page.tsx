@@ -106,13 +106,17 @@ export default function QuizTakePage() {
  return;
  }
 
- if (rangeStart < 1 || rangeEnd < 1 || rangeStart > rangeEnd || rangeEnd > total) {
+ const rs = rangeStart as number;
+ const re = rangeEnd as number;
+ const qc = questionCount as number;
+
+ if (rs < 1 || re < 1 || rs > re || re > total) {
  toast.error(t('quiz.invalidRange'));
  return;
  }
 
- const availableInRange = rangeEnd - rangeStart + 1;
- if (questionCount < 1 || questionCount > availableInRange) {
+ const availableInRange = re - rs + 1;
+ if (qc < 1 || qc > availableInRange) {
  toast.error(t('quiz.invalidQuestionCount', { max: availableInRange }));
  return;
  }
@@ -120,9 +124,9 @@ export default function QuizTakePage() {
  setStarting(true);
  try {
  const { data } = await quizzesApi.startAttempt(id, {
- questionCount,
- rangeStart,
- rangeEnd,
+ questionCount: qc,
+ rangeStart: rs,
+ rangeEnd: re,
  });
  setAttempt(data);
  const questions: QuizQuestion[] = data.quiz?.questions || [];
@@ -196,10 +200,10 @@ export default function QuizTakePage() {
  const hasValidRange =
  Number.isInteger(rangeStart)
  && Number.isInteger(rangeEnd)
- && rangeStart >= 1
- && rangeEnd >= rangeStart
- && rangeEnd <= questions.length;
- const availableInRange = hasValidRange ? rangeEnd - rangeStart + 1 : 0;
+ && (rangeStart as number) >= 1
+ && (rangeEnd as number) >= (rangeStart as number)
+ && (rangeEnd as number) <= questions.length;
+ const availableInRange = hasValidRange ? (rangeEnd as number) - (rangeStart as number) + 1 : 0;
 
  // ── Not started ──
  if (!attempt) {

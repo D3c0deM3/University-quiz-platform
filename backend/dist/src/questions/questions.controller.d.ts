@@ -19,11 +19,11 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        subjectId: string;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         questionText: string;
+        subjectId: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -42,11 +42,11 @@ export declare class QuestionsController {
             };
         } & {
             id: string;
-            subjectId: string;
-            status: import("@prisma/client").$Enums.QuestionStatus;
             createdAt: Date;
             updatedAt: Date;
+            status: import("@prisma/client").$Enums.QuestionStatus;
             questionText: string;
+            subjectId: string;
             answerText: string;
             imagePath: string | null;
             createdById: string;
@@ -83,11 +83,11 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        subjectId: string;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         questionText: string;
+        subjectId: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -105,11 +105,11 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        subjectId: string;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         questionText: string;
+        subjectId: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -130,11 +130,11 @@ export declare class QuestionsController {
         };
     } & {
         id: string;
-        subjectId: string;
-        status: import("@prisma/client").$Enums.QuestionStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.QuestionStatus;
         questionText: string;
+        subjectId: string;
         answerText: string;
         imagePath: string | null;
         createdById: string;
@@ -151,13 +151,13 @@ export declare class QuestionsController {
             };
         } & {
             id: string;
-            subjectId: string;
             createdAt: Date;
             updatedAt: Date;
-            description: string | null;
-            materialId: string | null;
             title: string;
+            description: string | null;
             isPublished: boolean;
+            subjectId: string;
+            materialId: string | null;
         }) | null;
     }>;
 }
