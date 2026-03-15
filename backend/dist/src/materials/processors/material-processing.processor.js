@@ -118,6 +118,8 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
                     });
                 }
                 if (result.quiz_questions && result.quiz_questions.length > 0) {
+                    const receivedCount = result.quiz_questions.length;
+                    this.logger.log(`Material ${materialId}: received ${receivedCount} quiz questions from Python service`);
                     const material = await tx.material.findUnique({
                         where: { id: materialId },
                         select: { subjectId: true },
@@ -132,17 +134,23 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
                                 isPublished: false,
                             },
                         });
+                        let savedQuizQuestions = 0;
                         for (let i = 0; i < result.quiz_questions.length; i++) {
                             const q = result.quiz_questions[i];
+                            if (!q.question_text) {
+                                this.logger.warn(`Material ${materialId}: skipping quiz question ${i} — empty question_text`);
+                                continue;
+                            }
                             const question = await tx.quizQuestion.create({
                                 data: {
                                     quizId: quiz.id,
                                     questionText: q.question_text,
                                     questionType: this.mapQuestionType(q.question_type),
                                     explanation: q.explanation || null,
-                                    orderIndex: i,
+                                    orderIndex: savedQuizQuestions,
                                 },
                             });
+                            savedQuizQuestions++;
                             if (q.options && q.options.length > 0) {
                                 await tx.quizOption.createMany({
                                     data: q.options.map((opt, optIndex) => ({
@@ -154,21 +162,28 @@ let MaterialProcessingProcessor = class MaterialProcessingProcessor extends bull
                                 });
                             }
                         }
+                        this.logger.log(`Material ${materialId}: saved ${savedQuizQuestions}/${receivedCount} quiz questions to quiz ${quiz.id}`);
+                        if (savedQuizQuestions < receivedCount) {
+                            this.logger.warn(`Material ${materialId}: QUESTION LOSS DETECTED — received ${receivedCount} but saved ${savedQuizQuestions} (${receivedCount - savedQuizQuestions} lost)`);
+                        }
                         if (uploadedById) {
                             for (const q of result.quiz_questions) {
+                                if (!q.question_text)
+                                    continue;
                                 const correctOption = q.options?.find((opt) => opt.is_correct);
-                                const answerText = correctOption?.text || q.explanation || '';
-                                if (q.question_text && answerText) {
-                                    await tx.manualQuestion.create({
-                                        data: {
-                                            questionText: q.question_text,
-                                            answerText,
-                                            subjectId: material.subjectId,
-                                            createdById: uploadedById,
-                                            status: client_1.QuestionStatus.APPROVED,
-                                        },
-                                    });
-                                }
+                                const answerText = correctOption?.text ||
+                                    q.explanation ||
+                                    q.options?.[0]?.text ||
+                                    'No answer provided';
+                                await tx.manualQuestion.create({
+                                    data: {
+                                        questionText: q.question_text,
+                                        answerText,
+                                        subjectId: material.subjectId,
+                                        createdById: uploadedById,
+                                        status: client_1.QuestionStatus.APPROVED,
+                                    },
+                                });
                             }
                         }
                     }

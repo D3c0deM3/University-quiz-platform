@@ -211,6 +211,11 @@ export class MaterialProcessingProcessor extends WorkerHost {
 
         // Save quiz questions
         if (result.quiz_questions && result.quiz_questions.length > 0) {
+          const receivedCount = result.quiz_questions.length;
+          this.logger.log(
+            `Material ${materialId}: received ${receivedCount} quiz questions from Python service`,
+          );
+
           // Get the material to find subjectId
           const material = await tx.material.findUnique({
             where: { id: materialId },
@@ -230,17 +235,25 @@ export class MaterialProcessingProcessor extends WorkerHost {
             });
 
             // Create questions with options
+            let savedQuizQuestions = 0;
             for (let i = 0; i < result.quiz_questions.length; i++) {
               const q = result.quiz_questions[i];
+              if (!q.question_text) {
+                this.logger.warn(
+                  `Material ${materialId}: skipping quiz question ${i} — empty question_text`,
+                );
+                continue;
+              }
               const question = await tx.quizQuestion.create({
                 data: {
                   quizId: quiz.id,
                   questionText: q.question_text,
                   questionType: this.mapQuestionType(q.question_type),
                   explanation: q.explanation || null,
-                  orderIndex: i,
+                  orderIndex: savedQuizQuestions,
                 },
               });
+              savedQuizQuestions++;
 
               // Create options for MCQ and TRUE_FALSE
               if (q.options && q.options.length > 0) {
@@ -255,22 +268,35 @@ export class MaterialProcessingProcessor extends WorkerHost {
               }
             }
 
+            this.logger.log(
+              `Material ${materialId}: saved ${savedQuizQuestions}/${receivedCount} quiz questions to quiz ${quiz.id}`,
+            );
+            if (savedQuizQuestions < receivedCount) {
+              this.logger.warn(
+                `Material ${materialId}: QUESTION LOSS DETECTED — received ${receivedCount} but saved ${savedQuizQuestions} (${receivedCount - savedQuizQuestions} lost)`,
+              );
+            }
+
             // Also save quiz questions to the Q&A bank (ManualQuestion)
             if (uploadedById) {
               for (const q of result.quiz_questions) {
+                if (!q.question_text) continue;
                 const correctOption = q.options?.find((opt) => opt.is_correct);
-                const answerText = correctOption?.text || q.explanation || '';
-                if (q.question_text && answerText) {
-                  await tx.manualQuestion.create({
-                    data: {
-                      questionText: q.question_text,
-                      answerText,
-                      subjectId: material.subjectId,
-                      createdById: uploadedById,
-                      status: QuestionStatus.APPROVED,
-                    },
-                  });
-                }
+                // Build answer from correct option, explanation, or fallback text
+                const answerText =
+                  correctOption?.text ||
+                  q.explanation ||
+                  q.options?.[0]?.text ||
+                  'No answer provided';
+                await tx.manualQuestion.create({
+                  data: {
+                    questionText: q.question_text,
+                    answerText,
+                    subjectId: material.subjectId,
+                    createdById: uploadedById,
+                    status: QuestionStatus.APPROVED,
+                  },
+                });
               }
             }
           }

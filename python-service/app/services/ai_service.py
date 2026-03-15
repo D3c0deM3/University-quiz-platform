@@ -292,7 +292,7 @@ async def generate_quiz_questions(
     seen_question_keys: set[str] = set()
     batch_num = 0
     stalled_batches = 0
-    max_stalled_batches = 3
+    max_stalled_batches = 5
 
     while len(all_questions) < num_questions and stalled_batches < max_stalled_batches:
         remaining = num_questions - len(all_questions)
@@ -470,12 +470,15 @@ async def _generate_quiz_batch(
 def _validate_questions(questions: list) -> list:
     """Validate and normalize a list of raw question dicts from the AI."""
     validated = []
+    skipped = 0
     for q in questions:
         if not q.get("question_text"):
+            skipped += 1
             continue
 
         question_text = str(q["question_text"]).strip()
         if not question_text:
+            skipped += 1
             continue
 
         validated_q = {
@@ -496,31 +499,41 @@ def _validate_questions(questions: list) -> list:
             ]
 
         validated.append(validated_q)
+
+    if skipped > 0:
+        logger.warning(f"_validate_questions: skipped {skipped} questions with empty question_text (kept {len(validated)}/{len(questions)})")
     return validated
 
 
 def _question_key(question_text: str) -> str:
-    """Normalize for dedup.  Keep only alphanumeric + spaces so that
-    numbering differences like '1.' vs '1)' and minor punctuation
-    changes do not cause false collisions, but truly identical
-    questions are still caught."""
+    """Normalize for dedup.  Uses first 120 non-whitespace characters
+    after stripping leading numbering.  This avoids false collisions
+    between short but genuinely different questions while still catching
+    true duplicates."""
     text = question_text.lower().strip()
     # Remove leading question numbers/letters: "1.", "1)", "a)", "A.", etc.
     text = re.sub(r'^[\d]+[.\)]\s*', '', text)
     text = re.sub(r'^[a-z][.\)]\s*', '', text)
     # Collapse whitespace
-    return " ".join(text.split())
+    normalized = " ".join(text.split())
+    # Use a longer prefix to reduce false collisions
+    return normalized[:120] if normalized else ""
 
 
 def _merge_unique_questions(target: list, incoming: list, seen_keys: set[str]) -> int:
     added = 0
+    dedup_skipped = 0
     for question in incoming:
         key = _question_key(question.get("question_text", ""))
         if not key or key in seen_keys:
+            if key in seen_keys:
+                dedup_skipped += 1
             continue
         seen_keys.add(key)
         target.append(question)
         added += 1
+    if dedup_skipped > 0:
+        logger.info(f"_merge_unique_questions: added {added}, skipped {dedup_skipped} duplicates (total: {len(target)})")
     return added
 
 
@@ -653,7 +666,7 @@ async def _generate_quiz_for_question_list_with_material(
         missing_questions = question_texts[i:i + batch_size]
         attempts = 0
 
-        while missing_questions and attempts < 3:
+        while missing_questions and attempts < 4:
             attempts += 1
             batch_prompt = """
 You are an expert educational quiz creator.
@@ -728,7 +741,7 @@ Rules:
         reconcile_batch_size = 20
         for i in range(0, len(globally_missing), reconcile_batch_size):
             still_missing = globally_missing[i:i + reconcile_batch_size]
-            for attempt in range(2):
+            for attempt in range(3):
                 if not still_missing:
                     break
                 reconcile_prompt = """You are an expert educational quiz creator. You MUST generate exactly one MCQ quiz object for EACH question below using the study material as the answer source. Do NOT skip any questions.
@@ -789,7 +802,7 @@ async def detect_questions(
 ) -> list:
     """Detect question texts from a document, chunking long inputs.
     Uses two passes to maximize detection coverage."""
-    chunks = _chunk_text_for_detection(text, chunk_chars=12000, overlap_chars=2000)
+    chunks = _chunk_text_for_detection(text, chunk_chars=10000, overlap_chars=2000)
     if not chunks:
         return []
 
@@ -918,7 +931,7 @@ async def generate_all_quiz_questions_stepwise(
         missing_questions = batch_questions[:]
         attempts = 0
 
-        while missing_questions and attempts < 3:
+        while missing_questions and attempts < 4:
             attempts += 1
             batch_prompt = """
 You are an expert educational quiz creator. For each question below, generate MCQ options and explanations. Return ONLY valid JSON as an array of question objects:
@@ -996,7 +1009,7 @@ QUESTIONS:
         reconcile_batch_size = 20
         for i in range(0, len(globally_missing), reconcile_batch_size):
             still_missing = globally_missing[i:i + reconcile_batch_size]
-            for attempt in range(2):
+            for attempt in range(3):
                 if not still_missing:
                     break
                 reconcile_prompt = """You are an expert educational quiz creator. You MUST generate exactly one MCQ quiz object for EACH question below. Do NOT skip any questions.
