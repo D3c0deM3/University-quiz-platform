@@ -230,6 +230,8 @@ const en = {
   'questions.failedToDelete': 'Failed to delete',
   'questions.confirmDelete': 'Are you sure you want to delete this question?',
   'questions.saving': 'Saving…',
+  'questions.trialMode': 'Trial Mode',
+  'questions.trialDescLimit': 'You can preview the first 10 questions. Subscribe to access all questions.',
 
   // ───── Create Question ─────
   'createQuestion.title': 'Create Question',

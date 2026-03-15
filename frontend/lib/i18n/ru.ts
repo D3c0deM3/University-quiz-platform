@@ -230,6 +230,8 @@ const ru: Record<string, string> = {
   'questions.failedToDelete': 'Не удалось удалить',
   'questions.confirmDelete': 'Вы уверены, что хотите удалить этот вопрос?',
   'questions.saving': 'Сохранение…',
+  'questions.trialMode': 'Пробный режим',
+  'questions.trialDescLimit': 'Вы можете просмотреть первые 10 вопросов. Подпишитесь для доступа ко всем вопросам.',
 
   // ───── Создание вопроса ─────
   'createQuestion.title': 'Создать вопрос',

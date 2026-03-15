@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { questionsApi, subjectsApi } from '@/lib/api';
+import { questionsApi, subjectsApi, subscriptionsApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTranslation } from '@/lib/i18n';
 import { useDebounce } from '@/lib/useDebounce';
@@ -57,6 +57,8 @@ export default function SubjectQuestionsPage() {
  const [editSaving, setEditSaving] = useState(false);
 
  const isAdmin = user?.role === 'ADMIN' || user?.role === 'TEACHER';
+ const [isTrial, setIsTrial] = useState(false);
+ const [trialUsed, setTrialUsed] = useState(false);
 
  const debouncedSearch = useDebounce(search, 350);
 
@@ -67,7 +69,18 @@ export default function SubjectQuestionsPage() {
  .get(subjectId)
  .then((res) => setSubject(res.data))
  .catch(() => {});
- }, [subjectId]);
+
+ // Check trial status for students
+ if (user?.role === 'STUDENT') {
+ subscriptionsApi
+ .check(subjectId)
+ .then((res) => {
+ setIsTrial(res.data.isTrial === true);
+ setTrialUsed(res.data.trialUsed === true);
+ })
+ .catch(() => {});
+ }
+ }, [subjectId, user]);
 
  const load = useCallback(
  async (p = 1) => {
@@ -76,7 +89,7 @@ export default function SubjectQuestionsPage() {
  try {
  const params: Record<string, string | number> = {
  page: p,
- limit: 20,
+ limit: isTrial ? 10 : 20,
  subjectId,
  status: 'APPROVED',
  };
@@ -91,7 +104,7 @@ export default function SubjectQuestionsPage() {
  setLoading(false);
  }
  },
- [subjectId, debouncedSearch, showMine],
+ [subjectId, debouncedSearch, showMine, isTrial],
  );
 
  useEffect(() => {
@@ -172,6 +185,15 @@ export default function SubjectQuestionsPage() {
  </p>
  </div>
  </div>
+
+ {/* Trial Banner */}
+ {isTrial && !trialUsed && (
+ <div className="rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 p-3 sm:p-4">
+ <p className="text-sm text-amber-800 dark:text-amber-200">
+ ✨ {t('questions.trialMode')} — {t('questions.trialDescLimit')}
+ </p>
+ </div>
+ )}
 
  {/* Filters */}
  <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">

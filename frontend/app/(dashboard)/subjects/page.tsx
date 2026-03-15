@@ -27,7 +27,6 @@ export default function SubjectsPage() {
  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
  const [trialStatus, setTrialStatus] = useState<Map<string, { hasAccess: boolean; isTrial: boolean; trialUsed: boolean }>>(new Map());
  const [modalSubject, setModalSubject] = useState<Subject | null>(null);
- const [startingTrialFor, setStartingTrialFor] = useState<string | null>(null);
 
  useEffect(() => {
  async function load() {
@@ -88,27 +87,9 @@ export default function SubjectsPage() {
  const isStudent = user?.role === 'STUDENT';
 
  const handleTryQuizForFree = async (subject: Subject) => {
- setStartingTrialFor(subject.id);
- try {
- // Get first available quiz for this subject
- const quizzesRes = await quizzesApi.listBySubject(subject.id, 1, 1);
- const quiz = quizzesRes.data.data?.[0];
-
- if (!quiz) {
- toast.error(t('subjects.noQuizzesAvailable'));
- return;
- }
-
- // Start attempt with 10 question limit (backend will enforce this)
- const attemptRes = await quizzesApi.startAttempt(quiz.id, { questionCount: 10 });
-
- // Navigate to quiz
- router.push(`/quizzes/${attemptRes.data.id}`);
- } catch (error: any) {
- toast.error(error.response?.data?.message || t('subjects.failedToStartTrial'));
- } finally {
- setStartingTrialFor(null);
- }
+ // For trial users, navigate directly to the Q&A questions page
+ // Backend will limit them to first 10 questions
+ router.push(`/questions/${subject.id}`);
  };
 
  return (
@@ -213,10 +194,9 @@ export default function SubjectsPage() {
  size="sm"
  className="flex-1 border-amber-200 dark:border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/15 hover:text-amber-700 dark:hover:text-amber-300 cursor-pointer"
  onClick={() => handleTryQuizForFree(subject)}
- disabled={startingTrialFor === subject.id}
  >
  <Sparkles size={14} className="mr-1.5" />
- {startingTrialFor === subject.id ? t('common.starting') : t('subjects.tryQuizFree')}
+ {t('subjects.tryQuizFree')}
  </Button>
  <Button
  size="sm"

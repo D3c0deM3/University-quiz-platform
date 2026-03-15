@@ -230,6 +230,8 @@ const uz: Record<string, string> = {
   'questions.failedToDelete': 'O\'chirib bo\'lmadi',
   'questions.confirmDelete': 'Bu savolni o\'chirishga ishonchingiz kommi?',
   'questions.saving': 'Saqlanmoqda…',
+  'questions.trialMode': 'Sinov rejimi',
+  'questions.trialDescLimit': 'Siz birinchi 10 savolni ko\'rishingiz mumkin. Barcha savollarga kirish uchun obuna bo\'ling.',
 
   // ───── Savol yaratish ─────
   'createQuestion.title': 'Savol yaratish',
