@@ -59,12 +59,16 @@ export default function SubjectDetailPage() {
  if (!id || (hasAccess !== true && !isTrial)) return;
  async function loadContent() {
  try {
- const [materialsRes, quizzesRes] = await Promise.all([
+ const [materialsResult, quizzesResult] = await Promise.allSettled([
  materialsApi.list({ subjectId: id, status: 'PUBLISHED', limit: 50 }),
  quizzesApi.listBySubject(id, 1, 50),
  ]);
- setMaterials(materialsRes.data.data || []);
- setQuizzes(quizzesRes.data.data || []);
+ if (materialsResult.status === 'fulfilled') {
+ setMaterials(materialsResult.value.data.data || []);
+ }
+ if (quizzesResult.status === 'fulfilled') {
+ setQuizzes(quizzesResult.value.data.data || []);
+ }
  } catch {
  // may fail if no content yet
  }

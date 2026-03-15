@@ -360,12 +360,12 @@ export class MaterialsController {
   ) {
     if (role === Role.STUDENT) {
       if (subjectId) {
-        // Specific subject requested — verify access
-        const hasAccess = await this.subscriptionsService.hasAccess(
+        // Specific subject requested — verify access or trial
+        const result = await this.subscriptionsService.hasAccessOrTrial(
           userId!,
           subjectId,
         );
-        if (!hasAccess)
+        if (!result.hasAccess && !result.isTrial)
           throw new ForbiddenException(
             'You do not have a subscription for this subject',
           );
@@ -421,11 +421,11 @@ export class MaterialsController {
   ) {
     const material = await this.materialsService.findOne(id);
     if (role === Role.STUDENT && material.subjectId) {
-      const hasAccess = await this.subscriptionsService.hasAccess(
+      const result = await this.subscriptionsService.hasAccessOrTrial(
         userId,
         material.subjectId,
       );
-      if (!hasAccess)
+      if (!result.hasAccess && !result.isTrial)
         throw new ForbiddenException(
           'You do not have a subscription for this subject',
         );

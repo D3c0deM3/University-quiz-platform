@@ -222,8 +222,8 @@ let MaterialsController = class MaterialsController {
     async findAll(page, limit, status, subjectId, userId, role) {
         if (role === client_1.Role.STUDENT) {
             if (subjectId) {
-                const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
-                if (!hasAccess)
+                const result = await this.subscriptionsService.hasAccessOrTrial(userId, subjectId);
+                if (!result.hasAccess && !result.isTrial)
                     throw new common_2.ForbiddenException('You do not have a subscription for this subject');
             }
             return this.materialsService.findAllForStudent(page, limit, userId, status, subjectId);
@@ -245,8 +245,8 @@ let MaterialsController = class MaterialsController {
     async findOne(id, userId, role) {
         const material = await this.materialsService.findOne(id);
         if (role === client_1.Role.STUDENT && material.subjectId) {
-            const hasAccess = await this.subscriptionsService.hasAccess(userId, material.subjectId);
-            if (!hasAccess)
+            const result = await this.subscriptionsService.hasAccessOrTrial(userId, material.subjectId);
+            if (!result.hasAccess && !result.isTrial)
                 throw new common_2.ForbiddenException('You do not have a subscription for this subject');
         }
         return material;
