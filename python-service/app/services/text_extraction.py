@@ -118,21 +118,50 @@ async def extract_from_docx(file_path: str) -> str:
     return "\n\n".join(text_parts)
 
 
+_antiword_setup_done = False
+
+
+def _setup_antiword_mappings():
+    """Ensure antiword can find its UTF-8.txt mapping file on Heroku.
+    antiword hardcodes search to ~/.antiword/ and /usr/share/antiword/.
+    heroku-buildpack-apt installs to /app/.apt/usr/share/antiword/.
+    """
+    global _antiword_setup_done
+    if _antiword_setup_done:
+        return
+    _antiword_setup_done = True
+
+    home_antiword = os.path.expanduser("~/.antiword")
+    if os.path.exists(os.path.join(home_antiword, "UTF-8.txt")):
+        return  # Already available
+
+    # Find where apt buildpack put the mapping files
+    apt_dir = "/app/.apt/usr/share/antiword"
+    if os.path.isdir(apt_dir):
+        if not os.path.exists(home_antiword):
+            os.symlink(apt_dir, home_antiword)
+            logger.info(f"Symlinked {home_antiword} -> {apt_dir}")
+        return
+
+    # Broader search as fallback
+    for root, dirs, files in os.walk("/app/.apt"):
+        if "UTF-8.txt" in files and "antiword" in root.lower():
+            if not os.path.exists(home_antiword):
+                os.symlink(root, home_antiword)
+                logger.info(f"Symlinked {home_antiword} -> {root}")
+            return
+
+
 async def extract_from_doc(file_path: str) -> str:
     """Extract text from a legacy .doc file using antiword, with python-docx fallback."""
     logger.info(f"Extracting text from DOC: {file_path}")
 
     # Try antiword first (lightweight, works on Heroku)
     try:
-        env = os.environ.copy()
-        # heroku-buildpack-apt installs mapping files under .apt prefix
-        for candidate in ["/app/.apt/usr/share/antiword", "/usr/share/antiword"]:
-            if os.path.isdir(candidate):
-                env["ANTIWORDDIR"] = candidate
-                break
+        _setup_antiword_mappings()
         result = subprocess.run(
             ["antiword", file_path],
-            capture_output=True, timeout=60, env=env,
+            capture_output=True, timeout=60,
         )
         if result.returncode == 0:
             text = result.stdout.decode("utf-8", errors="replace").strip()
