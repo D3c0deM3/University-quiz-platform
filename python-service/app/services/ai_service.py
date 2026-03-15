@@ -632,7 +632,9 @@ def _create_fallback_quizzes_for_missing(
         if q_key in existing_keys:
             continue
 
-        # Skip if already covered by fuzzy match
+        # Skip if already covered by fuzzy match — use HIGH threshold (0.70)
+        # to avoid false positives. Better to create a duplicate fallback
+        # than to lose a question.
         input_words = _normalize_words(q_text)
         is_covered = False
         if input_words:
@@ -641,7 +643,7 @@ def _create_fallback_quizzes_for_missing(
                     continue
                 overlap = len(input_words & ews)
                 union = len(input_words | ews)
-                if union > 0 and (overlap / union) > 0.45:
+                if union > 0 and (overlap / union) > 0.70:
                     is_covered = True
                     break
 

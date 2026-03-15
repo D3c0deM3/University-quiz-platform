@@ -214,6 +214,66 @@ async def extract_from_pptx(file_path: str) -> str:
     return "\n\n".join(text_parts)
 
 
+async def extract_from_ppt(file_path: str) -> str:
+    """Extract text from a legacy .ppt file.
+    Strategy: try python-pptx first (some .ppt files are actually OOXML),
+    then try LibreOffice conversion to .pptx, then fall back to catppt."""
+    logger.info(f"Extracting text from PPT: {file_path}")
+
+    # Try python-pptx first — some .ppt files are actually OOXML with wrong extension
+    try:
+        text = await extract_from_pptx(file_path)
+        if text and text.strip():
+            logger.info(f"python-pptx extracted {len(text)} characters from .ppt")
+            return text
+    except Exception as e:
+        logger.info(f"python-pptx failed on .ppt (expected for binary format): {e}")
+
+    # Try LibreOffice conversion to PPTX
+    try:
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                ["libreoffice", "--headless", "--convert-to", "pptx", "--outdir", tmpdir, file_path],
+                capture_output=True, timeout=120,
+            )
+            if result.returncode == 0:
+                base_name = os.path.splitext(os.path.basename(file_path))[0]
+                converted_path = os.path.join(tmpdir, base_name + ".pptx")
+                if os.path.exists(converted_path):
+                    text = await extract_from_pptx(converted_path)
+                    if text and text.strip():
+                        logger.info(f"LibreOffice PPT->PPTX conversion extracted {len(text)} characters")
+                        return text
+            else:
+                logger.warning(f"LibreOffice conversion failed: {result.stderr.decode(errors='replace')}")
+    except FileNotFoundError:
+        logger.warning("LibreOffice not installed, trying catppt fallback")
+    except Exception as e:
+        logger.warning(f"LibreOffice conversion failed: {e}")
+
+    # Fallback: catppt (part of catdoc package)
+    try:
+        result = subprocess.run(
+            ["catppt", file_path],
+            capture_output=True, timeout=60,
+        )
+        if result.returncode == 0:
+            text = result.stdout.decode("utf-8", errors="replace").strip()
+            if text:
+                logger.info(f"catppt extracted {len(text)} characters")
+                return text
+        else:
+            logger.warning(f"catppt failed: {result.stderr.decode(errors='replace')}")
+    except FileNotFoundError:
+        logger.warning("catppt not installed")
+    except Exception as e:
+        logger.warning(f"catppt failed: {e}")
+
+    logger.error("All PPT extraction methods failed")
+    return ""
+
+
 async def extract_with_ocr(file_path: str) -> str:
     """Extract text from an image file using OCR (pytesseract + Pillow)."""
     logger.info(f"Extracting text via OCR from: {file_path}")
@@ -274,7 +334,9 @@ async def extract_text(file_path: str, file_type: str) -> str:
         "docx": "docx",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
         "pptx": "pptx",
+        "ppt": "ppt",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+        "application/vnd.ms-powerpoint": "ppt",
         "xlsx": "xlsx",
         "xls": "xls",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
@@ -299,6 +361,8 @@ async def extract_text(file_path: str, file_type: str) -> str:
         return await extract_from_docx(abs_path)
     elif normalized == "pptx":
         return await extract_from_pptx(abs_path)
+    elif normalized == "ppt":
+        return await extract_from_ppt(abs_path)
     elif normalized in ("xlsx", "xls"):
         return await extract_from_excel(abs_path)
     elif normalized == "image":

@@ -17,6 +17,7 @@ const ALLOWED_MIME_TYPES = [
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
   'image/png',
@@ -38,7 +39,7 @@ export class MaterialsService {
   validateFile(file: Express.Multer.File) {
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       throw new BadRequestException(
-        `File type ${file.mimetype} is not supported. Allowed: PDF, DOC, DOCX, PPTX, XLSX, XLS, PNG, JPG`,
+        `File type ${file.mimetype} is not supported. Allowed: PDF, DOC, DOCX, PPT, PPTX, XLSX, XLS, PNG, JPG`,
       );
     }
 
@@ -71,6 +72,7 @@ export class MaterialsService {
       'application/msword': 'DOC',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
+      'application/vnd.ms-powerpoint': 'PPT',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
       'application/vnd.ms-excel': 'XLS',
       'image/png': 'PNG',

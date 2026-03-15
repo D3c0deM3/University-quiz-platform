@@ -25,19 +25,19 @@ export declare class MaterialsController {
             };
         } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import("@prisma/client").$Enums.MaterialStatus;
-            uploadedById: string;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
+            status: import("@prisma/client").$Enums.MaterialStatus;
             processingProgress: number;
             processingStage: string | null;
             errorMessage: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             subjectId: string;
+            uploadedById: string;
         })[];
         material: {
             subject: {
@@ -51,19 +51,19 @@ export declare class MaterialsController {
             };
         } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import("@prisma/client").$Enums.MaterialStatus;
-            uploadedById: string;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
+            status: import("@prisma/client").$Enums.MaterialStatus;
             processingProgress: number;
             processingStage: string | null;
             errorMessage: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             subjectId: string;
+            uploadedById: string;
         };
     }>;
     uploadWithQuestions(files: {
@@ -84,19 +84,19 @@ export declare class MaterialsController {
             };
         } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import("@prisma/client").$Enums.MaterialStatus;
-            uploadedById: string;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
+            status: import("@prisma/client").$Enums.MaterialStatus;
             processingProgress: number;
             processingStage: string | null;
             errorMessage: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             subjectId: string;
+            uploadedById: string;
         };
     }>;
     uploadText(materialFiles: Express.Multer.File[], subjectId: string, questionsText: string, numQuestionsRaw: string, userId: string): Promise<{
@@ -113,19 +113,19 @@ export declare class MaterialsController {
             };
         } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import("@prisma/client").$Enums.MaterialStatus;
-            uploadedById: string;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
+            status: import("@prisma/client").$Enums.MaterialStatus;
             processingProgress: number;
             processingStage: string | null;
             errorMessage: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             subjectId: string;
+            uploadedById: string;
         };
     }>;
     findAll(page: number, limit: number, status?: MaterialStatus, subjectId?: string, userId?: string, role?: Role): Promise<{
@@ -134,32 +134,32 @@ export declare class MaterialsController {
                 id: string;
                 name: string;
             };
+            uploadedBy: {
+                id: string;
+                firstName: string;
+                lastName: string;
+            };
             metadata: {
                 title: string | null;
                 summary: string | null;
                 keywords: string[];
                 tags: string[];
             } | null;
-            uploadedBy: {
-                id: string;
-                firstName: string;
-                lastName: string;
-            };
         } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import("@prisma/client").$Enums.MaterialStatus;
-            uploadedById: string;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
+            status: import("@prisma/client").$Enums.MaterialStatus;
             processingProgress: number;
             processingStage: string | null;
             errorMessage: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             subjectId: string;
+            uploadedById: string;
         })[];
         meta: {
             total: number;
@@ -208,10 +208,16 @@ export declare class MaterialsController {
             description: string | null;
             code: string | null;
         };
+        uploadedBy: {
+            id: string;
+            firstName: string;
+            lastName: string;
+        };
         metadata: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            materialId: string;
             title: string | null;
             summary: string | null;
             keywords: string[];
@@ -219,13 +225,7 @@ export declare class MaterialsController {
             tags: string[];
             difficultyLevel: import("@prisma/client").$Enums.DifficultyLevel | null;
             contentType: string | null;
-            materialId: string;
         } | null;
-        uploadedBy: {
-            id: string;
-            firstName: string;
-            lastName: string;
-        };
         textChunks: {
             id: string;
             createdAt: Date;
@@ -235,19 +235,19 @@ export declare class MaterialsController {
         }[];
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        status: import("@prisma/client").$Enums.MaterialStatus;
-        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
+        status: import("@prisma/client").$Enums.MaterialStatus;
         processingProgress: number;
         processingStage: string | null;
         errorMessage: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         subjectId: string;
+        uploadedById: string;
     }>;
     remove(id: string): Promise<{
         message: string;
@@ -256,6 +256,7 @@ export declare class MaterialsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        materialId: string;
         title: string | null;
         summary: string | null;
         keywords: string[];
@@ -263,12 +264,12 @@ export declare class MaterialsController {
         tags: string[];
         difficultyLevel: import("@prisma/client").$Enums.DifficultyLevel | null;
         contentType: string | null;
-        materialId: string;
     }>;
     updateMetadata(id: string, dto: UpdateMetadataDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        materialId: string;
         title: string | null;
         summary: string | null;
         keywords: string[];
@@ -276,71 +277,70 @@ export declare class MaterialsController {
         tags: string[];
         difficultyLevel: import("@prisma/client").$Enums.DifficultyLevel | null;
         contentType: string | null;
-        materialId: string;
     }>;
     getQuizzes(id: string): Promise<({
         _count: {
-            attempts: number;
             questions: number;
+            attempts: number;
         };
         questions: ({
             options: {
                 id: string;
                 createdAt: Date;
-                optionText: string;
-                isCorrect: boolean;
                 orderIndex: number;
                 questionId: string;
+                optionText: string;
+                isCorrect: boolean;
             }[];
         } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            explanation: string | null;
-            quizId: string;
             orderIndex: number;
+            quizId: string;
             questionText: string;
             questionType: import("@prisma/client").$Enums.QuestionType;
+            explanation: string | null;
         })[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
-        description: string | null;
-        isPublished: boolean;
         subjectId: string;
+        description: string | null;
         materialId: string | null;
+        title: string;
+        isPublished: boolean;
     })[]>;
     updateQuiz(quizId: string, dto: UpdateQuizDto): Promise<({
         questions: ({
             options: {
                 id: string;
                 createdAt: Date;
-                optionText: string;
-                isCorrect: boolean;
                 orderIndex: number;
                 questionId: string;
+                optionText: string;
+                isCorrect: boolean;
             }[];
         } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            explanation: string | null;
-            quizId: string;
             orderIndex: number;
+            quizId: string;
             questionText: string;
             questionType: import("@prisma/client").$Enums.QuestionType;
+            explanation: string | null;
         })[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
-        description: string | null;
-        isPublished: boolean;
         subjectId: string;
+        description: string | null;
         materialId: string | null;
+        title: string;
+        isPublished: boolean;
     }) | null>;
     deleteQuiz(quizId: string): Promise<{
         message: string;
@@ -353,6 +353,7 @@ export declare class MaterialsController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            materialId: string;
             title: string | null;
             summary: string | null;
             keywords: string[];
@@ -360,23 +361,22 @@ export declare class MaterialsController {
             tags: string[];
             difficultyLevel: import("@prisma/client").$Enums.DifficultyLevel | null;
             contentType: string | null;
-            materialId: string;
         } | null;
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        status: import("@prisma/client").$Enums.MaterialStatus;
-        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
+        status: import("@prisma/client").$Enums.MaterialStatus;
         processingProgress: number;
         processingStage: string | null;
         errorMessage: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         subjectId: string;
+        uploadedById: string;
     }>;
     publishMaterial(id: string, body: {
         publish: boolean;
@@ -385,6 +385,7 @@ export declare class MaterialsController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            materialId: string;
             title: string | null;
             summary: string | null;
             keywords: string[];
@@ -392,80 +393,79 @@ export declare class MaterialsController {
             tags: string[];
             difficultyLevel: import("@prisma/client").$Enums.DifficultyLevel | null;
             contentType: string | null;
-            materialId: string;
         } | null;
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        status: import("@prisma/client").$Enums.MaterialStatus;
-        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
+        status: import("@prisma/client").$Enums.MaterialStatus;
         processingProgress: number;
         processingStage: string | null;
         errorMessage: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         subjectId: string;
+        uploadedById: string;
     }>;
     reprocessMaterial(id: string, userId: string): Promise<{
         message: string;
         material: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import("@prisma/client").$Enums.MaterialStatus;
-            uploadedById: string;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
+            status: import("@prisma/client").$Enums.MaterialStatus;
             processingProgress: number;
             processingStage: string | null;
             errorMessage: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             subjectId: string;
+            uploadedById: string;
         };
     }>;
     createQuizQuestion(dto: CreateQuizQuestionDto): Promise<({
         options: {
             id: string;
             createdAt: Date;
-            optionText: string;
-            isCorrect: boolean;
             orderIndex: number;
             questionId: string;
+            optionText: string;
+            isCorrect: boolean;
         }[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        explanation: string | null;
-        quizId: string;
         orderIndex: number;
+        quizId: string;
         questionText: string;
         questionType: import("@prisma/client").$Enums.QuestionType;
+        explanation: string | null;
     }) | null>;
     updateQuizQuestion(questionId: string, dto: UpdateSingleQuestionDto): Promise<({
         options: {
             id: string;
             createdAt: Date;
-            optionText: string;
-            isCorrect: boolean;
             orderIndex: number;
             questionId: string;
+            optionText: string;
+            isCorrect: boolean;
         }[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        explanation: string | null;
-        quizId: string;
         orderIndex: number;
+        quizId: string;
         questionText: string;
         questionType: import("@prisma/client").$Enums.QuestionType;
+        explanation: string | null;
     }) | null>;
     deleteQuizQuestion(questionId: string): Promise<{
         message: string;
@@ -477,6 +477,7 @@ export declare class MaterialsController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            materialId: string;
             title: string | null;
             summary: string | null;
             keywords: string[];
@@ -484,22 +485,21 @@ export declare class MaterialsController {
             tags: string[];
             difficultyLevel: import("@prisma/client").$Enums.DifficultyLevel | null;
             contentType: string | null;
-            materialId: string;
         } | null;
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        status: import("@prisma/client").$Enums.MaterialStatus;
-        uploadedById: string;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
+        status: import("@prisma/client").$Enums.MaterialStatus;
         processingProgress: number;
         processingStage: string | null;
         errorMessage: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         subjectId: string;
+        uploadedById: string;
     }>;
 }
