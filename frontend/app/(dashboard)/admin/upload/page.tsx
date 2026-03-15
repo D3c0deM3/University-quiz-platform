@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { materialsApi, subjectsApi } from '@/lib/api';
+import { materialsApi, subjectsApi, quizzesApi } from '@/lib/api';
 import type { Subject } from '@/lib/types';
 import { useTranslation } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,24 +10,44 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Upload, FileText, X, HelpCircle } from 'lucide-react';
+import { Upload, FileText, X, HelpCircle, Plus, Trash2, CheckCircle, PenLine, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+interface ManualQuestion {
+  questionText: string;
+  correctAnswer: string;
+}
+
+function emptyQuestion(): ManualQuestion {
+  return {
+    questionText: '',
+    correctAnswer: '',
+  };
+}
 
 export default function UploadPage() {
  const router = useRouter();
  const { t } = useTranslation();
  const [subjects, setSubjects] = useState<Subject[]>([]);
  const [subjectId, setSubjectId] = useState('');
- const [file, setFile] = useState<File | null>(null);
+ const [files, setFiles] = useState<File[]>([]);
  const [uploading, setUploading] = useState(false);
  const [dragOver, setDragOver] = useState(false);
- const [numQuestions, setNumQuestions] = useState(10);
+ const [numQuestions, setNumQuestions] = useState<number | ''>(10);
  const [allQuestions, setAllQuestions] = useState(false);
  const [questionsWithMaterial, setQuestionsWithMaterial] = useState(false);
  const [questionsFile, setQuestionsFile] = useState<File | null>(null);
  const [studyMaterialFiles, setStudyMaterialFiles] = useState<File[]>([]);
  const [dragOverQuestions, setDragOverQuestions] = useState(false);
  const [dragOverStudyMaterials, setDragOverStudyMaterials] = useState(false);
+
+ // Tab state: 'file' or 'manual'
+ const [activeTab, setActiveTab] = useState<'file' | 'manual'>('file');
+
+ // Manual question entry state
+ const [quizTitle, setQuizTitle] = useState('');
+ const [manualQuestions, setManualQuestions] = useState<ManualQuestion[]>([emptyQuestion()]);
+ const [creatingQuiz, setCreatingQuiz] = useState(false);
 
  useEffect(() => {
  subjectsApi.list(1, 100).then((res) => {
@@ -39,8 +59,17 @@ export default function UploadPage() {
  const handleDrop = (e: React.DragEvent) => {
  e.preventDefault();
  setDragOver(false);
- const f = e.dataTransfer.files?.[0];
- if (f) setFile(f);
+ const incoming = Array.from(e.dataTransfer.files || []);
+ addFiles(incoming);
+ };
+
+ const addFiles = (incoming: File[]) => {
+ if (incoming.length === 0) return;
+ setFiles((prev) => mergeUniqueFiles(prev, incoming));
+ };
+
+ const removeFile = (index: number) => {
+ setFiles((prev) => prev.filter((_, i) => i !== index));
  };
 
  const handleDropQuestions = (e: React.DragEvent) => {
@@ -91,7 +120,7 @@ export default function UploadPage() {
  questionsFile,
  studyMaterialFiles,
  subjectId,
- allQuestions ? 0 : numQuestions,
+ allQuestions ? 0 : (numQuestions || 10),
  );
  toast.success(t('adminUpload.success'));
  router.push('/admin/materials');
@@ -104,13 +133,13 @@ export default function UploadPage() {
  setUploading(false);
  }
  } else {
- if (!file || !subjectId) {
+ if (files.length === 0 || !subjectId) {
  toast.error(t('adminUpload.error'));
  return;
  }
  setUploading(true);
  try {
- await materialsApi.upload(file, subjectId, allQuestions ? 0 : numQuestions);
+ await materialsApi.upload(files, subjectId, allQuestions ? 0 : (numQuestions || 10));
  toast.success(t('adminUpload.success'));
  router.push('/admin/materials');
  } catch (err: unknown) {
@@ -124,9 +153,67 @@ export default function UploadPage() {
  }
  };
 
+ // ── Manual question handlers ──
+
+ const updateQuestion = (index: number, field: keyof ManualQuestion, value: string) => {
+   setManualQuestions((prev) => prev.map((q, i) => i === index ? { ...q, [field]: value } : q));
+ };
+
+ const addQuestion = () => {
+   setManualQuestions((prev) => [...prev, emptyQuestion()]);
+ };
+
+ const removeQuestion = (index: number) => {
+   setManualQuestions((prev) => prev.filter((_, i) => i !== index));
+ };
+
+ const handleCreateManualQuiz = async () => {
+   if (!subjectId) {
+     toast.error(t('adminUpload.error'));
+     return;
+   }
+   if (manualQuestions.length === 0) {
+     toast.error(t('manualUpload.noQuestions'));
+     return;
+   }
+   for (const q of manualQuestions) {
+     if (!q.questionText.trim()) {
+       toast.error(t('manualUpload.needQuestionText'));
+       return;
+     }
+     if (!q.correctAnswer.trim()) {
+       toast.error(t('manualUpload.needCorrectAnswer'));
+       return;
+     }
+   }
+
+   setCreatingQuiz(true);
+   try {
+     await quizzesApi.createManualAi({
+       subjectId,
+       title: quizTitle.trim() || undefined,
+       questions: manualQuestions.map((q) => ({
+         questionText: q.questionText,
+         correctAnswer: q.correctAnswer,
+       })),
+     });
+     toast.success(t('manualUpload.success', { count: String(manualQuestions.length) }));
+     setManualQuestions([emptyQuestion()]);
+     setQuizTitle('');
+     router.push('/admin/materials');
+   } catch (err: unknown) {
+     const message =
+       (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+       t('manualUpload.error');
+     toast.error(message);
+   } finally {
+     setCreatingQuiz(false);
+   }
+ };
+
  const MultiFileUploadZone = ({
  id,
- files,
+ files: zoneFiles,
  onAddFiles,
  onRemoveFile,
  onDrop,
@@ -168,7 +255,7 @@ export default function UploadPage() {
  type="file"
  multiple
  className="hidden"
- accept=".pdf,.docx,.pptx,.xlsx,.xls,.png,.jpg,.jpeg"
+ accept=".pdf,.doc,.docx,.pptx,.xlsx,.xls,.png,.jpg,.jpeg"
  onChange={(e) => {
  const incoming = Array.from(e.target.files || []);
  onAddFiles(incoming);
@@ -177,9 +264,9 @@ export default function UploadPage() {
  />
  </div>
 
- {files.length > 0 && (
+ {zoneFiles.length > 0 && (
  <div className="space-y-2">
- {files.map((f, index) => (
+ {zoneFiles.map((f, index) => (
  <div
  key={`${f.name}-${f.size}-${f.lastModified}-${index}`}
  className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-zinc-700 p-3"
@@ -251,7 +338,7 @@ export default function UploadPage() {
  id={id}
  type="file"
  className="hidden"
- accept=".pdf,.docx,.pptx,.xlsx,.xls,.png,.jpg,.jpeg"
+ accept=".pdf,.doc,.docx,.pptx,.xlsx,.xls,.png,.jpg,.jpeg"
  onChange={(e) => {
  const f = e.target.files?.[0];
  if (f) onFileChange(f);
@@ -285,6 +372,37 @@ export default function UploadPage() {
  <p className="text-gray-500 dark:text-zinc-400">{t('adminUpload.subtitle')}</p>
  </div>
 
+ {/* Tab Switcher */}
+ <div className="flex rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+   <button
+     type="button"
+     onClick={() => setActiveTab('file')}
+     className={cn(
+       'flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors cursor-pointer',
+       activeTab === 'file'
+         ? 'bg-blue-600 text-white'
+         : 'bg-white dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-750',
+     )}
+   >
+     <Upload size={16} />
+     {t('manualUpload.tabFile')}
+   </button>
+   <button
+     type="button"
+     onClick={() => setActiveTab('manual')}
+     className={cn(
+       'flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors cursor-pointer',
+       activeTab === 'manual'
+         ? 'bg-blue-600 text-white'
+         : 'bg-white dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-750',
+     )}
+   >
+     <PenLine size={16} />
+     {t('manualUpload.tabManual')}
+   </button>
+ </div>
+
+ {/* Subject Selection (shared between both tabs) */}
  <Card>
  <CardHeader>
  <CardTitle>{t('adminUpload.selectSubject')}</CardTitle>
@@ -302,157 +420,258 @@ export default function UploadPage() {
  </CardContent>
  </Card>
 
- {/* Scenario 3 toggle */}
- <Card>
- <CardContent className="pt-6">
- <label className="flex items-start gap-3 cursor-pointer select-none">
- <input
- type="checkbox"
- checked={questionsWithMaterial}
- onChange={(e) => {
- setQuestionsWithMaterial(e.target.checked);
- if (!e.target.checked) {
- setQuestionsFile(null);
- setStudyMaterialFiles([]);
- }
- }}
- className="mt-0.5 h-5 w-5 rounded border-gray-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
- />
- <div>
- <p className="font-medium text-gray-900 dark:text-zinc-100">
- {t('adminUpload.questionsWithMaterial') || 'Upload questions with study material'}
- </p>
- <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
- {t('adminUpload.questionsWithMaterialDesc') || 'Upload a questions file and a study material file. AI will find answers strictly from the study material, not from its own knowledge.'}
- </p>
- </div>
- </label>
- </CardContent>
- </Card>
+ {activeTab === 'file' ? (
+   <>
+     {/* Scenario 3 toggle */}
+     <Card>
+     <CardContent className="pt-6">
+     <label className="flex items-start gap-3 cursor-pointer select-none">
+     <input
+     type="checkbox"
+     checked={questionsWithMaterial}
+     onChange={(e) => {
+     setQuestionsWithMaterial(e.target.checked);
+     if (!e.target.checked) {
+     setQuestionsFile(null);
+     setStudyMaterialFiles([]);
+     }
+     }}
+     className="mt-0.5 h-5 w-5 rounded border-gray-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+     />
+     <div>
+     <p className="font-medium text-gray-900 dark:text-zinc-100">
+     {t('adminUpload.questionsWithMaterial') || 'Upload questions with study material'}
+     </p>
+     <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
+     {t('adminUpload.questionsWithMaterialDesc') || 'Upload a questions file and a study material file. AI will find answers strictly from the study material, not from its own knowledge.'}
+     </p>
+     </div>
+     </label>
+     </CardContent>
+     </Card>
 
- {questionsWithMaterial && (
- <Card>
- <CardHeader>
- <CardTitle className="flex items-center gap-2">
- <HelpCircle size={18} className="text-amber-500" />
- {t('adminUpload.questionsFile') || 'Questions File'}
- </CardTitle>
- <CardDescription>
- {t('adminUpload.questionsFileDesc') || 'Upload the file containing exam questions, test papers, or question banks'}
- </CardDescription>
- </CardHeader>
- <CardContent>
- <FileUploadZone
- id="questions-file-input"
- currentFile={questionsFile}
- onFileChange={setQuestionsFile}
- onDrop={handleDropQuestions}
- isDragOver={dragOverQuestions}
- onDragOver={() => setDragOverQuestions(true)}
- onDragLeave={() => setDragOverQuestions(false)}
- label={t('adminUpload.chooseQuestionsFile') || 'Choose questions file or drag and drop'}
- description={t('adminUpload.supported')}
- />
- </CardContent>
- </Card>
- )}
+     {questionsWithMaterial && (
+     <Card>
+     <CardHeader>
+     <CardTitle className="flex items-center gap-2">
+     <HelpCircle size={18} className="text-amber-500" />
+     {t('adminUpload.questionsFile') || 'Questions File'}
+     </CardTitle>
+     <CardDescription>
+     {t('adminUpload.questionsFileDesc') || 'Upload the file containing exam questions, test papers, or question banks'}
+     </CardDescription>
+     </CardHeader>
+     <CardContent>
+     <FileUploadZone
+     id="questions-file-input"
+     currentFile={questionsFile}
+     onFileChange={setQuestionsFile}
+     onDrop={handleDropQuestions}
+     isDragOver={dragOverQuestions}
+     onDragOver={() => setDragOverQuestions(true)}
+     onDragLeave={() => setDragOverQuestions(false)}
+     label={t('adminUpload.chooseQuestionsFile') || 'Choose questions file or drag and drop'}
+     description={t('adminUpload.supported')}
+     />
+     </CardContent>
+     </Card>
+     )}
 
- {questionsWithMaterial ? (
- <Card>
- <CardHeader>
- <CardTitle>{t('adminUpload.studyMaterialFiles') || 'Study Material Files'}</CardTitle>
- <CardDescription>
- {t('adminUpload.studyMaterialFilesDesc') || 'Upload one or more study material files from which answers will be found'}
- </CardDescription>
- </CardHeader>
- <CardContent>
- <MultiFileUploadZone
- id="study-material-files-input"
- files={studyMaterialFiles}
- onAddFiles={addStudyMaterialFiles}
- onRemoveFile={removeStudyMaterialFile}
- onDrop={handleDropStudyMaterials}
- isDragOver={dragOverStudyMaterials}
- onDragOver={() => setDragOverStudyMaterials(true)}
- onDragLeave={() => setDragOverStudyMaterials(false)}
- label={t('adminUpload.chooseStudyMaterials') || 'Choose study materials or drag and drop'}
- description={t('adminUpload.supported')}
- />
- </CardContent>
- </Card>
+     {questionsWithMaterial ? (
+     <Card>
+     <CardHeader>
+     <CardTitle>{t('adminUpload.studyMaterialFiles') || 'Study Material Files'}</CardTitle>
+     <CardDescription>
+     {t('adminUpload.studyMaterialFilesDesc') || 'Upload one or more study material files from which answers will be found'}
+     </CardDescription>
+     </CardHeader>
+     <CardContent>
+     <MultiFileUploadZone
+     id="study-material-files-input"
+     files={studyMaterialFiles}
+     onAddFiles={addStudyMaterialFiles}
+     onRemoveFile={removeStudyMaterialFile}
+     onDrop={handleDropStudyMaterials}
+     isDragOver={dragOverStudyMaterials}
+     onDragOver={() => setDragOverStudyMaterials(true)}
+     onDragLeave={() => setDragOverStudyMaterials(false)}
+     label={t('adminUpload.chooseStudyMaterials') || 'Choose study materials or drag and drop'}
+     description={t('adminUpload.supported')}
+     />
+     </CardContent>
+     </Card>
+     ) : (
+     <Card>
+     <CardHeader>
+     <CardTitle>{t('adminUpload.selectedFile')}</CardTitle>
+     <CardDescription>{t('adminUpload.supported')}</CardDescription>
+     </CardHeader>
+     <CardContent>
+     <MultiFileUploadZone
+     id="file-input"
+     files={files}
+     onAddFiles={addFiles}
+     onRemoveFile={removeFile}
+     onDrop={handleDrop}
+     isDragOver={dragOver}
+     onDragOver={() => setDragOver(true)}
+     onDragLeave={() => setDragOver(false)}
+     label={t('adminUpload.chooseFile')}
+     description={t('adminUpload.supported')}
+     />
+     </CardContent>
+     </Card>
+     )}
+
+     <Card>
+     <CardHeader>
+     <CardTitle>{t('adminUpload.numQuestions') || 'Number of Questions'}</CardTitle>
+     <CardDescription>
+     {questionsWithMaterial
+     ? (t('adminUpload.numQuestionsDescDual') || 'Maximum number of questions to extract from the questions file')
+     : (t('adminUpload.numQuestionsDesc') || 'How many quiz questions should the AI generate from this material?')
+     }
+     </CardDescription>
+     </CardHeader>
+     <CardContent>
+     <label className="flex items-center gap-3 mb-3 cursor-pointer select-none">
+     <input
+     type="checkbox"
+     checked={allQuestions}
+     onChange={(e) => setAllQuestions(e.target.checked)}
+     className="h-5 w-5 rounded border-gray-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+     />
+     <div>
+     <p className="font-medium text-gray-900 dark:text-zinc-100 text-sm">
+     {t('adminUpload.allQuestions') || 'Extract all questions from material'}
+     </p>
+     <p className="text-xs text-gray-500 dark:text-zinc-400">
+     {t('adminUpload.allQuestionsDesc') || 'AI will detect and extract every question found in the material'}
+     </p>
+     </div>
+     </label>
+     {!allQuestions && (
+     <>
+     <Input
+     type="number"
+     min={1}
+     value={numQuestions}
+     onChange={(e) => setNumQuestions(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value, 10) || 1))}
+     placeholder="10"
+     />
+     <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">{t('adminUpload.numQuestionsHint') || 'Min: 1. Default: 10'}</p>
+     </>
+     )}
+     </CardContent>
+     </Card>
+
+     <Button
+     onClick={handleUpload}
+     loading={uploading}
+     disabled={questionsWithMaterial ? (!questionsFile || studyMaterialFiles.length === 0 || !subjectId) : (files.length === 0 || !subjectId)}
+     className="w-full"
+     size="lg"
+     >
+     <Upload size={18} /> {uploading ? t('adminUpload.uploading') : t('adminUpload.submit')}
+     </Button>
+   </>
  ) : (
- <Card>
- <CardHeader>
- <CardTitle>{t('adminUpload.selectedFile')}</CardTitle>
- <CardDescription>{t('adminUpload.supported')}</CardDescription>
- </CardHeader>
- <CardContent>
- <FileUploadZone
- id="file-input"
- currentFile={file}
- onFileChange={setFile}
- onDrop={handleDrop}
- isDragOver={dragOver}
- onDragOver={() => setDragOver(true)}
- onDragLeave={() => setDragOver(false)}
- label={t('adminUpload.chooseFile')}
- description={t('adminUpload.supported')}
- />
- </CardContent>
- </Card>
- )}
+   /* ── Manual Question Entry Tab ── */
+   <>
+     <Card>
+       <CardHeader>
+         <CardTitle className="flex items-center gap-2">
+           <PenLine size={18} className="text-blue-500" />
+           {t('manualUpload.title')}
+         </CardTitle>
+         <CardDescription>{t('manualUpload.description')}</CardDescription>
+       </CardHeader>
+       <CardContent>
+         <Input
+           value={quizTitle}
+           onChange={(e) => setQuizTitle(e.target.value)}
+           placeholder={t('manualUpload.quizTitlePlaceholder')}
+         />
+       </CardContent>
+     </Card>
 
- <Card>
- <CardHeader>
- <CardTitle>{t('adminUpload.numQuestions') || 'Number of Questions'}</CardTitle>
- <CardDescription>
- {questionsWithMaterial
- ? (t('adminUpload.numQuestionsDescDual') || 'Maximum number of questions to extract from the questions file')
- : (t('adminUpload.numQuestionsDesc') || 'How many quiz questions should the AI generate from this material?')
- }
- </CardDescription>
- </CardHeader>
- <CardContent>
- <label className="flex items-center gap-3 mb-3 cursor-pointer select-none">
- <input
- type="checkbox"
- checked={allQuestions}
- onChange={(e) => setAllQuestions(e.target.checked)}
- className="h-5 w-5 rounded border-gray-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
- />
- <div>
- <p className="font-medium text-gray-900 dark:text-zinc-100 text-sm">
- {t('adminUpload.allQuestions') || 'Extract all questions from material'}
- </p>
- <p className="text-xs text-gray-500 dark:text-zinc-400">
- {t('adminUpload.allQuestionsDesc') || 'AI will detect and extract every question found in the material'}
- </p>
- </div>
- </label>
- {!allQuestions && (
- <>
- <Input
- type="number"
- min={1}
- value={numQuestions}
- onChange={(e) => setNumQuestions(Math.max(1, parseInt(e.target.value, 10) || 1))}
- placeholder="10"
- />
- <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">{t('adminUpload.numQuestionsHint') || 'Min: 1. Default: 10'}</p>
- </>
- )}
- </CardContent>
- </Card>
+     {manualQuestions.map((q, qIndex) => (
+       <Card key={qIndex}>
+         <CardHeader className="pb-3">
+           <div className="flex items-center justify-between">
+             <CardTitle className="text-base">
+               {t('manualUpload.questionNum', { num: String(qIndex + 1) })}
+             </CardTitle>
+             {manualQuestions.length > 1 && (
+               <button
+                 type="button"
+                 onClick={() => removeQuestion(qIndex)}
+                 className="flex items-center gap-1 text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 cursor-pointer"
+               >
+                 <Trash2 size={14} />
+                 {t('manualUpload.removeQuestion')}
+               </button>
+             )}
+           </div>
+         </CardHeader>
+         <CardContent className="space-y-4">
+           {/* Question text */}
+           <div>
+             <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5">
+               {t('manualUpload.questionText')}
+             </label>
+             <textarea
+               value={q.questionText}
+               onChange={(e) => updateQuestion(qIndex, 'questionText', e.target.value)}
+               placeholder={t('manualUpload.questionPlaceholder')}
+               rows={2}
+               className="w-full rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-y"
+             />
+           </div>
 
- <Button
- onClick={handleUpload}
- loading={uploading}
- disabled={questionsWithMaterial ? (!questionsFile || studyMaterialFiles.length === 0 || !subjectId) : (!file || !subjectId)}
- className="w-full"
- size="lg"
- >
- <Upload size={18} /> {uploading ? t('adminUpload.uploading') : t('adminUpload.submit')}
- </Button>
+           {/* Correct answer */}
+           <div>
+             <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5">
+               {t('manualUpload.correctAnswer')}
+             </label>
+             <Input
+               value={q.correctAnswer}
+               onChange={(e) => updateQuestion(qIndex, 'correctAnswer', e.target.value)}
+               placeholder={t('manualUpload.correctAnswerPlaceholder')}
+             />
+           </div>
+
+           {/* AI hint */}
+           <p className="text-xs text-gray-400 dark:text-zinc-500 italic flex items-center gap-1">
+             <Sparkles size={12} />
+             {t('manualUpload.aiHint')}
+           </p>
+         </CardContent>
+       </Card>
+     ))}
+
+     {/* Add Question button */}
+     <button
+       type="button"
+       onClick={addQuestion}
+       className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 dark:border-zinc-600 p-4 text-sm font-medium text-gray-600 dark:text-zinc-400 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+     >
+       <Plus size={18} />
+       {t('manualUpload.addQuestion')}
+     </button>
+
+     {/* Submit button */}
+     <Button
+       onClick={handleCreateManualQuiz}
+       loading={creatingQuiz}
+       disabled={!subjectId || manualQuestions.length === 0 || creatingQuiz}
+       className="w-full"
+       size="lg"
+     >
+       <CheckCircle size={18} /> {creatingQuiz ? t('manualUpload.creating') : t('manualUpload.createQuiz')}
+     </Button>
+   </>
+ )}
  </div>
  );
 }

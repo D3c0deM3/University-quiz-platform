@@ -8,15 +8,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var QuizzesService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.QuizzesService = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const prisma_service_js_1 = require("../prisma/prisma.service.js");
 const client_1 = require("@prisma/client");
-let QuizzesService = class QuizzesService {
+let QuizzesService = QuizzesService_1 = class QuizzesService {
     prisma;
-    constructor(prisma) {
+    configService;
+    logger = new common_1.Logger(QuizzesService_1.name);
+    constructor(prisma, configService) {
         this.prisma = prisma;
+        this.configService = configService;
     }
     async findBySubject(subjectId, page = 1, limit = 20) {
         const skip = (page - 1) * limit;
@@ -488,6 +493,210 @@ let QuizzesService = class QuizzesService {
             isCorrect,
         };
     }
+    async createManualQuiz(dto) {
+        const subject = await this.prisma.subject.findUnique({
+            where: { id: dto.subjectId },
+        });
+        if (!subject) {
+            throw new common_1.NotFoundException('Subject not found');
+        }
+        for (const q of dto.questions) {
+            const correctCount = q.options.filter((o) => o.isCorrect).length;
+            if (correctCount !== 1) {
+                throw new common_1.BadRequestException(`Each question must have exactly one correct answer. "${q.questionText.substring(0, 50)}..." has ${correctCount}.`);
+            }
+        }
+        const quiz = await this.prisma.$transaction(async (tx) => {
+            const quizTitle = dto.title || `${subject.name} - Manual Quiz`;
+            const newQuiz = await tx.quiz.create({
+                data: {
+                    title: quizTitle,
+                    description: `Manually created quiz with ${dto.questions.length} questions for ${subject.name}`,
+                    subjectId: dto.subjectId,
+                    isPublished: true,
+                },
+            });
+            for (let i = 0; i < dto.questions.length; i++) {
+                const q = dto.questions[i];
+                await tx.quizQuestion.create({
+                    data: {
+                        quizId: newQuiz.id,
+                        questionText: q.questionText,
+                        questionType: 'MCQ',
+                        explanation: q.explanation || '',
+                        orderIndex: i,
+                        options: {
+                            create: q.options.map((opt, j) => ({
+                                optionText: opt.text,
+                                isCorrect: opt.isCorrect,
+                                orderIndex: j,
+                            })),
+                        },
+                    },
+                });
+            }
+            return tx.quiz.findUnique({
+                where: { id: newQuiz.id },
+                include: {
+                    subject: { select: { id: true, name: true } },
+                    _count: { select: { questions: true } },
+                },
+            });
+        });
+        return {
+            message: `Quiz created successfully with ${dto.questions.length} questions`,
+            quiz,
+        };
+    }
+    async createAiManualQuiz(dto) {
+        const subject = await this.prisma.subject.findUnique({
+            where: { id: dto.subjectId },
+        });
+        if (!subject) {
+            throw new common_1.NotFoundException('Subject not found');
+        }
+        const aiResults = await this.generateDistractorsWithAI(dto.questions, subject.name);
+        const quiz = await this.prisma.$transaction(async (tx) => {
+            const quizTitle = dto.title || `${subject.name} - Manual Quiz`;
+            const newQuiz = await tx.quiz.create({
+                data: {
+                    title: quizTitle,
+                    description: `AI-assisted quiz with ${dto.questions.length} questions for ${subject.name}`,
+                    subjectId: dto.subjectId,
+                    isPublished: true,
+                },
+            });
+            for (let i = 0; i < dto.questions.length; i++) {
+                const q = dto.questions[i];
+                const ai = aiResults[i];
+                const options = [
+                    { text: q.correctAnswer, isCorrect: true },
+                    ...ai.distractors.slice(0, 3).map((d) => ({ text: d, isCorrect: false })),
+                ];
+                for (let j = options.length - 1; j > 0; j--) {
+                    const k = Math.floor(Math.random() * (j + 1));
+                    [options[j], options[k]] = [options[k], options[j]];
+                }
+                await tx.quizQuestion.create({
+                    data: {
+                        quizId: newQuiz.id,
+                        questionText: q.questionText,
+                        questionType: 'MCQ',
+                        explanation: ai.explanation || '',
+                        orderIndex: i,
+                        options: {
+                            create: options.map((opt, j) => ({
+                                optionText: opt.text,
+                                isCorrect: opt.isCorrect,
+                                orderIndex: j,
+                            })),
+                        },
+                    },
+                });
+            }
+            return tx.quiz.findUnique({
+                where: { id: newQuiz.id },
+                include: {
+                    subject: { select: { id: true, name: true } },
+                    _count: { select: { questions: true } },
+                },
+            });
+        });
+        return {
+            message: `Quiz created successfully with ${dto.questions.length} AI-enhanced questions`,
+            quiz,
+        };
+    }
+    async generateDistractorsWithAI(questions, subjectName) {
+        const apiKey = this.configService.get('AI_API_KEY');
+        if (!apiKey) {
+            throw new common_1.BadRequestException('AI API key not configured');
+        }
+        const questionsText = questions
+            .map((q, i) => `${i + 1}. Question: ${q.questionText}\n   Correct Answer: ${q.correctAnswer}`)
+            .join('\n\n');
+        const prompt = `You are an educational quiz assistant for the subject "${subjectName}".
+
+For each question below, generate exactly 3 plausible but incorrect answer options (distractors) and a brief explanation of why the correct answer is right.
+
+Questions:
+${questionsText}
+
+IMPORTANT: Respond ONLY with a valid JSON array (no markdown code blocks, no extra text). Each element must be:
+{
+  "distractors": ["wrong option 1", "wrong option 2", "wrong option 3"],
+  "explanation": "Brief explanation of why the correct answer is right"
+}
+
+Rules:
+- Each distractor must be plausible and related to the subject but clearly incorrect
+- Distractors should be similar in length and style to the correct answer
+- The explanation should be 1-2 sentences
+- Return exactly ${questions.length} elements in the array, one per question, in the same order`;
+        const primaryModel = this.configService.get('AI_MODEL', 'gemini-3.1-flash-lite-preview');
+        const fallbackModels = [primaryModel, 'gemini-2.5-flash-lite'].filter((m, i, arr) => arr.indexOf(m) === i);
+        let lastError = null;
+        for (const model of fallbackModels) {
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                temperature: 0.7,
+                                maxOutputTokens: 8192,
+                            },
+                        }),
+                    });
+                    if (response.status === 429) {
+                        const errorBody = await response.text();
+                        this.logger.warn(`Rate limited on ${model} (attempt ${attempt + 1}): ${errorBody}`);
+                        await new Promise((r) => setTimeout(r, (attempt + 1) * 5000));
+                        lastError = new Error(`429 rate limited on ${model}`);
+                        continue;
+                    }
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        this.logger.error(`Gemini API error: ${response.status} - ${errorBody}`);
+                        throw new common_1.BadRequestException('AI service returned an error');
+                    }
+                    const data = (await response.json());
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) {
+                        this.logger.error('Empty response from Gemini');
+                        throw new common_1.BadRequestException('AI service returned empty response');
+                    }
+                    const cleaned = text
+                        .replace(/```json\s*\n?/g, '')
+                        .replace(/```\s*\n?/g, '')
+                        .trim();
+                    const parsed = JSON.parse(cleaned);
+                    const valid = parsed.filter((item) => Array.isArray(item.distractors) &&
+                        item.distractors.length >= 3 &&
+                        item.distractors.every((d) => typeof d === 'string' && d.trim()) &&
+                        typeof item.explanation === 'string');
+                    if (valid.length !== questions.length) {
+                        this.logger.warn(`AI returned ${valid.length} results for ${questions.length} questions, retrying...`);
+                        lastError = new Error('Mismatched result count');
+                        continue;
+                    }
+                    return valid;
+                }
+                catch (innerErr) {
+                    if (innerErr instanceof common_1.BadRequestException)
+                        throw innerErr;
+                    lastError = innerErr;
+                    this.logger.warn(`Model ${model} attempt ${attempt + 1} failed: ${lastError.message}`);
+                }
+            }
+            this.logger.warn(`All retries exhausted for model ${model}, trying next fallback...`);
+        }
+        this.logger.error(`All models exhausted. Last error: ${lastError?.message}`);
+        throw new common_1.BadRequestException('AI service is temporarily unavailable. Please try again later.');
+    }
     async deleteQuiz(quizId) {
         const quiz = await this.prisma.quiz.findUnique({ where: { id: quizId } });
         if (!quiz) {
@@ -535,8 +744,9 @@ let QuizzesService = class QuizzesService {
     }
 };
 exports.QuizzesService = QuizzesService;
-exports.QuizzesService = QuizzesService = __decorate([
+exports.QuizzesService = QuizzesService = QuizzesService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_js_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_js_1.PrismaService,
+        config_1.ConfigService])
 ], QuizzesService);
 //# sourceMappingURL=quizzes.service.js.map

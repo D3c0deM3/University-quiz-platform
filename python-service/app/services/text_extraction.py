@@ -1,10 +1,12 @@
 """
 Text extraction service.
-Extracts text from PDF, DOCX, PPTX, and image files.
+Extracts text from PDF, DOC, DOCX, PPTX, and image files.
 Uses standard parsers (pdfplumber, python-docx, python-pptx, pytesseract).
 """
 import os
 import logging
+import subprocess
+import tempfile
 from typing import List
 
 import pdfplumber
@@ -117,6 +119,35 @@ async def extract_from_docx(file_path: str) -> str:
     return "\n\n".join(text_parts)
 
 
+async def extract_from_doc(file_path: str) -> str:
+    """Extract text from a legacy .doc file by converting to .docx via LibreOffice."""
+    logger.info(f"Extracting text from DOC: {file_path}")
+
+    try:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            result = subprocess.run(
+                [
+                    "libreoffice", "--headless", "--convert-to", "docx",
+                    "--outdir", tmp_dir, file_path,
+                ],
+                capture_output=True, timeout=120,
+            )
+            if result.returncode != 0:
+                logger.error(f"LibreOffice conversion failed: {result.stderr.decode(errors='replace')}")
+                return ""
+
+            base_name = os.path.splitext(os.path.basename(file_path))[0]
+            converted_path = os.path.join(tmp_dir, f"{base_name}.docx")
+            if not os.path.exists(converted_path):
+                logger.error(f"Converted file not found at {converted_path}")
+                return ""
+
+            return await extract_from_docx(converted_path)
+    except Exception as e:
+        logger.error(f"DOC extraction failed: {e}")
+        return ""
+
+
 async def extract_from_pptx(file_path: str) -> str:
     """Extract text from a PPTX file using python-pptx."""
     logger.info(f"Extracting text from PPTX: {file_path}")
@@ -199,6 +230,8 @@ async def extract_text(file_path: str, file_type: str) -> str:
     mime_map = {
         "pdf": "pdf",
         "application/pdf": "pdf",
+        "doc": "doc",
+        "application/msword": "doc",
         "docx": "docx",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
         "pptx": "pptx",
@@ -219,6 +252,8 @@ async def extract_text(file_path: str, file_type: str) -> str:
 
     if normalized == "pdf":
         return await extract_from_pdf(abs_path)
+    elif normalized == "doc":
+        return await extract_from_doc(abs_path)
     elif normalized == "docx":
         return await extract_from_docx(abs_path)
     elif normalized == "pptx":

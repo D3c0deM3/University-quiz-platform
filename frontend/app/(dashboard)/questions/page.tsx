@@ -6,12 +6,10 @@ import { questionsApi, subscriptionsApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTranslation } from '@/lib/i18n';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
 import {
  HelpCircle,
- Plus,
  BookOpen,
  MessageSquare,
  ArrowRight,
@@ -83,13 +81,6 @@ export default function QuestionsPage() {
  {t('questions.subtitle')}
  </p>
  </div>
- <Link href="/questions/create" className="shrink-0">
- <Button size="sm" className="sm:size-default">
- <Plus size={14} className="mr-1 sm:mr-2" />
- <span className="hidden sm:inline">{t('questions.addQuestion')}</span>
- <span className="sm:hidden">{t('questions.addQuestion').split(' ')[0]}</span>
- </Button>
- </Link>
  </div>
 
  {/* Stats summary */}
@@ -118,11 +109,6 @@ export default function QuestionsPage() {
  icon={<HelpCircle size={48} />}
  title={t('questions.noQuestionsYet')}
  description={t('questions.beFirstToContribute')}
- action={
- <Link href="/questions/create">
- <Button>{t('questions.addQuestion')}</Button>
- </Link>
- }
  />
  ) : (
  <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">

@@ -17,7 +17,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
 import {
  HelpCircle,
- Plus,
  Search,
  ChevronLeft,
  ChevronRight,
@@ -172,13 +171,6 @@ export default function SubjectQuestionsPage() {
  {subject?.description || t('questions.browseQA')}
  </p>
  </div>
- <Link href="/questions/create" className="shrink-0">
- <Button size="sm" className="sm:size-default">
- <Plus size={14} className="mr-1" />
- <span className="hidden sm:inline">{t('questions.addQuestion')}</span>
- <span className="sm:hidden">Add</span>
- </Button>
- </Link>
  </div>
 
  {/* Filters */}
@@ -219,11 +211,6 @@ export default function SubjectQuestionsPage() {
  showMine
  ? t('questions.noQuestionsInSubject')
  : t('questions.beFirstQuestion')
- }
- action={
- <Link href="/questions/create">
- <Button>{t('questions.addQuestion')}</Button>
- </Link>
  }
  />
  ) : (

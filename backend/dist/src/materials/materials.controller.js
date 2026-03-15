@@ -68,9 +68,9 @@ let MaterialsController = class MaterialsController {
         this.processingQueue = processingQueue;
         this.subscriptionsService = subscriptionsService;
     }
-    async upload(file, subjectId, numQuestionsRaw, userId) {
-        if (!file) {
-            throw new common_1.BadRequestException('File is required');
+    async upload(files, subjectId, numQuestionsRaw, userId) {
+        if (!files || files.length === 0) {
+            throw new common_1.BadRequestException('At least one file is required');
         }
         if (!subjectId) {
             throw new common_1.BadRequestException('subjectId is required');
@@ -81,23 +81,28 @@ let MaterialsController = class MaterialsController {
             : numQuestions === 0
                 ? 0
                 : Math.max(numQuestions, 1);
-        const material = await this.materialsService.upload(file, subjectId, userId);
-        await this.processingQueue.add('process', {
-            materialId: material.id,
-            filePath: material.filePath,
-            fileType: material.fileType,
-            originalName: material.originalName,
-            numQuestions: validNumQuestions,
-            uploadedById: userId,
-        }, {
-            attempts: 3,
-            backoff: { type: 'exponential', delay: 5000 },
-            removeOnComplete: true,
-            removeOnFail: false,
-        });
+        const results = [];
+        for (const file of files) {
+            const material = await this.materialsService.upload(file, subjectId, userId);
+            await this.processingQueue.add('process', {
+                materialId: material.id,
+                filePath: material.filePath,
+                fileType: material.fileType,
+                originalName: material.originalName,
+                numQuestions: validNumQuestions,
+                uploadedById: userId,
+            }, {
+                attempts: 3,
+                backoff: { type: 'exponential', delay: 5000 },
+                removeOnComplete: true,
+                removeOnFail: false,
+            });
+            results.push(material);
+        }
         return {
-            message: 'Material uploaded successfully. Processing will begin shortly.',
-            material,
+            message: `${results.length} material(s) uploaded successfully. Processing will begin shortly.`,
+            materials: results,
+            material: results[0],
         };
     }
     async uploadWithQuestions(files, subjectId, numQuestionsRaw, userId) {
@@ -251,13 +256,13 @@ exports.MaterialsController = MaterialsController;
 __decorate([
     (0, common_1.Post)('upload'),
     (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', multerOptions)),
-    __param(0, (0, common_1.UploadedFile)()),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('files', 10, multerOptions)),
+    __param(0, (0, common_1.UploadedFiles)()),
     __param(1, (0, common_1.Body)('subjectId')),
     __param(2, (0, common_1.Body)('numQuestions')),
     __param(3, (0, index_js_2.CurrentUser)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String, String]),
+    __metadata("design:paramtypes", [Array, String, String, String]),
     __metadata("design:returntype", Promise)
 ], MaterialsController.prototype, "upload", null);
 __decorate([

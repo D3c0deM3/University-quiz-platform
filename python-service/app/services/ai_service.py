@@ -524,7 +524,7 @@ def _dedupe_question_texts(questions: list[str]) -> list[str]:
     return deduped
 
 
-def _chunk_text_for_detection(text: str, chunk_chars: int = 12000, overlap_chars: int = 800) -> list[str]:
+def _chunk_text_for_detection(text: str, chunk_chars: int = 12000, overlap_chars: int = 2000) -> list[str]:
     clean_text = text.strip()
     if not clean_text:
         return []
@@ -710,28 +710,39 @@ async def detect_questions(
     text: str,
     progress_callback: ProgressCallback = None,
 ) -> list:
-    """Detect question texts from a document, chunking long inputs."""
-    chunks = _chunk_text_for_detection(text, chunk_chars=12000, overlap_chars=800)
+    """Detect question texts from a document, chunking long inputs.
+    Uses two passes to maximize detection coverage."""
+    chunks = _chunk_text_for_detection(text, chunk_chars=12000, overlap_chars=2000)
     if not chunks:
         return []
 
     detected_questions: list[str] = []
 
     for idx, chunk in enumerate(chunks):
-        prompt = """
-You are an expert at extracting exam questions. Analyze the following material and return ONLY a JSON array of question texts you find. Do NOT generate answers or options. Example:
+        prompt = """You are an expert at extracting exam questions from documents. Your task is to find and extract EVERY question in the text below.
+
+RULES:
+- Extract ALL questions, even if they seem similar or repetitive
+- Include questions of all types: multiple choice, true/false, short answer, essay, fill-in-the-blank
+- Preserve the original question text exactly as written
+- Look for numbered questions (1. 2. 3.), lettered questions (a) b) c)), questions with question marks, and imperative prompts ("Explain...", "Describe...", "Define...", "List...", "Compare...")
+- Do NOT skip any questions. It is critical that every single question is extracted
+- Do NOT generate new questions — only extract existing ones from the text
+
+Return ONLY a valid JSON array of question text strings. Example:
 [
   "What is the capital of France?",
   "Explain the process of photosynthesis.",
-  ...
+  "Define the term 'mitosis'."
 ]
+
 TEXT TO ANALYZE:
 """ + chunk
 
         try:
             raw = await _call_gemini_with_fallback(
                 prompt,
-                temperature=0.2,
+                temperature=0.0,
                 max_output_tokens=32768,
             )
             cleaned = _clean_json_response(raw)
@@ -743,7 +754,7 @@ TEXT TO ANALYZE:
                 f"Question detection chunk {idx + 1}/{len(chunks)} found {len(chunk_questions)} questions"
             )
             detected_questions.extend(chunk_questions)
-            progress = int(((idx + 1) / max(1, len(chunks))) * 100)
+            progress = int(((idx + 1) / max(1, len(chunks))) * 80)
             await _emit_progress(
                 progress_callback,
                 progress,
@@ -754,6 +765,43 @@ TEXT TO ANALYZE:
 
     deduped = _dedupe_question_texts(detected_questions)
     logger.info(f"Detected {len(deduped)} unique questions across {len(chunks)} chunk(s)")
+
+    # Verification pass: re-scan the full text (or large portion) to catch any missed questions
+    if len(text) > 5000:
+        verification_sample = text[:50000] if len(text) > 50000 else text
+        existing_sample = json.dumps(deduped[:100], ensure_ascii=False)
+        verify_prompt = f"""You are an expert at extracting exam questions. The following text was already analyzed and {len(deduped)} questions were found.
+
+Review the text below and find any questions that were MISSED in the first pass. Only return questions that are NOT already in the existing list.
+
+ALREADY EXTRACTED (sample):
+{existing_sample}
+
+Return ONLY a valid JSON array of any ADDITIONAL question text strings that were missed. Return an empty array [] if none were missed.
+
+TEXT TO REVIEW:
+{verification_sample}"""
+
+        try:
+            raw = await _call_gemini_with_fallback(
+                verify_prompt,
+                temperature=0.0,
+                max_output_tokens=32768,
+            )
+            cleaned = _clean_json_response(raw)
+            additional = json.loads(cleaned)
+            if isinstance(additional, list):
+                additional_questions = [q for q in additional if isinstance(q, str) and q.strip()]
+                if additional_questions:
+                    existing_keys = {_question_key(q) for q in deduped}
+                    newly_found = [q.strip() for q in additional_questions if _question_key(q) not in existing_keys]
+                    if newly_found:
+                        deduped.extend(newly_found)
+                        logger.info(f"Verification pass found {len(newly_found)} additional questions (total: {len(deduped)})")
+        except Exception as e:
+            logger.warning(f"Verification pass failed (non-critical): {e}")
+
+    await _emit_progress(progress_callback, 100, f"Detected {len(deduped)} questions total")
     return deduped
 
 

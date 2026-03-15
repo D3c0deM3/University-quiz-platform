@@ -194,9 +194,9 @@ export const materialsApi = {
   list: (params: { page?: number; limit?: number; status?: string; subjectId?: string }) =>
     api.get('/materials', { params }),
   get: (id: string) => api.get(`/materials/${id}`),
-  upload: (file: File, subjectId: string, numQuestions: number = 10) => {
+  upload: (files: File[], subjectId: string, numQuestions: number = 10) => {
     const form = new FormData();
-    form.append('file', file);
+    files.forEach((file) => form.append('files', file));
     form.append('subjectId', subjectId);
     form.append('numQuestions', String(numQuestions));
     return api.post('/materials/upload', form, {
@@ -260,6 +260,23 @@ export const quizzesApi = {
     api.get(`/subjects/${subjectId}/quizzes`, { params: { page, limit } }),
   get: (id: string) => api.get(`/quizzes/${id}`),
   delete: (id: string) => api.delete(`/quizzes/${id}`),
+  createManual: (data: {
+    subjectId: string;
+    title?: string;
+    questions: Array<{
+      questionText: string;
+      explanation?: string;
+      options: Array<{ text: string; isCorrect: boolean }>;
+    }>;
+  }) => api.post('/quizzes/create-manual', data),
+  createManualAi: (data: {
+    subjectId: string;
+    title?: string;
+    questions: Array<{
+      questionText: string;
+      correctAnswer: string;
+    }>;
+  }) => api.post('/quizzes/create-manual-ai', data),
   startAttempt: (
     quizId: string,
     settings?: { questionCount?: number; rangeStart?: number; rangeEnd?: number },

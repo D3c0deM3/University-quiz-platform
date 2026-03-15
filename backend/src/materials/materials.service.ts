@@ -14,6 +14,7 @@ import { CreateQuizQuestionDto, UpdateSingleQuestionDto } from './dto/quiz-quest
 
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
+  'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -37,7 +38,7 @@ export class MaterialsService {
   validateFile(file: Express.Multer.File) {
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       throw new BadRequestException(
-        `File type ${file.mimetype} is not supported. Allowed: PDF, DOCX, PPTX, XLSX, XLS, PNG, JPG`,
+        `File type ${file.mimetype} is not supported. Allowed: PDF, DOC, DOCX, PPTX, XLSX, XLS, PNG, JPG`,
       );
     }
 
@@ -67,6 +68,7 @@ export class MaterialsService {
     // Determine file type label
     const fileTypeMap: Record<string, string> = {
       'application/pdf': 'PDF',
+      'application/msword': 'DOC',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',

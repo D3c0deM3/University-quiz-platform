@@ -21,6 +21,8 @@ const client_1 = require("@prisma/client");
 const submit_quiz_dto_js_1 = require("./dto/submit-quiz.dto.js");
 const check_answer_dto_js_1 = require("./dto/check-answer.dto.js");
 const start_attempt_dto_js_1 = require("./dto/start-attempt.dto.js");
+const create_manual_quiz_dto_js_1 = require("./dto/create-manual-quiz.dto.js");
+const create_ai_manual_quiz_dto_js_1 = require("./dto/create-ai-manual-quiz.dto.js");
 const subscriptions_service_js_1 = require("../subscriptions/subscriptions.service.js");
 const common_2 = require("@nestjs/common");
 let QuizzesController = class QuizzesController {
@@ -75,6 +77,12 @@ let QuizzesController = class QuizzesController {
     }
     async getMyStats(userId) {
         return this.quizzesService.getMyStats(userId);
+    }
+    async createManualQuiz(dto) {
+        return this.quizzesService.createManualQuiz(dto);
+    }
+    async createAiManualQuiz(dto) {
+        return this.quizzesService.createAiManualQuiz(dto);
     }
     async deleteQuiz(quizId) {
         return this.quizzesService.deleteQuiz(quizId);
@@ -161,6 +169,22 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], QuizzesController.prototype, "getMyStats", null);
+__decorate([
+    (0, common_1.Post)('quizzes/create-manual'),
+    (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_manual_quiz_dto_js_1.CreateManualQuizDto]),
+    __metadata("design:returntype", Promise)
+], QuizzesController.prototype, "createManualQuiz", null);
+__decorate([
+    (0, common_1.Post)('quizzes/create-manual-ai'),
+    (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_ai_manual_quiz_dto_js_1.CreateAiManualQuizDto]),
+    __metadata("design:returntype", Promise)
+], QuizzesController.prototype, "createAiManualQuiz", null);
 __decorate([
     (0, common_1.Delete)('quizzes/:id'),
     (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),

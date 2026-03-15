@@ -3,6 +3,8 @@ import { Role } from '@prisma/client';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
 import { CheckAnswerDto } from './dto/check-answer.dto.js';
 import { StartAttemptDto } from './dto/start-attempt.dto.js';
+import { CreateManualQuizDto } from './dto/create-manual-quiz.dto.js';
+import { CreateAiManualQuizDto } from './dto/create-ai-manual-quiz.dto.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 export declare class QuizzesController {
     private quizzesService;
@@ -11,18 +13,18 @@ export declare class QuizzesController {
     findBySubject(subjectId: string, userId: string, role: Role, page: number, limit: number): Promise<{
         data: ({
             _count: {
-                attempts: number;
                 questions: number;
+                attempts: number;
             };
         } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             title: string;
             description: string | null;
-            isPublished: boolean;
             subjectId: string;
             materialId: string | null;
+            isPublished: boolean;
+            createdAt: Date;
+            updatedAt: Date;
         })[];
         meta: {
             total: number;
@@ -36,29 +38,29 @@ export declare class QuizzesController {
             id: string;
             name: string;
         };
-        _count: {
-            questions: number;
-        };
         questions: {
             id: string;
-            options: {
-                id: string;
-                optionText: string;
-                orderIndex: number;
-            }[];
             orderIndex: number;
             questionText: string;
             questionType: import("@prisma/client").$Enums.QuestionType;
+            options: {
+                id: string;
+                orderIndex: number;
+                optionText: string;
+            }[];
         }[];
+        _count: {
+            questions: number;
+        };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         title: string;
         description: string | null;
-        isPublished: boolean;
         subjectId: string;
         materialId: string | null;
+        isPublished: boolean;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     startAttempt(quizId: string, userId: string, role: Role, dto: StartAttemptDto): Promise<{
         quiz: {
@@ -66,21 +68,21 @@ export declare class QuizzesController {
             title: string;
             questions: {
                 id: string;
-                options: {
-                    id: string;
-                    optionText: string;
-                    orderIndex: number;
-                }[];
                 orderIndex: number;
                 questionText: string;
                 questionType: import("@prisma/client").$Enums.QuestionType;
+                options: {
+                    id: string;
+                    orderIndex: number;
+                    optionText: string;
+                }[];
             }[];
         };
     } & {
         id: string;
         createdAt: Date;
-        userId: string;
         quizId: string;
+        userId: string;
         score: number | null;
         totalPoints: number | null;
         startedAt: Date;
@@ -235,6 +237,48 @@ export declare class QuizzesController {
             averageScore: number;
             bestScore: number;
         }[];
+    }>;
+    createManualQuiz(dto: CreateManualQuizDto): Promise<{
+        message: string;
+        quiz: ({
+            subject: {
+                id: string;
+                name: string;
+            };
+            _count: {
+                questions: number;
+            };
+        } & {
+            id: string;
+            title: string;
+            description: string | null;
+            subjectId: string;
+            materialId: string | null;
+            isPublished: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        }) | null;
+    }>;
+    createAiManualQuiz(dto: CreateAiManualQuizDto): Promise<{
+        message: string;
+        quiz: ({
+            subject: {
+                id: string;
+                name: string;
+            };
+            _count: {
+                questions: number;
+            };
+        } & {
+            id: string;
+            title: string;
+            description: string | null;
+            subjectId: string;
+            materialId: string | null;
+            isPublished: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        }) | null;
     }>;
     deleteQuiz(quizId: string): Promise<{
         message: string;

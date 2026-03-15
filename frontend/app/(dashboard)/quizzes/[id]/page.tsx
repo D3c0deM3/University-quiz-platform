@@ -44,9 +44,9 @@ export default function QuizTakePage() {
  const [currentIndex, setCurrentIndex] = useState(0);
  const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('end');
  const [revealed, setRevealed] = useState<RevealedMap>({});
- const [rangeStart, setRangeStart] = useState(1);
- const [rangeEnd, setRangeEnd] = useState(1);
- const [questionCount, setQuestionCount] = useState(1);
+ const [rangeStart, setRangeStart] = useState<number | ''>(1);
+ const [rangeEnd, setRangeEnd] = useState<number | ''>(1);
+ const [questionCount, setQuestionCount] = useState<number | ''>(1);
  const prevIndexRef = useRef<number>(0);
 
  // Load quiz details
@@ -242,7 +242,7 @@ export default function QuizTakePage() {
  min={1}
  max={questions.length}
  value={rangeStart}
- onChange={(e) => setRangeStart(Number.parseInt(e.target.value || '0', 10))}
+ onChange={(e) => setRangeStart(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
  />
  </div>
  <div className="space-y-1">
@@ -252,7 +252,7 @@ export default function QuizTakePage() {
  min={1}
  max={questions.length}
  value={rangeEnd}
- onChange={(e) => setRangeEnd(Number.parseInt(e.target.value || '0', 10))}
+ onChange={(e) => setRangeEnd(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
  />
  </div>
  <div className="space-y-1 col-span-2">
@@ -262,7 +262,7 @@ export default function QuizTakePage() {
  min={1}
  max={Math.max(1, availableInRange)}
  value={questionCount}
- onChange={(e) => setQuestionCount(Number.parseInt(e.target.value || '0', 10))}
+ onChange={(e) => setQuestionCount(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
  />
  </div>
  </div>

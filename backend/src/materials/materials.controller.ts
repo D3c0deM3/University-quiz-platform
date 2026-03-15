@@ -10,7 +10,6 @@ import {
   Body,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
   UploadedFiles,
   ParseIntPipe,
   DefaultValuePipe,
@@ -18,7 +17,7 @@ import {
   Res,
 } from '@nestjs/common';
 import {
-  FileInterceptor,
+  FilesInterceptor,
   FileFieldsInterceptor,
 } from '@nestjs/platform-express';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -91,15 +90,15 @@ export class MaterialsController {
 
   @Post('upload')
   @Roles(Role.ADMIN, Role.TEACHER)
-  @UseInterceptors(FileInterceptor('file', multerOptions))
+  @UseInterceptors(FilesInterceptor('files', 10, multerOptions))
   async upload(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles() files: Express.Multer.File[],
     @Body('subjectId') subjectId: string,
     @Body('numQuestions') numQuestionsRaw: string,
     @CurrentUser('id') userId: string,
   ) {
-    if (!file) {
-      throw new BadRequestException('File is required');
+    if (!files || files.length === 0) {
+      throw new BadRequestException('At least one file is required');
     }
     if (!subjectId) {
       throw new BadRequestException('subjectId is required');
@@ -113,34 +112,39 @@ export class MaterialsController {
         ? 0
         : Math.max(numQuestions, 1);
 
-    const material = await this.materialsService.upload(
-      file,
-      subjectId,
-      userId,
-    );
+    const results: Awaited<ReturnType<MaterialsService['upload']>>[] = [];
+    for (const file of files) {
+      const material = await this.materialsService.upload(
+        file,
+        subjectId,
+        userId,
+      );
 
-    // Enqueue background processing job
-    await this.processingQueue.add(
-      'process',
-      {
-        materialId: material.id,
-        filePath: material.filePath,
-        fileType: material.fileType,
-        originalName: material.originalName,
-        numQuestions: validNumQuestions,
-        uploadedById: userId,
-      } satisfies MaterialProcessingJobData,
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000 },
-        removeOnComplete: true,
-        removeOnFail: false,
-      },
-    );
+      // Enqueue background processing job
+      await this.processingQueue.add(
+        'process',
+        {
+          materialId: material.id,
+          filePath: material.filePath,
+          fileType: material.fileType,
+          originalName: material.originalName,
+          numQuestions: validNumQuestions,
+          uploadedById: userId,
+        } satisfies MaterialProcessingJobData,
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+          removeOnComplete: true,
+          removeOnFail: false,
+        },
+      );
+      results.push(material);
+    }
 
     return {
-      message: 'Material uploaded successfully. Processing will begin shortly.',
-      material,
+      message: `${results.length} material(s) uploaded successfully. Processing will begin shortly.`,
+      materials: results,
+      material: results[0],
     };
   }
 

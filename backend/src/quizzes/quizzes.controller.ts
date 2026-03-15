@@ -17,6 +17,8 @@ import { Role } from '@prisma/client';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
 import { CheckAnswerDto } from './dto/check-answer.dto.js';
 import { StartAttemptDto } from './dto/start-attempt.dto.js';
+import { CreateManualQuizDto } from './dto/create-manual-quiz.dto.js';
+import { CreateAiManualQuizDto } from './dto/create-ai-manual-quiz.dto.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { ForbiddenException } from '@nestjs/common';
 
@@ -171,6 +173,24 @@ export class QuizzesController {
   @Get('my/quiz-stats')
   async getMyStats(@CurrentUser('id') userId: string) {
     return this.quizzesService.getMyStats(userId);
+  }
+
+  /**
+   * POST /quizzes/create-manual — create a quiz manually with questions (admin/teacher only)
+   */
+  @Post('quizzes/create-manual')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  async createManualQuiz(@Body() dto: CreateManualQuizDto) {
+    return this.quizzesService.createManualQuiz(dto);
+  }
+
+  /**
+   * POST /quizzes/create-manual-ai — create a quiz with AI-generated distractors (admin/teacher only)
+   */
+  @Post('quizzes/create-manual-ai')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  async createAiManualQuiz(@Body() dto: CreateAiManualQuizDto) {
+    return this.quizzesService.createAiManualQuiz(dto);
   }
 
   /**

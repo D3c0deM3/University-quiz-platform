@@ -18,6 +18,7 @@ const prisma_service_js_1 = require("../prisma/prisma.service.js");
 const client_1 = require("@prisma/client");
 const ALLOWED_MIME_TYPES = [
     'application/pdf',
+    'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -39,7 +40,7 @@ let MaterialsService = class MaterialsService {
     }
     validateFile(file) {
         if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-            throw new common_1.BadRequestException(`File type ${file.mimetype} is not supported. Allowed: PDF, DOCX, PPTX, XLSX, XLS, PNG, JPG`);
+            throw new common_1.BadRequestException(`File type ${file.mimetype} is not supported. Allowed: PDF, DOC, DOCX, PPTX, XLSX, XLS, PNG, JPG`);
         }
         const maxSize = this.configService.get('MAX_FILE_SIZE', 52428800);
         if (file.size > maxSize) {
@@ -56,6 +57,7 @@ let MaterialsService = class MaterialsService {
         this.validateFile(file);
         const fileTypeMap = {
             'application/pdf': 'PDF',
+            'application/msword': 'DOC',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
             'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',

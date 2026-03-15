@@ -3,16 +3,38 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { QuestionType, Role } from '@prisma/client';
 import { SubmitQuizDto } from './dto/submit-quiz.dto.js';
 import { CheckAnswerDto } from './dto/check-answer.dto.js';
 import { StartAttemptDto } from './dto/start-attempt.dto.js';
+import { CreateManualQuizDto } from './dto/create-manual-quiz.dto.js';
+import { CreateAiManualQuizDto } from './dto/create-ai-manual-quiz.dto.js';
+
+interface GeminiResponse {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{ text?: string }>;
+    };
+  }>;
+}
+
+interface GeneratedDistractors {
+  distractors: string[];
+  explanation: string;
+}
 
 @Injectable()
 export class QuizzesService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(QuizzesService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService,
+  ) {}
 
   /**
    * List available (published) quizzes for a subject.
@@ -625,6 +647,264 @@ export class QuizzesService {
       correctOptionId: correctOption?.id ?? null,
       isCorrect,
     };
+  }
+
+  /**
+   * Create a quiz manually with questions and options (admin/teacher only).
+   */
+  async createManualQuiz(dto: CreateManualQuizDto) {
+    const subject = await this.prisma.subject.findUnique({
+      where: { id: dto.subjectId },
+    });
+    if (!subject) {
+      throw new NotFoundException('Subject not found');
+    }
+
+    // Validate each question has exactly one correct option
+    for (const q of dto.questions) {
+      const correctCount = q.options.filter((o) => o.isCorrect).length;
+      if (correctCount !== 1) {
+        throw new BadRequestException(
+          `Each question must have exactly one correct answer. "${q.questionText.substring(0, 50)}..." has ${correctCount}.`,
+        );
+      }
+    }
+
+    const quiz = await this.prisma.$transaction(async (tx) => {
+      const quizTitle = dto.title || `${subject.name} - Manual Quiz`;
+
+      const newQuiz = await tx.quiz.create({
+        data: {
+          title: quizTitle,
+          description: `Manually created quiz with ${dto.questions.length} questions for ${subject.name}`,
+          subjectId: dto.subjectId,
+          isPublished: true,
+        },
+      });
+
+      for (let i = 0; i < dto.questions.length; i++) {
+        const q = dto.questions[i];
+        await tx.quizQuestion.create({
+          data: {
+            quizId: newQuiz.id,
+            questionText: q.questionText,
+            questionType: 'MCQ',
+            explanation: q.explanation || '',
+            orderIndex: i,
+            options: {
+              create: q.options.map((opt, j) => ({
+                optionText: opt.text,
+                isCorrect: opt.isCorrect,
+                orderIndex: j,
+              })),
+            },
+          },
+        });
+      }
+
+      return tx.quiz.findUnique({
+        where: { id: newQuiz.id },
+        include: {
+          subject: { select: { id: true, name: true } },
+          _count: { select: { questions: true } },
+        },
+      });
+    });
+
+    return {
+      message: `Quiz created successfully with ${dto.questions.length} questions`,
+      quiz,
+    };
+  }
+
+  /**
+   * Create a quiz with AI-generated distractors and explanations (admin/teacher only).
+   */
+  async createAiManualQuiz(dto: CreateAiManualQuizDto) {
+    const subject = await this.prisma.subject.findUnique({
+      where: { id: dto.subjectId },
+    });
+    if (!subject) {
+      throw new NotFoundException('Subject not found');
+    }
+
+    // Call AI to generate distractors and explanations
+    const aiResults = await this.generateDistractorsWithAI(dto.questions, subject.name);
+
+    const quiz = await this.prisma.$transaction(async (tx) => {
+      const quizTitle = dto.title || `${subject.name} - Manual Quiz`;
+
+      const newQuiz = await tx.quiz.create({
+        data: {
+          title: quizTitle,
+          description: `AI-assisted quiz with ${dto.questions.length} questions for ${subject.name}`,
+          subjectId: dto.subjectId,
+          isPublished: true,
+        },
+      });
+
+      for (let i = 0; i < dto.questions.length; i++) {
+        const q = dto.questions[i];
+        const ai = aiResults[i];
+
+        // Correct answer + 3 AI-generated distractors
+        const options = [
+          { text: q.correctAnswer, isCorrect: true },
+          ...ai.distractors.slice(0, 3).map((d) => ({ text: d, isCorrect: false })),
+        ];
+
+        // Shuffle so correct answer isn't always first
+        for (let j = options.length - 1; j > 0; j--) {
+          const k = Math.floor(Math.random() * (j + 1));
+          [options[j], options[k]] = [options[k], options[j]];
+        }
+
+        await tx.quizQuestion.create({
+          data: {
+            quizId: newQuiz.id,
+            questionText: q.questionText,
+            questionType: 'MCQ',
+            explanation: ai.explanation || '',
+            orderIndex: i,
+            options: {
+              create: options.map((opt, j) => ({
+                optionText: opt.text,
+                isCorrect: opt.isCorrect,
+                orderIndex: j,
+              })),
+            },
+          },
+        });
+      }
+
+      return tx.quiz.findUnique({
+        where: { id: newQuiz.id },
+        include: {
+          subject: { select: { id: true, name: true } },
+          _count: { select: { questions: true } },
+        },
+      });
+    });
+
+    return {
+      message: `Quiz created successfully with ${dto.questions.length} AI-enhanced questions`,
+      quiz,
+    };
+  }
+
+  private async generateDistractorsWithAI(
+    questions: Array<{ questionText: string; correctAnswer: string }>,
+    subjectName: string,
+  ): Promise<GeneratedDistractors[]> {
+    const apiKey = this.configService.get<string>('AI_API_KEY');
+    if (!apiKey) {
+      throw new BadRequestException('AI API key not configured');
+    }
+
+    const questionsText = questions
+      .map((q, i) => `${i + 1}. Question: ${q.questionText}\n   Correct Answer: ${q.correctAnswer}`)
+      .join('\n\n');
+
+    const prompt = `You are an educational quiz assistant for the subject "${subjectName}".
+
+For each question below, generate exactly 3 plausible but incorrect answer options (distractors) and a brief explanation of why the correct answer is right.
+
+Questions:
+${questionsText}
+
+IMPORTANT: Respond ONLY with a valid JSON array (no markdown code blocks, no extra text). Each element must be:
+{
+  "distractors": ["wrong option 1", "wrong option 2", "wrong option 3"],
+  "explanation": "Brief explanation of why the correct answer is right"
+}
+
+Rules:
+- Each distractor must be plausible and related to the subject but clearly incorrect
+- Distractors should be similar in length and style to the correct answer
+- The explanation should be 1-2 sentences
+- Return exactly ${questions.length} elements in the array, one per question, in the same order`;
+
+    const primaryModel = this.configService.get<string>('AI_MODEL', 'gemini-3.1-flash-lite-preview');
+    const fallbackModels = [primaryModel, 'gemini-2.5-flash-lite'].filter(
+      (m, i, arr) => arr.indexOf(m) === i,
+    );
+
+    let lastError: Error | null = null;
+
+    for (const model of fallbackModels) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 8192,
+              },
+            }),
+          });
+
+          if (response.status === 429) {
+            const errorBody = await response.text();
+            this.logger.warn(`Rate limited on ${model} (attempt ${attempt + 1}): ${errorBody}`);
+            await new Promise((r) => setTimeout(r, (attempt + 1) * 5000));
+            lastError = new Error(`429 rate limited on ${model}`);
+            continue;
+          }
+
+          if (!response.ok) {
+            const errorBody = await response.text();
+            this.logger.error(`Gemini API error: ${response.status} - ${errorBody}`);
+            throw new BadRequestException('AI service returned an error');
+          }
+
+          const data = (await response.json()) as GeminiResponse;
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+          if (!text) {
+            this.logger.error('Empty response from Gemini');
+            throw new BadRequestException('AI service returned empty response');
+          }
+
+          const cleaned = text
+            .replace(/```json\s*\n?/g, '')
+            .replace(/```\s*\n?/g, '')
+            .trim();
+
+          const parsed: GeneratedDistractors[] = JSON.parse(cleaned);
+
+          const valid = parsed.filter(
+            (item) =>
+              Array.isArray(item.distractors) &&
+              item.distractors.length >= 3 &&
+              item.distractors.every((d) => typeof d === 'string' && d.trim()) &&
+              typeof item.explanation === 'string',
+          );
+
+          if (valid.length !== questions.length) {
+            this.logger.warn(
+              `AI returned ${valid.length} results for ${questions.length} questions, retrying...`,
+            );
+            lastError = new Error('Mismatched result count');
+            continue;
+          }
+
+          return valid;
+        } catch (innerErr) {
+          if (innerErr instanceof BadRequestException) throw innerErr;
+          lastError = innerErr as Error;
+          this.logger.warn(`Model ${model} attempt ${attempt + 1} failed: ${lastError.message}`);
+        }
+      }
+      this.logger.warn(`All retries exhausted for model ${model}, trying next fallback...`);
+    }
+
+    this.logger.error(`All models exhausted. Last error: ${lastError?.message}`);
+    throw new BadRequestException('AI service is temporarily unavailable. Please try again later.');
   }
 
   /**
