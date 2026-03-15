@@ -217,6 +217,7 @@ async def extract_from_pptx(file_path: str) -> str:
 async def extract_from_ppt(file_path: str) -> str:
     """Extract text from a legacy .ppt file.
     Strategy: try python-pptx first (some .ppt files are actually OOXML),
+    then try olefile OLE stream parsing (pure Python, no system deps),
     then try LibreOffice conversion to .pptx, then fall back to catppt."""
     logger.info(f"Extracting text from PPT: {file_path}")
 
@@ -228,6 +229,66 @@ async def extract_from_ppt(file_path: str) -> str:
             return text
     except Exception as e:
         logger.info(f"python-pptx failed on .ppt (expected for binary format): {e}")
+
+    # Try olefile — pure Python extraction from binary PPT OLE compound documents
+    try:
+        import olefile
+        import struct
+
+        if olefile.isOleFile(file_path):
+            ole = olefile.OleFileIO(file_path)
+            text_parts = []
+
+            # PowerPoint stores text in "PowerPoint Document" stream
+            if ole.exists("PowerPoint Document"):
+                data = ole.openstream("PowerPoint Document").read()
+                # Parse the PPT binary format for text records
+                # Record types that contain text:
+                #   0x0FA0 = TextCharsAtom (UTF-16LE)
+                #   0x0FA8 = TextBytesAtom (ASCII/Latin-1)
+                i = 0
+                while i < len(data) - 8:
+                    rec_ver_inst = struct.unpack_from("<H", data, i)[0]
+                    rec_type = struct.unpack_from("<H", data, i + 2)[0]
+                    rec_len = struct.unpack_from("<I", data, i + 4)[0]
+                    i += 8
+
+                    if rec_len > len(data) - i:
+                        break
+
+                    if rec_type == 0x0FA8:  # TextBytesAtom
+                        try:
+                            text_bytes = data[i:i + rec_len]
+                            decoded = text_bytes.decode("latin-1", errors="replace")
+                            cleaned = decoded.strip()
+                            if cleaned and len(cleaned) > 1:
+                                text_parts.append(cleaned)
+                        except Exception:
+                            pass
+                    elif rec_type == 0x0FA0:  # TextCharsAtom (UTF-16LE)
+                        try:
+                            text_bytes = data[i:i + rec_len]
+                            decoded = text_bytes.decode("utf-16-le", errors="replace")
+                            cleaned = decoded.strip()
+                            if cleaned and len(cleaned) > 1:
+                                text_parts.append(cleaned)
+                        except Exception:
+                            pass
+
+                    i += rec_len
+
+            ole.close()
+
+            if text_parts:
+                full_text = "\n\n".join(text_parts)
+                logger.info(f"olefile extracted {len(full_text)} characters from .ppt")
+                return full_text
+        else:
+            logger.info("File is not a valid OLE file")
+    except ImportError:
+        logger.warning("olefile not installed, skipping OLE extraction")
+    except Exception as e:
+        logger.warning(f"olefile extraction failed: {e}")
 
     # Try LibreOffice conversion to PPTX
     try:
