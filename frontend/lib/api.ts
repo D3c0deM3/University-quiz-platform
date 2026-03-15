@@ -213,6 +213,16 @@ export const materialsApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  uploadText: (questionsText: string, materialFiles: File[], subjectId: string, numQuestions: number = 0) => {
+    const form = new FormData();
+    form.append('questionsText', questionsText);
+    materialFiles.forEach((file) => form.append('materialFiles', file));
+    form.append('subjectId', subjectId);
+    form.append('numQuestions', String(numQuestions));
+    return api.post('/materials/upload-text', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   delete: (id: string) => api.delete(`/materials/${id}`),
   getMetadata: (id: string) => api.get(`/materials/${id}/metadata`),
   updateMetadata: (id: string, data: Record<string, unknown>) =>

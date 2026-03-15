@@ -6,6 +6,7 @@ Includes retry logic with model fallback.
 import json
 import logging
 import asyncio
+import re
 from typing import Awaitable, Callable, List, Optional
 
 from google import genai
@@ -498,7 +499,16 @@ def _validate_questions(questions: list) -> list:
 
 
 def _question_key(question_text: str) -> str:
-    return " ".join(question_text.lower().strip().split())
+    """Normalize for dedup.  Keep only alphanumeric + spaces so that
+    numbering differences like '1.' vs '1)' and minor punctuation
+    changes do not cause false collisions, but truly identical
+    questions are still caught."""
+    text = question_text.lower().strip()
+    # Remove leading question numbers/letters: "1.", "1)", "a)", "A.", etc.
+    text = re.sub(r'^[\d]+[.\)]\s*', '', text)
+    text = re.sub(r'^[a-z][.\)]\s*', '', text)
+    # Collapse whitespace
+    return " ".join(text.split())
 
 
 def _merge_unique_questions(target: list, incoming: list, seen_keys: set[str]) -> int:
@@ -524,7 +534,7 @@ def _dedupe_question_texts(questions: list[str]) -> list[str]:
     return deduped
 
 
-def _chunk_text_for_detection(text: str, chunk_chars: int = 12000, overlap_chars: int = 2000) -> list[str]:
+def _chunk_text_for_detection(text: str, chunk_chars: int = 15000, overlap_chars: int = 3000) -> list[str]:
     clean_text = text.strip()
     if not clean_text:
         return []
@@ -559,9 +569,10 @@ async def generate_quiz_from_questions_and_material(
         raise ValueError("AI_API_KEY is not configured")
 
     max_len = settings.MAX_TEXT_LENGTH
-    # Split the budget between questions and material text
-    questions_max = max_len // 3  # ~1/3 for questions
-    material_max = max_len - questions_max  # ~2/3 for material (answers need more context)
+    # Give the questions file enough room — it must NOT be truncated when possible
+    # since every question matters.  Material can afford truncation more gracefully.
+    questions_max = min(len(questions_text), max(max_len // 2, 30000))
+    material_max = max(max_len - questions_max, max_len // 3)
 
     truncated_questions = questions_text[:questions_max] if len(questions_text) > questions_max else questions_text
     truncated_material = material_text[:material_max] if len(material_text) > material_max else material_text
@@ -631,9 +642,11 @@ async def _generate_quiz_for_question_list_with_material(
     batch_size: int = 50,
     progress_callback: ProgressCallback = None,
 ) -> list:
-    """Generate quiz answers/options for known questions in batches using material context."""
+    """Generate quiz answers/options for known questions in batches using material context.
+    Includes a final reconciliation pass for any questions the AI missed."""
     all_quizzes: list[dict] = []
     seen_question_keys: set[str] = set()
+    globally_missing: list[str] = []
 
     for i in range(0, len(question_texts), batch_size):
         missing_questions = question_texts[i:i + batch_size]
@@ -650,6 +663,7 @@ Rules:
 - Use the study material as the primary source for selecting the correct answer.
 - Return ONLY valid JSON (no markdown, no code fences) as an array.
 - Include exactly 4 options per question and exactly 1 correct option.
+- You MUST return exactly one quiz object for EACH question. Do NOT skip any.
 
 ===== STUDY MATERIAL =====
 """ + material_context + """
@@ -680,7 +694,7 @@ Rules:
                     f"Questions+material batch {i//batch_size + 1} attempt {attempts}: "
                     f"generated {len(validated_batch)}, missing {len(missing_questions)}"
                 )
-                progress = int(((i + len(question_texts[i:i + batch_size]) - len(missing_questions)) / max(1, len(question_texts))) * 100)
+                progress = int(((i + len(question_texts[i:i + batch_size]) - len(missing_questions)) / max(1, len(question_texts))) * 85)
                 await _emit_progress(
                     progress_callback,
                     progress,
@@ -693,10 +707,72 @@ Rules:
                 break
 
         if missing_questions:
+            globally_missing.extend(missing_questions)
             logger.warning(
                 f"Questions+material batch {i//batch_size + 1}: "
                 f"could not generate {len(missing_questions)} question(s) after retries"
             )
+
+    # ── Final reconciliation pass for globally missing questions ──
+    if globally_missing:
+        logger.info(
+            f"Questions+material reconciliation: retrying {len(globally_missing)} globally missing question(s)"
+        )
+        await _emit_progress(
+            progress_callback,
+            88,
+            f"Reconciliation: retrying {len(globally_missing)} missing questions",
+        )
+
+        reconcile_batch_size = 20
+        for i in range(0, len(globally_missing), reconcile_batch_size):
+            still_missing = globally_missing[i:i + reconcile_batch_size]
+            for attempt in range(2):
+                if not still_missing:
+                    break
+                reconcile_prompt = """You are an expert educational quiz creator. You MUST generate exactly one MCQ quiz object for EACH question below using the study material as the answer source. Do NOT skip any questions.
+
+Return ONLY valid JSON as an array of question objects. Each object must have: question_text, question_type ("MCQ"), options (array of 4), explanation.
+
+===== STUDY MATERIAL =====
+""" + material_context + """
+
+QUESTIONS (generate one quiz object per question):
+""" + json.dumps(still_missing, ensure_ascii=False)
+
+                try:
+                    raw = await _call_gemini_with_fallback(
+                        reconcile_prompt,
+                        temperature=0.3,
+                        max_output_tokens=65536,
+                    )
+                    cleaned = _clean_json_response(raw)
+                    reconciled = json.loads(cleaned)
+                    if isinstance(reconciled, list):
+                        validated = _validate_questions(reconciled)
+                        added = _merge_unique_questions(all_quizzes, validated, seen_question_keys)
+                        generated_keys = {_question_key(q["question_text"]) for q in validated}
+                        still_missing = [
+                            q for q in still_missing
+                            if _question_key(q) not in generated_keys
+                        ]
+                        logger.info(
+                            f"Questions+material reconciliation batch {i//reconcile_batch_size + 1} "
+                            f"attempt {attempt + 1}: recovered {added}, still missing {len(still_missing)}"
+                        )
+                except Exception as e:
+                    logger.error(
+                        f"Questions+material reconciliation batch {i//reconcile_batch_size + 1} "
+                        f"attempt {attempt + 1} failed: {e}"
+                    )
+                    break
+
+    final_missing = len(question_texts) - len(all_quizzes)
+    if final_missing > 0:
+        logger.warning(
+            f"Questions+material finished with {final_missing} unrecoverable missing question(s) "
+            f"out of {len(question_texts)} detected"
+        )
 
     await _emit_progress(
         progress_callback,
@@ -768,13 +844,24 @@ TEXT TO ANALYZE:
 
     # Verification pass: re-scan the full text (or large portion) to catch any missed questions
     if len(text) > 5000:
-        verification_sample = text[:50000] if len(text) > 50000 else text
-        existing_sample = json.dumps(deduped[:100], ensure_ascii=False)
+        verification_sample = text[:80000] if len(text) > 80000 else text
+        # Send all detected questions (not just 100) so the verifier knows what exists
+        existing_sample = json.dumps(deduped, ensure_ascii=False)
+        # Truncate the existing list if it's too large for the prompt
+        if len(existing_sample) > 30000:
+            existing_sample = json.dumps(deduped[:200], ensure_ascii=False)
         verify_prompt = f"""You are an expert at extracting exam questions. The following text was already analyzed and {len(deduped)} questions were found.
 
-Review the text below and find any questions that were MISSED in the first pass. Only return questions that are NOT already in the existing list.
+Review the text below CAREFULLY and find any questions that were MISSED in the first pass. Only return questions that are NOT already in the existing list.
 
-ALREADY EXTRACTED (sample):
+Look especially for:
+- Questions near page breaks or section boundaries
+- Questions that don't follow the standard numbering pattern
+- Questions inside tables, sidebars, or boxed sections
+- Multi-part questions where sub-parts were missed
+- Short one-line questions that might have been overlooked
+
+ALREADY EXTRACTED ({len(deduped)} questions):
 {existing_sample}
 
 Return ONLY a valid JSON array of any ADDITIONAL question text strings that were missed. Return an empty array [] if none were missed.
@@ -810,9 +897,10 @@ async def generate_all_quiz_questions_stepwise(
     batch_size: int = 50,
     progress_callback: ProgressCallback = None,
 ) -> list:
-    """Step-by-step: detect all questions, then batch quiz generation."""
+    """Step-by-step: detect all questions, then batch quiz generation.
+    Includes a final reconciliation pass for any questions the AI missed."""
     async def detection_progress(p: int, stage: str):
-        mapped = int(p * 0.35)
+        mapped = int(p * 0.30)
         await _emit_progress(progress_callback, mapped, stage)
 
     detected_questions = await detect_questions(text, progress_callback=detection_progress)
@@ -822,6 +910,7 @@ async def generate_all_quiz_questions_stepwise(
 
     all_quizzes: list[dict] = []
     seen_question_keys: set[str] = set()
+    globally_missing: list[str] = []
 
     for i in range(0, len(detected_questions), batch_size):
         batch_questions = detected_questions[i:i+batch_size]
@@ -845,6 +934,9 @@ You are an expert educational quiz creator. For each question below, generate MC
     "explanation": "..."
   }
 ]
+
+IMPORTANT: You MUST return exactly one quiz object for EACH question below. Do NOT skip any questions.
+
 QUESTIONS:
 """ + json.dumps(missing_questions, ensure_ascii=False)
 
@@ -871,7 +963,7 @@ QUESTIONS:
                     f"Batch {i//batch_size + 1} attempt {attempts}: "
                     f"generated {len(validated_batch)}, missing {len(missing_questions)}"
                 )
-                progress = 35 + int((len(all_quizzes) / max(1, len(detected_questions))) * 65)
+                progress = 30 + int((len(all_quizzes) / max(1, len(detected_questions))) * 55)
                 await _emit_progress(
                     progress_callback,
                     progress,
@@ -882,12 +974,69 @@ QUESTIONS:
                 break
 
         if missing_questions:
+            globally_missing.extend(missing_questions)
             logger.warning(
                 f"Batch {i//batch_size + 1}: could not generate "
                 f"{len(missing_questions)} question(s) after retries"
             )
 
-    logger.info(f"Stepwise generated {len(all_quizzes)} quizzes")
+    # ── Final reconciliation pass for all globally missing questions ──
+    if globally_missing:
+        logger.info(
+            f"Reconciliation: retrying {len(globally_missing)} globally missing question(s)"
+        )
+        await _emit_progress(
+            progress_callback,
+            88,
+            f"Reconciliation: retrying {len(globally_missing)} missing questions",
+        )
+
+        # Process missing questions in small batches for higher success rate
+        reconcile_batch_size = 20
+        for i in range(0, len(globally_missing), reconcile_batch_size):
+            still_missing = globally_missing[i:i + reconcile_batch_size]
+            for attempt in range(2):
+                if not still_missing:
+                    break
+                reconcile_prompt = """You are an expert educational quiz creator. You MUST generate exactly one MCQ quiz object for EACH question below. Do NOT skip any questions.
+
+Return ONLY valid JSON as an array of question objects. Each object must have: question_text, question_type ("MCQ"), options (array of 4), explanation.
+
+QUESTIONS (generate one quiz object per question):
+""" + json.dumps(still_missing, ensure_ascii=False)
+
+                try:
+                    raw = await _call_gemini_with_fallback(
+                        reconcile_prompt,
+                        temperature=0.3,
+                        max_output_tokens=65536,
+                    )
+                    cleaned = _clean_json_response(raw)
+                    reconciled = json.loads(cleaned)
+                    if isinstance(reconciled, list):
+                        validated = _validate_questions(reconciled)
+                        added = _merge_unique_questions(all_quizzes, validated, seen_question_keys)
+                        generated_keys = {_question_key(q["question_text"]) for q in validated}
+                        still_missing = [
+                            q for q in still_missing
+                            if _question_key(q) not in generated_keys
+                        ]
+                        logger.info(
+                            f"Reconciliation batch {i//reconcile_batch_size + 1} attempt {attempt + 1}: "
+                            f"recovered {added}, still missing {len(still_missing)}"
+                        )
+                except Exception as e:
+                    logger.error(f"Reconciliation batch {i//reconcile_batch_size + 1} attempt {attempt + 1} failed: {e}")
+                    break
+
+    final_missing = len(detected_questions) - len(all_quizzes)
+    if final_missing > 0:
+        logger.warning(
+            f"Stepwise finished with {final_missing} unrecoverable missing question(s) "
+            f"out of {len(detected_questions)} detected"
+        )
+
+    logger.info(f"Stepwise generated {len(all_quizzes)} quizzes out of {len(detected_questions)} detected")
     await _emit_progress(
         progress_callback,
         100,

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Upload, FileText, X, HelpCircle, Plus, Trash2, CheckCircle, PenLine, Sparkles } from 'lucide-react';
+import { Upload, FileText, X, HelpCircle, Plus, Trash2, CheckCircle, PenLine, Sparkles, Type } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ManualQuestion {
@@ -41,13 +41,21 @@ export default function UploadPage() {
  const [dragOverQuestions, setDragOverQuestions] = useState(false);
  const [dragOverStudyMaterials, setDragOverStudyMaterials] = useState(false);
 
- // Tab state: 'file' or 'manual'
- const [activeTab, setActiveTab] = useState<'file' | 'manual'>('file');
+ // Tab state: 'file', 'manual', or 'text'
+ const [activeTab, setActiveTab] = useState<'file' | 'manual' | 'text'>('file');
 
  // Manual question entry state
  const [quizTitle, setQuizTitle] = useState('');
  const [manualQuestions, setManualQuestions] = useState<ManualQuestion[]>([emptyQuestion()]);
  const [creatingQuiz, setCreatingQuiz] = useState(false);
+
+ // Text upload state
+ const [textQuestions, setTextQuestions] = useState('');
+ const [textMaterialFiles, setTextMaterialFiles] = useState<File[]>([]);
+ const [dragOverTextMaterial, setDragOverTextMaterial] = useState(false);
+ const [textNumQuestions, setTextNumQuestions] = useState<number | ''>(0);
+ const [textAllQuestions, setTextAllQuestions] = useState(true);
+ const [submittingText, setSubmittingText] = useState(false);
 
  useEffect(() => {
  subjectsApi.list(1, 100).then((res) => {
@@ -209,6 +217,53 @@ export default function UploadPage() {
    } finally {
      setCreatingQuiz(false);
    }
+ };
+
+ const handleUploadText = async () => {
+   if (!subjectId) {
+     toast.error(t('adminUpload.error'));
+     return;
+   }
+   if (!textQuestions.trim()) {
+     toast.error(t('textUpload.needQuestions'));
+     return;
+   }
+   setSubmittingText(true);
+   try {
+     await materialsApi.uploadText(
+       textQuestions,
+       textMaterialFiles,
+       subjectId,
+       textAllQuestions ? 0 : (textNumQuestions || 10),
+     );
+     toast.success(t('textUpload.success'));
+     setTextQuestions('');
+     setTextMaterialFiles([]);
+     router.push('/admin/materials');
+   } catch (err: unknown) {
+     const message =
+       (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+       t('textUpload.error');
+     toast.error(message);
+   } finally {
+     setSubmittingText(false);
+   }
+ };
+
+ const addTextMaterialFiles = (incoming: File[]) => {
+   if (incoming.length === 0) return;
+   setTextMaterialFiles((prev) => mergeUniqueFiles(prev, incoming));
+ };
+
+ const handleDropTextMaterial = (e: React.DragEvent) => {
+   e.preventDefault();
+   setDragOverTextMaterial(false);
+   const incoming = Array.from(e.dataTransfer.files || []);
+   addTextMaterialFiles(incoming);
+ };
+
+ const removeTextMaterialFile = (index: number) => {
+   setTextMaterialFiles((prev) => prev.filter((_, i) => i !== index));
  };
 
  const MultiFileUploadZone = ({
@@ -400,6 +455,19 @@ export default function UploadPage() {
      <PenLine size={16} />
      {t('manualUpload.tabManual')}
    </button>
+   <button
+     type="button"
+     onClick={() => setActiveTab('text')}
+     className={cn(
+       'flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors cursor-pointer',
+       activeTab === 'text'
+         ? 'bg-blue-600 text-white'
+         : 'bg-white dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-750',
+     )}
+   >
+     <Type size={16} />
+     {t('manualUpload.tabText')}
+   </button>
  </div>
 
  {/* Subject Selection (shared between both tabs) */}
@@ -575,7 +643,7 @@ export default function UploadPage() {
      <Upload size={18} /> {uploading ? t('adminUpload.uploading') : t('adminUpload.submit')}
      </Button>
    </>
- ) : (
+ ) : activeTab === 'manual' ? (
    /* ── Manual Question Entry Tab ── */
    <>
      <Card>
@@ -671,7 +739,108 @@ export default function UploadPage() {
        <CheckCircle size={18} /> {creatingQuiz ? t('manualUpload.creating') : t('manualUpload.createQuiz')}
      </Button>
    </>
- )}
+ ) : activeTab === 'text' ? (
+   /* ── AI Text Tab ── */
+   <>
+     <Card>
+       <CardHeader>
+         <CardTitle className="flex items-center gap-2">
+           <Type size={18} className="text-purple-500" />
+           {t('textUpload.title')}
+         </CardTitle>
+         <CardDescription>{t('textUpload.description')}</CardDescription>
+       </CardHeader>
+     </Card>
+
+     <Card>
+       <CardHeader>
+         <CardTitle className="text-base">{t('textUpload.questionsLabel')}</CardTitle>
+         <CardDescription>{t('textUpload.questionsDesc')}</CardDescription>
+       </CardHeader>
+       <CardContent>
+         <textarea
+           value={textQuestions}
+           onChange={(e) => setTextQuestions(e.target.value)}
+           placeholder={t('textUpload.questionsPlaceholder')}
+           rows={10}
+           className="w-full rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-y"
+         />
+         {textQuestions.trim() && (
+           <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+             {textQuestions.trim().length.toLocaleString()} {t('textUpload.characters')}
+           </p>
+         )}
+       </CardContent>
+     </Card>
+
+     <Card>
+       <CardHeader>
+         <CardTitle className="text-base">{t('textUpload.materialLabel')}</CardTitle>
+         <CardDescription>{t('textUpload.materialDesc')}</CardDescription>
+       </CardHeader>
+       <CardContent>
+         <MultiFileUploadZone
+           id="text-material-files-input"
+           files={textMaterialFiles}
+           onAddFiles={addTextMaterialFiles}
+           onRemoveFile={removeTextMaterialFile}
+           onDrop={handleDropTextMaterial}
+           isDragOver={dragOverTextMaterial}
+           onDragOver={() => setDragOverTextMaterial(true)}
+           onDragLeave={() => setDragOverTextMaterial(false)}
+           label={t('textUpload.chooseMaterialFiles')}
+           description={t('adminUpload.supported')}
+         />
+       </CardContent>
+     </Card>
+
+     <Card>
+       <CardHeader>
+         <CardTitle className="text-base">{t('adminUpload.numQuestions')}</CardTitle>
+       </CardHeader>
+       <CardContent>
+         <label className="flex items-center gap-3 mb-3 cursor-pointer select-none">
+           <input
+             type="checkbox"
+             checked={textAllQuestions}
+             onChange={(e) => setTextAllQuestions(e.target.checked)}
+             className="h-5 w-5 rounded border-gray-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+           />
+           <div>
+             <p className="font-medium text-gray-900 dark:text-zinc-100 text-sm">
+               {t('adminUpload.allQuestions')}
+             </p>
+             <p className="text-xs text-gray-500 dark:text-zinc-400">
+               {t('adminUpload.allQuestionsDesc')}
+             </p>
+           </div>
+         </label>
+         {!textAllQuestions && (
+           <>
+             <Input
+               type="number"
+               min={1}
+               value={textNumQuestions}
+               onChange={(e) => setTextNumQuestions(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value, 10) || 1))}
+               placeholder="10"
+             />
+             <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">{t('adminUpload.numQuestionsHint')}</p>
+           </>
+         )}
+       </CardContent>
+     </Card>
+
+     <Button
+       onClick={handleUploadText}
+       loading={submittingText}
+       disabled={!subjectId || !textQuestions.trim() || submittingText}
+       className="w-full"
+       size="lg"
+     >
+       <Sparkles size={18} /> {submittingText ? t('textUpload.submitting') : t('textUpload.submit')}
+     </Button>
+   </>
+ ) : null}
  </div>
  );
 }

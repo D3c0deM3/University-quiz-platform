@@ -183,6 +183,7 @@ const ru: Record<string, string> = {
   'subjectDetail.contactUs': 'Свяжитесь с нами для подписки:',
   'subjectDetail.trialMode': 'Бесплатная пробная версия',
   'subjectDetail.trialDesc': 'У вас есть одна бесплатная пробная попытка из 10 вопросов. Подпишитесь для полного доступа.',
+  'subjectDetail.startTrialQuiz': 'Начать пробный тест',
   'subjectDetail.noMaterialsTitle': 'Нет опубликованных материалов',
   'subjectDetail.noMaterialsDesc': 'Материалы по этому предмету ещё не опубликованы',
 
@@ -631,6 +632,23 @@ const ru: Record<string, string> = {
   'manualUpload.needQuestionText': 'Все вопросы должны содержать текст',
   'manualUpload.tabFile': 'Загрузка файла',
   'manualUpload.tabManual': 'Ручной ввод',
+  'manualUpload.tabText': 'ИИ Текст',
+
+  // ───── Текстовая загрузка ─────
+  'textUpload.title': 'Обработка текста ИИ',
+  'textUpload.description': 'Вставьте вопросы и при необходимости учебный материал. ИИ создаст тест с ответами.',
+  'textUpload.questionsLabel': 'Текст вопросов',
+  'textUpload.questionsDesc': 'Вставьте вопросы, которые нужно превратить в тест',
+  'textUpload.questionsPlaceholder': 'Вставьте вопросы сюда...',
+  'textUpload.materialLabel': 'Файлы учебного материала (необязательно)',
+  'textUpload.materialDesc': 'Если указаны, ИИ найдёт ответы из этих файлов. Если пусто, ИИ использует свои знания.',
+  'textUpload.chooseMaterialFiles': 'Выберите файлы учебного материала или перетащите',
+  'textUpload.characters': 'символов',
+  'textUpload.submit': 'Создать тест',
+  'textUpload.submitting': 'Обработка...',
+  'textUpload.success': 'Текст отправлен на создание теста. Обработка начнётся в ближайшее время.',
+  'textUpload.error': 'Не удалось обработать текст. Попробуйте снова.',
+  'textUpload.needQuestions': 'Пожалуйста, вставьте текст вопросов.',
 
   // ───── Подписки (админ) ─────
   'adminSubs.title': 'Подписки',

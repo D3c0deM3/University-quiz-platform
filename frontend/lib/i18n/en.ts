@@ -183,6 +183,7 @@ const en = {
   'subjectDetail.contactUs': 'Contact us to subscribe:',
   'subjectDetail.trialMode': 'Free Trial',
   'subjectDetail.trialDesc': 'You have one free trial quiz attempt with 10 questions. Subscribe for unlimited access.',
+  'subjectDetail.startTrialQuiz': 'Start Trial Quiz',
   'subjectDetail.noMaterialsTitle': 'No published materials',
   'subjectDetail.noMaterialsDesc': "Materials for this subject haven't been published yet",
 
@@ -631,6 +632,23 @@ const en = {
   'manualUpload.needQuestionText': 'All questions must have question text',
   'manualUpload.tabFile': 'File Upload',
   'manualUpload.tabManual': 'Manual Entry',
+  'manualUpload.tabText': 'AI Text',
+
+  // ───── Text Upload ─────
+  'textUpload.title': 'AI Text Processing',
+  'textUpload.description': 'Paste questions and optionally study material. AI will generate a quiz with answers.',
+  'textUpload.questionsLabel': 'Questions Text',
+  'textUpload.questionsDesc': 'Paste the questions you want to turn into a quiz',
+  'textUpload.questionsPlaceholder': 'Paste your exam questions here...',
+  'textUpload.materialLabel': 'Study Material Files (Optional)',
+  'textUpload.materialDesc': 'If provided, AI will find answers from these files. If empty, AI will use its own reasoning.',
+  'textUpload.chooseMaterialFiles': 'Choose study material files or drag and drop',
+  'textUpload.characters': 'characters',
+  'textUpload.submit': 'Generate Quiz',
+  'textUpload.submitting': 'Processing...',
+  'textUpload.success': 'Text submitted for quiz generation. Processing will begin shortly.',
+  'textUpload.error': 'Failed to process text. Please try again.',
+  'textUpload.needQuestions': 'Please paste some questions text.',
 
   // ───── Admin Subscriptions ─────
   'adminSubs.title': 'Subscriptions',

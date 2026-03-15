@@ -25,6 +25,7 @@ import { Queue } from 'bullmq';
 import { diskStorage } from 'multer';
 import { extname, join, isAbsolute } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { promises as fs } from 'fs';
 import { MaterialsService } from './materials.service.js';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards/index.js';
 import { Roles, CurrentUser } from '../auth/decorators/index.js';
@@ -238,6 +239,114 @@ export class MaterialsController {
         'Questions and study materials uploaded successfully. Processing will begin shortly.',
       material,
     };
+  }
+
+  @Post('upload-text')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @UseInterceptors(
+    FilesInterceptor('materialFiles', 10, multerOptions),
+  )
+  async uploadText(
+    @UploadedFiles() materialFiles: Express.Multer.File[],
+    @Body('subjectId') subjectId: string,
+    @Body('questionsText') questionsText: string,
+    @Body('numQuestions') numQuestionsRaw: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    if (!subjectId) {
+      throw new BadRequestException('subjectId is required');
+    }
+    if (!questionsText?.trim()) {
+      throw new BadRequestException('questionsText is required');
+    }
+
+    const numQuestions = parseInt(numQuestionsRaw, 10);
+    const validNumQuestions = isNaN(numQuestions)
+      ? 0
+      : numQuestions === 0
+        ? 0
+        : Math.max(numQuestions, 1);
+
+    // Write questions text to a temporary .txt file
+    const questionsFileName = `${uuidv4()}.txt`;
+    const questionsFilePath = join(resolvedUploadDir, questionsFileName);
+    await fs.writeFile(questionsFilePath, questionsText, 'utf-8');
+
+    if (materialFiles && materialFiles.length > 0) {
+      // Mode: questions_with_material — questions as text, study material as files
+      const primaryFile = materialFiles[0];
+      const additionalFiles = materialFiles.slice(1);
+
+      const material = await this.materialsService.upload(
+        primaryFile,
+        subjectId,
+        userId,
+      );
+
+      await this.processingQueue.add(
+        'process',
+        {
+          materialId: material.id,
+          filePath: material.filePath,
+          fileType: material.fileType,
+          originalName: material.originalName,
+          numQuestions: validNumQuestions,
+          uploadedById: userId,
+          mode: 'questions_with_material',
+          questionsFilePath,
+          questionsFileType: 'TXT',
+          additionalMaterialFilePaths: additionalFiles.map((f) => f.path),
+          additionalMaterialFileTypes: additionalFiles.map((f) =>
+            extname(f.originalname).toLowerCase().replace('.', '').toUpperCase(),
+          ),
+        } satisfies MaterialProcessingJobData,
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+          removeOnComplete: true,
+          removeOnFail: false,
+        },
+      );
+
+      return {
+        message:
+          'Text and study materials submitted for processing. Quiz generation will begin shortly.',
+        material,
+      };
+    } else {
+      // Mode: standard — questions only, AI uses its own reasoning
+      const material = await this.materialsService.uploadFromText(
+        questionsFilePath,
+        questionsFileName,
+        Buffer.byteLength(questionsText, 'utf-8'),
+        subjectId,
+        userId,
+      );
+
+      await this.processingQueue.add(
+        'process',
+        {
+          materialId: material.id,
+          filePath: questionsFilePath,
+          fileType: 'TXT',
+          originalName: questionsFileName,
+          numQuestions: validNumQuestions,
+          uploadedById: userId,
+        } satisfies MaterialProcessingJobData,
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+          removeOnComplete: true,
+          removeOnFail: false,
+        },
+      );
+
+      return {
+        message:
+          'Text submitted for processing. Quiz generation will begin shortly.',
+        material,
+      };
+    }
   }
 
   @Get()

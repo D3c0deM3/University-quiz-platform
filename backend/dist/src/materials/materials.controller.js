@@ -20,6 +20,7 @@ const bullmq_2 = require("bullmq");
 const multer_1 = require("multer");
 const path_1 = require("path");
 const uuid_1 = require("uuid");
+const fs_1 = require("fs");
 const materials_service_js_1 = require("./materials.service.js");
 const index_js_1 = require("../auth/guards/index.js");
 const index_js_2 = require("../auth/decorators/index.js");
@@ -154,6 +155,70 @@ let MaterialsController = class MaterialsController {
             material,
         };
     }
+    async uploadText(materialFiles, subjectId, questionsText, numQuestionsRaw, userId) {
+        if (!subjectId) {
+            throw new common_1.BadRequestException('subjectId is required');
+        }
+        if (!questionsText?.trim()) {
+            throw new common_1.BadRequestException('questionsText is required');
+        }
+        const numQuestions = parseInt(numQuestionsRaw, 10);
+        const validNumQuestions = isNaN(numQuestions)
+            ? 0
+            : numQuestions === 0
+                ? 0
+                : Math.max(numQuestions, 1);
+        const questionsFileName = `${(0, uuid_1.v4)()}.txt`;
+        const questionsFilePath = (0, path_1.join)(resolvedUploadDir, questionsFileName);
+        await fs_1.promises.writeFile(questionsFilePath, questionsText, 'utf-8');
+        if (materialFiles && materialFiles.length > 0) {
+            const primaryFile = materialFiles[0];
+            const additionalFiles = materialFiles.slice(1);
+            const material = await this.materialsService.upload(primaryFile, subjectId, userId);
+            await this.processingQueue.add('process', {
+                materialId: material.id,
+                filePath: material.filePath,
+                fileType: material.fileType,
+                originalName: material.originalName,
+                numQuestions: validNumQuestions,
+                uploadedById: userId,
+                mode: 'questions_with_material',
+                questionsFilePath,
+                questionsFileType: 'TXT',
+                additionalMaterialFilePaths: additionalFiles.map((f) => f.path),
+                additionalMaterialFileTypes: additionalFiles.map((f) => (0, path_1.extname)(f.originalname).toLowerCase().replace('.', '').toUpperCase()),
+            }, {
+                attempts: 3,
+                backoff: { type: 'exponential', delay: 5000 },
+                removeOnComplete: true,
+                removeOnFail: false,
+            });
+            return {
+                message: 'Text and study materials submitted for processing. Quiz generation will begin shortly.',
+                material,
+            };
+        }
+        else {
+            const material = await this.materialsService.uploadFromText(questionsFilePath, questionsFileName, Buffer.byteLength(questionsText, 'utf-8'), subjectId, userId);
+            await this.processingQueue.add('process', {
+                materialId: material.id,
+                filePath: questionsFilePath,
+                fileType: 'TXT',
+                originalName: questionsFileName,
+                numQuestions: validNumQuestions,
+                uploadedById: userId,
+            }, {
+                attempts: 3,
+                backoff: { type: 'exponential', delay: 5000 },
+                removeOnComplete: true,
+                removeOnFail: false,
+            });
+            return {
+                message: 'Text submitted for processing. Quiz generation will begin shortly.',
+                material,
+            };
+        }
+    }
     async findAll(page, limit, status, subjectId, userId, role) {
         if (role === client_1.Role.STUDENT) {
             if (subjectId) {
@@ -281,6 +346,19 @@ __decorate([
     __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", Promise)
 ], MaterialsController.prototype, "uploadWithQuestions", null);
+__decorate([
+    (0, common_1.Post)('upload-text'),
+    (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('materialFiles', 10, multerOptions)),
+    __param(0, (0, common_1.UploadedFiles)()),
+    __param(1, (0, common_1.Body)('subjectId')),
+    __param(2, (0, common_1.Body)('questionsText')),
+    __param(3, (0, common_1.Body)('numQuestions')),
+    __param(4, (0, index_js_2.CurrentUser)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Array, String, String, String, String]),
+    __metadata("design:returntype", Promise)
+], MaterialsController.prototype, "uploadText", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('page', new common_1.DefaultValuePipe(1), common_1.ParseIntPipe)),

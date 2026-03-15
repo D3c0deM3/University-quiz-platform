@@ -86,6 +86,32 @@ let MaterialsService = class MaterialsService {
         });
         return material;
     }
+    async uploadFromText(filePath, fileName, fileSize, subjectId, uploadedById) {
+        const subject = await this.prisma.subject.findUnique({
+            where: { id: subjectId },
+        });
+        if (!subject) {
+            throw new common_1.NotFoundException('Subject not found');
+        }
+        return this.prisma.material.create({
+            data: {
+                fileName,
+                originalName: 'text-upload.txt',
+                filePath,
+                fileType: 'TXT',
+                fileSize,
+                status: client_1.MaterialStatus.PENDING,
+                processingProgress: 0,
+                processingStage: 'Queued for processing',
+                subjectId,
+                uploadedById,
+            },
+            include: {
+                subject: { select: { id: true, name: true } },
+                uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+            },
+        });
+    }
     async findAll(page = 1, limit = 20, status, subjectId) {
         const skip = (page - 1) * limit;
         const where = {};

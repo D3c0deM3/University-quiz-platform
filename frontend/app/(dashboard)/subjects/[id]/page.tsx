@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
-import { BookOpen, FileText, ClipboardList, ArrowLeft, Lock, Phone, MessageCircle, Sparkles } from 'lucide-react';
+import { BookOpen, FileText, ClipboardList, ArrowLeft, Lock, Phone, MessageCircle, Sparkles, Play } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 
 export default function SubjectDetailPage() {
@@ -209,7 +209,8 @@ export default function SubjectDetailPage() {
  {/* Trial banner */}
  {isTrial && (
  <Card className="border-amber-200 dark:border-amber-500/20 bg-amber-50/50 dark:bg-amber-500/5">
- <CardContent className="flex items-center gap-3 p-4">
+ <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4">
+ <div className="flex items-center gap-3">
  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/10 shrink-0">
  <Sparkles size={16} className="text-amber-600 dark:text-amber-400" />
  </div>
@@ -221,6 +222,14 @@ export default function SubjectDetailPage() {
  {t('subjectDetail.trialDesc')}
  </p>
  </div>
+ </div>
+ {quizzes.length > 0 && (
+ <Link href={`/quizzes/${quizzes[0].id}`} className="shrink-0 w-full sm:w-auto">
+ <Button className="bg-amber-600 hover:bg-amber-700 text-white w-full sm:w-auto">
+ <Play size={16} /> {t('subjectDetail.startTrialQuiz')}
+ </Button>
+ </Link>
+ )}
  </CardContent>
  </Card>
  )}

@@ -183,6 +183,7 @@ const uz: Record<string, string> = {
   'subjectDetail.contactUs': 'Obuna bo\'lish uchun biz bilan bog\'laning:',
   'subjectDetail.trialMode': 'Bepul sinov',
   'subjectDetail.trialDesc': 'Sizda 10 ta savoldan iborat bitta bepul sinov imkoniyati bor. To\'liq kirish uchun obuna bo\'ling.',
+  'subjectDetail.startTrialQuiz': 'Sinov testini boshlash',
   'subjectDetail.noMaterialsTitle': 'Chop etilgan materiallar yo\'q',
   'subjectDetail.noMaterialsDesc': 'Bu fan uchun materiallar hali chop etilmagan',
 
@@ -631,6 +632,23 @@ const uz: Record<string, string> = {
   'manualUpload.needQuestionText': 'Barcha savollarda savol matni bo\'lishi kerak',
   'manualUpload.tabFile': 'Fayl yuklash',
   'manualUpload.tabManual': 'Qo\'lda kiritish',
+  'manualUpload.tabText': 'AI Matn',
+
+  // ───── Matnli yuklash ─────
+  'textUpload.title': 'AI Matn qayta ishlash',
+  'textUpload.description': 'Savollarni va ixtiyoriy ravishda o\'quv materialini joylashtiring. AI javoblari bilan test yaratadi.',
+  'textUpload.questionsLabel': 'Savollar matni',
+  'textUpload.questionsDesc': 'Testga aylantirmoqchi bo\'lgan savollarni joylashtiring',
+  'textUpload.questionsPlaceholder': 'Savollarni shu yerga joylashtiring...',
+  'textUpload.materialLabel': 'O\'quv materiali fayllari (ixtiyoriy)',
+  'textUpload.materialDesc': 'Agar ko\'rsatilsa, AI javoblarni ushbu fayllardan topadi. Bo\'sh bo\'lsa, AI o\'z bilimidan foydalanadi.',
+  'textUpload.chooseMaterialFiles': 'O\'quv materiali fayllarini tanlang yoki sudrab olib tashlang',
+  'textUpload.characters': 'belgilar',
+  'textUpload.submit': 'Test yaratish',
+  'textUpload.submitting': 'Qayta ishlanmoqda...',
+  'textUpload.success': 'Matn test yaratish uchun yuborildi. Qayta ishlash tez orada boshlanadi.',
+  'textUpload.error': 'Matnni qayta ishlashda xatolik. Qaytadan urinib ko\'ring.',
+  'textUpload.needQuestions': 'Iltimos, savollar matnini joylashtiring.',
 
   // ───── Admin obunalar ─────
   'adminSubs.title': 'Obunalar',
