@@ -199,7 +199,10 @@ export class MaterialsService {
     });
     const subscribedSubjectIds = subs.map((s) => s.subjectId);
 
-    if (subscribedSubjectIds.length === 0) {
+    // If a specific subjectId was requested, the controller already verified
+    // access (subscription or trial), so we can query directly.
+    // Only short-circuit when listing ALL materials and user has no subscriptions.
+    if (subscribedSubjectIds.length === 0 && !subjectId) {
       return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
     }
 

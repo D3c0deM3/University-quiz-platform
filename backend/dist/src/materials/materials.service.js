@@ -158,7 +158,7 @@ let MaterialsService = class MaterialsService {
             select: { subjectId: true },
         });
         const subscribedSubjectIds = subs.map((s) => s.subjectId);
-        if (subscribedSubjectIds.length === 0) {
+        if (subscribedSubjectIds.length === 0 && !subjectId) {
             return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
         }
         const skip = (page - 1) * limit;
