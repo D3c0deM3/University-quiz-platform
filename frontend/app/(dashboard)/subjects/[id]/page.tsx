@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
-import { BookOpen, FileText, ClipboardList, ArrowLeft, Lock, Phone, MessageCircle } from 'lucide-react';
+import { BookOpen, FileText, ClipboardList, ArrowLeft, Lock, Phone, MessageCircle, Sparkles } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 
 export default function SubjectDetailPage() {
@@ -23,6 +23,7 @@ export default function SubjectDetailPage() {
  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
  const [loading, setLoading] = useState(true);
  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+ const [isTrial, setIsTrial] = useState(false);
 
  useEffect(() => {
  if (!id) return;
@@ -37,6 +38,7 @@ export default function SubjectDetailPage() {
  try {
  const checkRes = await subscriptionsApi.check(id);
  setHasAccess(checkRes.data.hasAccess === true);
+ setIsTrial(checkRes.data.isTrial === true);
  } catch {
  setHasAccess(false);
  }
@@ -52,9 +54,9 @@ export default function SubjectDetailPage() {
  load();
  }, [id, user]);
 
- // Load content only when access confirmed
+ // Load content when access confirmed or trial available
  useEffect(() => {
- if (!id || hasAccess !== true) return;
+ if (!id || (hasAccess !== true && !isTrial)) return;
  async function loadContent() {
  try {
  const [materialsRes, quizzesRes] = await Promise.all([
@@ -68,7 +70,7 @@ export default function SubjectDetailPage() {
  }
  }
  loadContent();
- }, [id, hasAccess]);
+ }, [id, hasAccess, isTrial]);
 
  if (loading) {
  return (
@@ -98,8 +100,8 @@ export default function SubjectDetailPage() {
  );
  }
 
- // Paywall for students without access
- if (hasAccess === false) {
+ // Paywall for students without access and no trial
+ if (hasAccess === false && !isTrial) {
  return (
  <div className="space-y-6">
  <div>
@@ -203,6 +205,25 @@ export default function SubjectDetailPage() {
  <p className="mt-1 text-xs sm:text-base text-gray-500 dark:text-zinc-400">{subject.description}</p>
  )}
  </div>
+
+ {/* Trial banner */}
+ {isTrial && (
+ <Card className="border-amber-200 dark:border-amber-500/20 bg-amber-50/50 dark:bg-amber-500/5">
+ <CardContent className="flex items-center gap-3 p-4">
+ <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/10 shrink-0">
+ <Sparkles size={16} className="text-amber-600 dark:text-amber-400" />
+ </div>
+ <div>
+ <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+ {t('subjectDetail.trialMode')}
+ </p>
+ <p className="text-xs text-amber-700 dark:text-amber-400">
+ {t('subjectDetail.trialDesc')}
+ </p>
+ </div>
+ </CardContent>
+ </Card>
+ )}
 
  {/* Materials */}
  <Card className="overflow-hidden">

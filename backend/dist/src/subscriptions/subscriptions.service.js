@@ -160,6 +160,22 @@ let SubscriptionsService = class SubscriptionsService {
         });
         return !!sub;
     }
+    async getCompletedAttemptCount(userId) {
+        return this.prisma.quizAttempt.count({
+            where: { userId, completedAt: { not: null } },
+        });
+    }
+    async hasAccessOrTrial(userId, subjectId) {
+        const subscribed = await this.hasAccess(userId, subjectId);
+        if (subscribed) {
+            return { hasAccess: true, isTrial: false, trialUsed: false };
+        }
+        const completedCount = await this.getCompletedAttemptCount(userId);
+        if (completedCount === 0) {
+            return { hasAccess: false, isTrial: true, trialUsed: false };
+        }
+        return { hasAccess: false, isTrial: false, trialUsed: true };
+    }
 };
 exports.SubscriptionsService = SubscriptionsService;
 exports.SubscriptionsService = SubscriptionsService = __decorate([

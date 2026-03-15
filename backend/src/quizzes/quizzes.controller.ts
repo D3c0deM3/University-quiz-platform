@@ -44,11 +44,8 @@ export class QuizzesController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
     if (role === Role.STUDENT) {
-      const hasAccess = await this.subscriptionsService.hasAccess(
-        userId,
-        subjectId,
-      );
-      if (!hasAccess)
+      const result = await this.subscriptionsService.hasAccessOrTrial(userId, subjectId);
+      if (!result.hasAccess && !result.isTrial)
         throw new ForbiddenException(
           'You do not have a subscription for this subject',
         );
@@ -67,11 +64,8 @@ export class QuizzesController {
   ) {
     const quiz = await this.quizzesService.findOne(quizId);
     if (role === Role.STUDENT && quiz.subjectId) {
-      const hasAccess = await this.subscriptionsService.hasAccess(
-        userId,
-        quiz.subjectId,
-      );
-      if (!hasAccess)
+      const result = await this.subscriptionsService.hasAccessOrTrial(userId, quiz.subjectId);
+      if (!result.hasAccess && !result.isTrial)
         throw new ForbiddenException(
           'You do not have a subscription for this subject',
         );
@@ -92,14 +86,16 @@ export class QuizzesController {
     if (role === Role.STUDENT) {
       const quiz = await this.quizzesService.findOne(quizId);
       if (quiz.subjectId) {
-        const hasAccess = await this.subscriptionsService.hasAccess(
-          userId,
-          quiz.subjectId,
-        );
-        if (!hasAccess)
+        const result = await this.subscriptionsService.hasAccessOrTrial(userId, quiz.subjectId);
+        if (!result.hasAccess && !result.isTrial)
           throw new ForbiddenException(
             'You do not have a subscription for this subject',
           );
+        // Trial: force max 10 questions
+        if (result.isTrial) {
+          const totalQuestions = (quiz as any)._count?.questions ?? 10;
+          dto.questionCount = Math.min(10, totalQuestions);
+        }
       }
     }
     return this.quizzesService.startAttempt(quizId, userId, dto);

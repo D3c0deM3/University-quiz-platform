@@ -36,15 +36,26 @@ let SubscriptionsController = class SubscriptionsController {
     async findByUser(userId) {
         return this.subscriptionsService.findByUser(userId);
     }
-    async getMySubscriptions(userId) {
-        return this.subscriptionsService.getMySubscriptions(userId);
+    async getMySubscriptions(userId, role) {
+        const result = await this.subscriptionsService.getMySubscriptions(userId);
+        if (role === client_1.Role.STUDENT) {
+            const completedCount = await this.subscriptionsService.getCompletedAttemptCount(userId);
+            return { ...result, trialAvailable: completedCount === 0 };
+        }
+        return result;
     }
     async checkAccess(userId, role, subjectId) {
         if (role === client_1.Role.ADMIN || role === client_1.Role.TEACHER) {
-            return { hasAccess: true };
+            return { hasAccess: true, isTrial: false, trialUsed: false };
         }
-        const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
-        return { hasAccess };
+        return this.subscriptionsService.hasAccessOrTrial(userId, subjectId);
+    }
+    async trialStatus(userId, role) {
+        if (role === client_1.Role.ADMIN || role === client_1.Role.TEACHER) {
+            return { trialAvailable: false, trialUsed: false };
+        }
+        const completedCount = await this.subscriptionsService.getCompletedAttemptCount(userId);
+        return { trialAvailable: completedCount === 0, trialUsed: completedCount > 0 };
     }
     async update(id, dto) {
         return this.subscriptionsService.update(id, dto);
@@ -93,8 +104,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)('my'),
     __param(0, (0, index_js_2.CurrentUser)('id')),
+    __param(1, (0, index_js_2.CurrentUser)('role')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], SubscriptionsController.prototype, "getMySubscriptions", null);
 __decorate([
@@ -106,6 +118,14 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], SubscriptionsController.prototype, "checkAccess", null);
+__decorate([
+    (0, common_1.Get)('trial-status'),
+    __param(0, (0, index_js_2.CurrentUser)('id')),
+    __param(1, (0, index_js_2.CurrentUser)('role')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], SubscriptionsController.prototype, "trialStatus", null);
 __decorate([
     (0, common_1.Put)(':id'),
     (0, index_js_2.Roles)(client_1.Role.ADMIN),

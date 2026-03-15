@@ -25,18 +25,18 @@ export declare class MaterialsController {
             };
         } & {
             id: string;
+            subjectId: string;
+            status: import("@prisma/client").$Enums.MaterialStatus;
+            createdAt: Date;
+            updatedAt: Date;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
-            status: import("@prisma/client").$Enums.MaterialStatus;
             processingProgress: number;
             processingStage: string | null;
             errorMessage: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            subjectId: string;
             uploadedById: string;
         })[];
         material: {
@@ -51,18 +51,18 @@ export declare class MaterialsController {
             };
         } & {
             id: string;
+            subjectId: string;
+            status: import("@prisma/client").$Enums.MaterialStatus;
+            createdAt: Date;
+            updatedAt: Date;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
-            status: import("@prisma/client").$Enums.MaterialStatus;
             processingProgress: number;
             processingStage: string | null;
             errorMessage: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            subjectId: string;
             uploadedById: string;
         };
     }>;
@@ -84,18 +84,18 @@ export declare class MaterialsController {
             };
         } & {
             id: string;
+            subjectId: string;
+            status: import("@prisma/client").$Enums.MaterialStatus;
+            createdAt: Date;
+            updatedAt: Date;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
-            status: import("@prisma/client").$Enums.MaterialStatus;
             processingProgress: number;
             processingStage: string | null;
             errorMessage: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            subjectId: string;
             uploadedById: string;
         };
     }>;
@@ -118,18 +118,18 @@ export declare class MaterialsController {
             } | null;
         } & {
             id: string;
+            subjectId: string;
+            status: import("@prisma/client").$Enums.MaterialStatus;
+            createdAt: Date;
+            updatedAt: Date;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
-            status: import("@prisma/client").$Enums.MaterialStatus;
             processingProgress: number;
             processingStage: string | null;
             errorMessage: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            subjectId: string;
             uploadedById: string;
         })[];
         meta: {
@@ -206,18 +206,18 @@ export declare class MaterialsController {
         }[];
     } & {
         id: string;
+        subjectId: string;
+        status: import("@prisma/client").$Enums.MaterialStatus;
+        createdAt: Date;
+        updatedAt: Date;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
-        status: import("@prisma/client").$Enums.MaterialStatus;
         processingProgress: number;
         processingStage: string | null;
         errorMessage: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        subjectId: string;
         uploadedById: string;
     }>;
     remove(id: string): Promise<{
@@ -251,8 +251,8 @@ export declare class MaterialsController {
     }>;
     getQuizzes(id: string): Promise<({
         _count: {
-            questions: number;
             attempts: number;
+            questions: number;
         };
         questions: ({
             options: {
@@ -275,9 +275,9 @@ export declare class MaterialsController {
         })[];
     } & {
         id: string;
+        subjectId: string;
         createdAt: Date;
         updatedAt: Date;
-        subjectId: string;
         description: string | null;
         materialId: string | null;
         title: string;
@@ -305,9 +305,9 @@ export declare class MaterialsController {
         })[];
     } & {
         id: string;
+        subjectId: string;
         createdAt: Date;
         updatedAt: Date;
-        subjectId: string;
         description: string | null;
         materialId: string | null;
         title: string;
@@ -335,18 +335,18 @@ export declare class MaterialsController {
         } | null;
     } & {
         id: string;
+        subjectId: string;
+        status: import("@prisma/client").$Enums.MaterialStatus;
+        createdAt: Date;
+        updatedAt: Date;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
-        status: import("@prisma/client").$Enums.MaterialStatus;
         processingProgress: number;
         processingStage: string | null;
         errorMessage: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        subjectId: string;
         uploadedById: string;
     }>;
     publishMaterial(id: string, body: {
@@ -367,36 +367,36 @@ export declare class MaterialsController {
         } | null;
     } & {
         id: string;
+        subjectId: string;
+        status: import("@prisma/client").$Enums.MaterialStatus;
+        createdAt: Date;
+        updatedAt: Date;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
-        status: import("@prisma/client").$Enums.MaterialStatus;
         processingProgress: number;
         processingStage: string | null;
         errorMessage: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        subjectId: string;
         uploadedById: string;
     }>;
     reprocessMaterial(id: string, userId: string): Promise<{
         message: string;
         material: {
             id: string;
+            subjectId: string;
+            status: import("@prisma/client").$Enums.MaterialStatus;
+            createdAt: Date;
+            updatedAt: Date;
             fileName: string;
             originalName: string;
             filePath: string;
             fileType: string;
             fileSize: number;
-            status: import("@prisma/client").$Enums.MaterialStatus;
             processingProgress: number;
             processingStage: string | null;
             errorMessage: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            subjectId: string;
             uploadedById: string;
         };
     }>;
@@ -459,18 +459,18 @@ export declare class MaterialsController {
         } | null;
     } & {
         id: string;
+        subjectId: string;
+        status: import("@prisma/client").$Enums.MaterialStatus;
+        createdAt: Date;
+        updatedAt: Date;
         fileName: string;
         originalName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
-        status: import("@prisma/client").$Enums.MaterialStatus;
         processingProgress: number;
         processingStage: string | null;
         errorMessage: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        subjectId: string;
         uploadedById: string;
     }>;
 }

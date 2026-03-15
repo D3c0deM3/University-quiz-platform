@@ -150,6 +150,8 @@ const uz: Record<string, string> = {
   'subjects.materials': 'materiallar',
   'subjects.questions': 'savollar',
   'subjects.viewSubject': 'Fanni ko\'rish',
+  'subjects.trial': 'Sinov',
+  'subjects.tryFree': 'Bepul sinab ko\'ring',
 
   // ───── Fan tafsilotlari ─────
   'subjectDetail.back': 'Fanlarga qaytish',
@@ -172,13 +174,15 @@ const uz: Record<string, string> = {
   'subjectDetail.notFound': 'Fan topilmadi',
   'subjectDetail.subscriptionRequired': 'Obuna talab qilinadi',
   'subjectDetail.subscriptionDesc': '{name} fani uchun testlar, savol-javoblar va o\'quv materiallariga kirish uchun faol obuna kerak.',
-  'subjectDetail.price': '$1',
-  'subjectDetail.priceDesc': 'yoki har bir fan uchun 10 000 so\'m',
+  'subjectDetail.price': '10 000 UZS',
+  'subjectDetail.priceDesc': 'har bir fan uchun',
   'subjectDetail.allQuizzes': 'Bu fan bo\'yicha barcha testlar',
   'subjectDetail.qaBank': 'Savol-javoblar banki',
   'subjectDetail.studyMaterials': 'O\'quv materiallari va hujjatlar',
   'subjectDetail.continuousContent': 'Doimiy kontent yangilanishi',
   'subjectDetail.contactUs': 'Obuna bo\'lish uchun biz bilan bog\'laning:',
+  'subjectDetail.trialMode': 'Bepul sinov',
+  'subjectDetail.trialDesc': 'Sizda 10 ta savoldan iborat bitta bepul sinov imkoniyati bor. To\'liq kirish uchun obuna bo\'ling.',
   'subjectDetail.noMaterialsTitle': 'Chop etilgan materiallar yo\'q',
   'subjectDetail.noMaterialsDesc': 'Bu fan uchun materiallar hali chop etilmagan',
 

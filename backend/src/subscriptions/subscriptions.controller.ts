@@ -68,8 +68,16 @@ export class SubscriptionsController {
    * GET /subscriptions/my — student gets their active subscriptions
    */
   @Get('my')
-  async getMySubscriptions(@CurrentUser('id') userId: string) {
-    return this.subscriptionsService.getMySubscriptions(userId);
+  async getMySubscriptions(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    const result = await this.subscriptionsService.getMySubscriptions(userId);
+    if (role === Role.STUDENT) {
+      const completedCount = await this.subscriptionsService.getCompletedAttemptCount(userId);
+      return { ...result, trialAvailable: completedCount === 0 };
+    }
+    return result;
   }
 
   /**
@@ -82,10 +90,24 @@ export class SubscriptionsController {
     @Param('subjectId') subjectId: string,
   ) {
     if (role === Role.ADMIN || role === Role.TEACHER) {
-      return { hasAccess: true };
+      return { hasAccess: true, isTrial: false, trialUsed: false };
     }
-    const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
-    return { hasAccess };
+    return this.subscriptionsService.hasAccessOrTrial(userId, subjectId);
+  }
+
+  /**
+   * GET /subscriptions/trial-status — check trial availability for current user
+   */
+  @Get('trial-status')
+  async trialStatus(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    if (role === Role.ADMIN || role === Role.TEACHER) {
+      return { trialAvailable: false, trialUsed: false };
+    }
+    const completedCount = await this.subscriptionsService.getCompletedAttemptCount(userId);
+    return { trialAvailable: completedCount === 0, trialUsed: completedCount > 0 };
   }
 
   /**

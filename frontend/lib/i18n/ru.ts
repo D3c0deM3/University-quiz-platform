@@ -150,6 +150,8 @@ const ru: Record<string, string> = {
   'subjects.materials': 'материалы',
   'subjects.questions': 'вопросы',
   'subjects.viewSubject': 'Открыть предмет',
+  'subjects.trial': 'Пробный',
+  'subjects.tryFree': 'Попробовать бесплатно',
 
   // ───── Детали предмета ─────
   'subjectDetail.back': 'К предметам',
@@ -172,13 +174,15 @@ const ru: Record<string, string> = {
   'subjectDetail.notFound': 'Предмет не найден',
   'subjectDetail.subscriptionRequired': 'Требуется подписка',
   'subjectDetail.subscriptionDesc': 'Для доступа к тестам, вопросам и учебным материалам по предмету {name} необходима активная подписка.',
-  'subjectDetail.price': '$1',
-  'subjectDetail.priceDesc': 'или 10 000 сум за предмет',
+  'subjectDetail.price': '10 000 UZS',
+  'subjectDetail.priceDesc': 'за предмет',
   'subjectDetail.allQuizzes': 'Все тесты по этому предмету',
   'subjectDetail.qaBank': 'Банк вопросов и ответов',
   'subjectDetail.studyMaterials': 'Учебные материалы и документы',
   'subjectDetail.continuousContent': 'Постоянное обновление контента',
   'subjectDetail.contactUs': 'Свяжитесь с нами для подписки:',
+  'subjectDetail.trialMode': 'Бесплатная пробная версия',
+  'subjectDetail.trialDesc': 'У вас есть одна бесплатная пробная попытка из 10 вопросов. Подпишитесь для полного доступа.',
   'subjectDetail.noMaterialsTitle': 'Нет опубликованных материалов',
   'subjectDetail.noMaterialsDesc': 'Материалы по этому предмету ещё не опубликованы',
 

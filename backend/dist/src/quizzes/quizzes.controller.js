@@ -34,8 +34,8 @@ let QuizzesController = class QuizzesController {
     }
     async findBySubject(subjectId, userId, role, page, limit) {
         if (role === client_1.Role.STUDENT) {
-            const hasAccess = await this.subscriptionsService.hasAccess(userId, subjectId);
-            if (!hasAccess)
+            const result = await this.subscriptionsService.hasAccessOrTrial(userId, subjectId);
+            if (!result.hasAccess && !result.isTrial)
                 throw new common_2.ForbiddenException('You do not have a subscription for this subject');
         }
         return this.quizzesService.findBySubject(subjectId, page, limit);
@@ -43,8 +43,8 @@ let QuizzesController = class QuizzesController {
     async findOne(quizId, userId, role) {
         const quiz = await this.quizzesService.findOne(quizId);
         if (role === client_1.Role.STUDENT && quiz.subjectId) {
-            const hasAccess = await this.subscriptionsService.hasAccess(userId, quiz.subjectId);
-            if (!hasAccess)
+            const result = await this.subscriptionsService.hasAccessOrTrial(userId, quiz.subjectId);
+            if (!result.hasAccess && !result.isTrial)
                 throw new common_2.ForbiddenException('You do not have a subscription for this subject');
         }
         return quiz;
@@ -53,9 +53,13 @@ let QuizzesController = class QuizzesController {
         if (role === client_1.Role.STUDENT) {
             const quiz = await this.quizzesService.findOne(quizId);
             if (quiz.subjectId) {
-                const hasAccess = await this.subscriptionsService.hasAccess(userId, quiz.subjectId);
-                if (!hasAccess)
+                const result = await this.subscriptionsService.hasAccessOrTrial(userId, quiz.subjectId);
+                if (!result.hasAccess && !result.isTrial)
                     throw new common_2.ForbiddenException('You do not have a subscription for this subject');
+                if (result.isTrial) {
+                    const totalQuestions = quiz._count?.questions ?? 10;
+                    dto.questionCount = Math.min(10, totalQuestions);
+                }
             }
         }
         return this.quizzesService.startAttempt(quizId, userId, dto);

@@ -150,6 +150,8 @@ const en = {
   'subjects.materials': 'materials',
   'subjects.questions': 'questions',
   'subjects.viewSubject': 'View Subject',
+  'subjects.trial': 'Trial',
+  'subjects.tryFree': 'Try Free',
 
   // ───── Subject Detail ─────
   'subjectDetail.back': 'Back to Subjects',
@@ -172,13 +174,15 @@ const en = {
   'subjectDetail.notFound': 'Subject not found',
   'subjectDetail.subscriptionRequired': 'Subscription Required',
   'subjectDetail.subscriptionDesc': 'To access quizzes, Q&A questions, and study materials for {name}, you need an active subscription.',
-  'subjectDetail.price': '$1',
-  'subjectDetail.priceDesc': 'or 10,000 UZS per subject',
+  'subjectDetail.price': '10 000 UZS',
+  'subjectDetail.priceDesc': 'per subject',
   'subjectDetail.allQuizzes': 'All quizzes for this subject',
   'subjectDetail.qaBank': 'Q&A question bank',
   'subjectDetail.studyMaterials': 'Study materials & documents',
   'subjectDetail.continuousContent': 'Continuous content additions',
   'subjectDetail.contactUs': 'Contact us to subscribe:',
+  'subjectDetail.trialMode': 'Free Trial',
+  'subjectDetail.trialDesc': 'You have one free trial quiz attempt with 10 questions. Subscribe for unlimited access.',
   'subjectDetail.noMaterialsTitle': 'No published materials',
   'subjectDetail.noMaterialsDesc': "Materials for this subject haven't been published yet",
 

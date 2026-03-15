@@ -184,4 +184,34 @@ export class SubscriptionsService {
     });
     return !!sub;
   }
+
+  /**
+   * Count completed quiz attempts for a user (globally, across all subjects).
+   */
+  async getCompletedAttemptCount(userId: string): Promise<number> {
+    return this.prisma.quizAttempt.count({
+      where: { userId, completedAt: { not: null } },
+    });
+  }
+
+  /**
+   * Check access or trial eligibility for a student on a specific subject.
+   * Returns { hasAccess, isTrial, trialUsed }.
+   */
+  async hasAccessOrTrial(
+    userId: string,
+    subjectId: string,
+  ): Promise<{ hasAccess: boolean; isTrial: boolean; trialUsed: boolean }> {
+    const subscribed = await this.hasAccess(userId, subjectId);
+    if (subscribed) {
+      return { hasAccess: true, isTrial: false, trialUsed: false };
+    }
+
+    const completedCount = await this.getCompletedAttemptCount(userId);
+    if (completedCount === 0) {
+      return { hasAccess: false, isTrial: true, trialUsed: false };
+    }
+
+    return { hasAccess: false, isTrial: false, trialUsed: true };
+  }
 }

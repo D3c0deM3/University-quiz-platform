@@ -316,6 +316,7 @@ export const usersApi = {
 export const subscriptionsApi = {
   my: () => api.get('/subscriptions/my'),
   check: (subjectId: string) => api.get(`/subscriptions/check/${subjectId}`),
+  trialStatus: () => api.get('/subscriptions/trial-status'),
   list: (params?: { page?: number; limit?: number; status?: string; userId?: string; subjectId?: string }) =>
     api.get('/subscriptions', { params }),
   byUser: (userId: string) => api.get(`/subscriptions/user/${userId}`),

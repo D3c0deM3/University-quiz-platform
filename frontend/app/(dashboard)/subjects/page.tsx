@@ -22,6 +22,7 @@ export default function SubjectsPage() {
  const [search, setSearch] = useState('');
  const [loading, setLoading] = useState(true);
  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
+ const [trialAvailable, setTrialAvailable] = useState(false);
  const [modalSubject, setModalSubject] = useState<Subject | null>(null);
 
  useEffect(() => {
@@ -37,6 +38,7 @@ export default function SubjectsPage() {
  const subRes = await subscriptionsApi.my();
  const ids: string[] = subRes.data.subjectIds || [];
  setSubscribedIds(new Set(ids));
+ setTrialAvailable(subRes.data.trialAvailable === true);
  } catch {
  // no subscriptions
  }
@@ -102,9 +104,39 @@ export default function SubjectsPage() {
  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
  {filtered.map((subject) => {
  const hasAccess = subscribedIds.has(subject.id);
- const isLocked = isStudent && !hasAccess;
+ const isLocked = isStudent && !hasAccess && !trialAvailable;
+ const isTrial = isStudent && !hasAccess && trialAvailable;
 
- return isLocked ? (
+ return isTrial ? (
+ <Link key={subject.id} href={`/subjects/${subject.id}`}>
+ <Card className="h-full transition-shadow hover:shadow-md cursor-pointer border-amber-200 dark:border-amber-500/20">
+ <CardContent className="flex flex-col gap-3 p-6">
+ <div className="flex items-start justify-between">
+ <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/10">
+ <BookOpen size={20} className="text-amber-600 dark:text-amber-400" />
+ </div>
+ <div className="flex items-center gap-1.5">
+ {subject.code && (
+ <Badge variant="outline">{subject.code}</Badge>
+ )}
+ <Badge variant="secondary" className="text-xs bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400">{t('subjects.trial')}</Badge>
+ </div>
+ </div>
+ <div>
+ <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{subject.name}</h3>
+ {subject.description && (
+ <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400 line-clamp-2">
+ {subject.description}
+ </p>
+ )}
+ </div>
+ <div className="mt-auto flex items-center text-sm text-amber-600 dark:text-amber-400 font-medium">
+ {t('subjects.tryFree')} <ArrowRight size={14} className="ml-1" />
+ </div>
+ </CardContent>
+ </Card>
+ </Link>
+ ) : isLocked ? (
  <div key={subject.id}>
  <Card className="h-full relative overflow-hidden border-gray-200 dark:border-zinc-700 opacity-80">
  <CardContent className="flex flex-col gap-3 p-6">
@@ -208,8 +240,8 @@ export default function SubjectsPage() {
  {/* Pricing */}
  <div className="px-6 py-5">
  <div className="rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-700 p-4 text-center mb-5">
- <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">$1</p>
- <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">10,000 UZS &middot; one-time per subject</p>
+ <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">10 000 UZS</p>
+ <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">one-time per subject</p>
  </div>
 
  {/* What's included */}
