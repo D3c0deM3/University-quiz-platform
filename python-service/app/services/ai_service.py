@@ -1327,11 +1327,13 @@ async def try_extract_structured_quiz(
     # 2. Extract full objects from chunks
     await _emit_progress(progress_callback, 10, "Structured quiz detected - extracting...")
     
-    # Use smaller chunks (8000 chars) to ensure the AI doesn't get lazy and skip questions
-    chunks = _chunk_text_for_detection(text, chunk_chars=8000, overlap_chars=500)
+    # Use smart line-based chunking instead of blind slicing
+    # 4500 chars with 1000 char overlap ensures no question is cut in half
+    chunks = _smart_chunk_text(text, chunk_size=4500, overlap_size=1000)
     all_questions = []
     
     for idx, chunk in enumerate(chunks):
+        # Add context about chunk position to help AI understand if it's cutting off
         prompt = QUIZ_FULL_EXTRACTION_PROMPT + chunk
         try:
              # Generous token limit for extraction
@@ -1358,3 +1360,43 @@ async def try_extract_structured_quiz(
 
     await _emit_progress(progress_callback, 100, f"Finished structured extraction: {len(all_questions)} total")
     return all_questions
+
+def _smart_chunk_text(text: str, chunk_size: int = 4500, overlap_size: int = 1000) -> list[str]:
+    """
+    Chunk text by lines to avoid cutting questions in half, with line-based overlap.
+    """
+    lines = text.splitlines()
+    chunks = []
+    current_chunk = []
+    current_len = 0
+    
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        line_len = len(line) + 1  # +1 for newline
+        
+        # If adding this line would exceed the limit (and we have content)
+        if current_len + line_len > chunk_size and current_chunk:
+            # Finalize current chunk
+            chunks.append("\n".join(current_chunk))
+            
+            # Start new chunk with overlap from the end of the previous one
+            backtrack_len = 0
+            overlap_buffer = []
+            for prev_line in reversed(current_chunk):
+                backtrack_len += len(prev_line) + 1
+                overlap_buffer.insert(0, prev_line)
+                if backtrack_len >= overlap_size:
+                    break
+            
+            current_chunk = overlap_buffer
+            current_len = backtrack_len
+            
+        current_chunk.append(line)
+        current_len += line_len
+        i += 1
+        
+    if current_chunk:
+        chunks.append("\n".join(current_chunk))
+        
+    return chunks
