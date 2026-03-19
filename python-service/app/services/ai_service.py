@@ -157,6 +157,8 @@ A) Option
 B) Option
 C) Option
 
+Also valid if separated by symbols like "+++++" (between questions) and "=====" (between options).
+
 Examples of NOT structured quiz:
 - A textbook chapter with a few review questions at the end
 - An article about history
@@ -170,10 +172,17 @@ TEXT TO ANALYZE:
 QUIZ_FULL_EXTRACTION_PROMPT = """You are an expert data extractor. The text below contains a quiz with questions and their options.
 Your task is to extract EVERY question along with its options and correct answer (if indicated).
 
+Be extremely thorough. Do not skip ANY questions.
+Look for special delimiters:
+- "+++++" often separates distinct questions.
+- "=====" often separates options or lines.
+- "#" or bolding often marks the CORRECT answer.
+
 Rules:
 - Extract textual questions exactly as they appear.
 - Extract all provided options for each question.
-- If the correct answer is marked (e.g., bolded, asterisk *, underlined, explicitly stated, or in a separate key), mark `is_correct: true` for that option.
+- If the correct answer is marked (e.g. starts with #, bolded, asterisk *, underlined, explicitly stated, or in a separate key), mark `is_correct: true` for that option.
+- If an option starts with "#" or similar marker, REMOVE that marker from the option text but set is_correct=true.
 - If no correct answer is indicated, mark ALL options as `is_correct: false` (or make a best guess if you are confident).
 - Return a valid JSON array of objects.
 
@@ -1318,8 +1327,8 @@ async def try_extract_structured_quiz(
     # 2. Extract full objects from chunks
     await _emit_progress(progress_callback, 10, "Structured quiz detected - extracting...")
     
-    # Use larger chunks for extraction since we want context for options
-    chunks = _chunk_text_for_detection(text, chunk_chars=25000, overlap_chars=2000)
+    # Use smaller chunks (8000 chars) to ensure the AI doesn't get lazy and skip questions
+    chunks = _chunk_text_for_detection(text, chunk_chars=8000, overlap_chars=500)
     all_questions = []
     
     for idx, chunk in enumerate(chunks):
