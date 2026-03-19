@@ -290,7 +290,6 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
           zIndex: 2147483647,
           backgroundColor: '#000',
           pointerEvents: 'auto',
-          display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color: '#fff',
