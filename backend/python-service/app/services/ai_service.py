@@ -372,7 +372,8 @@ async def generate_quiz_questions(
     seen_question_keys: set[str] = set()
     batch_num = 0
     stalled_batches = 0
-    max_stalled_batches = 5
+    # Scale max_stalled_batches based on requested question count (min 8, max 15)
+    max_stalled_batches = min(15, max(8, num_questions // 30))
 
     while len(all_questions) < num_questions and stalled_batches < max_stalled_batches:
         remaining = num_questions - len(all_questions)
@@ -389,7 +390,7 @@ async def generate_quiz_questions(
                 current_batch_size,
                 offset=len(all_questions),
                 total=num_questions,
-                existing_question_texts=[q["question_text"] for q in all_questions[-150:]],
+                existing_question_texts=[q["question_text"] for q in all_questions],
             )
         except Exception as e:
             logger.error(f"Batch {batch_num} failed: {e}")
@@ -515,10 +516,18 @@ async def _generate_quiz_batch(
         )
 
     if existing_question_texts:
-        previous_sample = json.dumps(existing_question_texts[-50:], ensure_ascii=False)
+        # Show more questions to AI to avoid duplicates (increased from 50 to 100)
+        # Also include compact summaries of ALL previous questions
+        recent_sample = json.dumps(existing_question_texts[-100:], ensure_ascii=False)
+
+        # Create compact list of ALL question beginnings (first 50 chars each) for broader coverage
+        all_question_starts = [q[:50] + "..." if len(q) > 50 else q for q in existing_question_texts]
+        compact_all = json.dumps(all_question_starts, ensure_ascii=False)
+
         extra_instruction += (
             "\n\nDo NOT repeat questions that were already generated. "
-            f"Already generated questions (sample): {previous_sample}"
+            f"Recent questions (last 100): {recent_sample}\n"
+            f"All question beginnings ({len(existing_question_texts)} total): {compact_all}"
         )
 
     prompt = QUIZ_PROMPT.replace("{num_questions}", str(num_questions)) + extra_instruction + "\n" + text
