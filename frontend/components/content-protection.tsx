@@ -58,7 +58,7 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
   /** Show full-screen overlay + blur body synchronously. */
   const showOverlay = useCallback(() => {
     if (overlayRef.current) {
-      overlayRef.current.style.display = 'block';
+      overlayRef.current.style.display = 'flex';
     }
     document.body.style.filter = 'blur(50px) brightness(0)';
   }, []);
@@ -73,10 +73,9 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
 
   /** Show overlay and navigate to dashboard (desktop). */
   const protectAndRedirect = useCallback(() => {
-    if (redirectingRef.current) return;
-    redirectingRef.current = true;
+    // UPDATED: Instead of navigating away (losing progress), just show overlay
+    // router.push('/dashboard');
     showOverlay();
-    router.push('/dashboard');
   }, [showOverlay, router]);
 
   /** Show overlay and force logout (mobile screenshot). */
@@ -96,9 +95,13 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
     const interval = setInterval(() => {
       if (!document.hasFocus()) {
         protectAndRedirect();
-        clearInterval(interval);
+        // Do not stop polling — continue monitoring focus state
+        // clearInterval(interval);
+      } else {
+        // Optional: Ensure overlay is hidden if focused (redundant with handleFocus but safe)
+        // hideOverlay(); 
       }
-    }, 100);
+    }, 500); // Relaxed interval
 
     return () => clearInterval(interval);
   }, [isProtected, protectAndRedirect]);
@@ -165,12 +168,15 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
         }
       }
     } else {
-      // Desktop — redirect on any tab switch
+      // Desktop — show overlay on tab switch
       if (document.hidden) {
         protectAndRedirect();
+      } else {
+        // Desktop — tab became visible -> Hide overlay
+        hideOverlay();
       }
     }
-  }, [isProtected, showOverlay, protectAndRedirect, protectAndLogout]);
+  }, [isProtected, showOverlay, protectAndRedirect, protectAndLogout, hideOverlay]);
 
   // Window blur — desktop only redirect, mobile logout
   const handleBlur = useCallback(() => {
@@ -185,16 +191,21 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
   }, [isProtected, showOverlay, protectAndRedirect]);
 
   // Window focus — mobile: if overlay is showing after blur, trigger logout
+  // Desktop: just hide the overlay so user can continue
   const handleFocus = useCallback(() => {
     if (!isProtected) return;
-    if (!isMobileDevice()) return;
-
-    // If we showed the overlay due to blur and user came back,
-    // it means they left the app (screenshot, app switcher, etc.)
-    if (overlayRef.current && overlayRef.current.style.display === 'block') {
-      protectAndLogout();
+    
+    if (isMobileDevice()) {
+      // Mobile logic: If we showed the overlay due to blur and user came back,
+      // it means they left the app (screenshot, app switcher, etc.) -> LOGOUT
+      if (overlayRef.current && overlayRef.current.style.display === 'flex') { // Updated to flex
+         protectAndLogout();
+      }
+    } else {
+      // Desktop logic: User came back to the tab -> Hide overlay, continue
+      hideOverlay();
     }
-  }, [isProtected, protectAndLogout]);
+  }, [isProtected, protectAndLogout, hideOverlay]);
 
   // Register all event listeners
   useEffect(() => {
@@ -279,9 +290,17 @@ export function ContentProtection({ children }: { children: React.ReactNode }) {
           zIndex: 2147483647,
           backgroundColor: '#000',
           pointerEvents: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+          fontSize: '1.5rem',
+          textAlign: 'center',
         }}
         aria-hidden="true"
-      />
+      >
+        <p>Please return to the browser to continue</p>
+      </div>
     </>
   );
 }
