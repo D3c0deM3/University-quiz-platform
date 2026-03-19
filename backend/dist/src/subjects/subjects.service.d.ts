@@ -8,8 +8,8 @@ export declare class SubjectsService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         code: string | null;
+        description: string | null;
     }>;
     findAll(page?: number, limit?: number, search?: string): Promise<{
         data: ({
@@ -22,8 +22,8 @@ export declare class SubjectsService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            description: string | null;
             code: string | null;
+            description: string | null;
         })[];
         meta: {
             total: number;
@@ -42,16 +42,16 @@ export declare class SubjectsService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         code: string | null;
+        description: string | null;
     }>;
     update(id: string, dto: UpdateSubjectDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         code: string | null;
+        description: string | null;
     }>;
     remove(id: string): Promise<{
         message: string;
