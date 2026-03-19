@@ -146,6 +146,53 @@ Rules:
 ===== STUDY MATERIAL DOCUMENT =====
 """
 
+QUIZ_STRUCTURE_CHECK_PROMPT = """You are an expert file analyzer. Determine if the following text represents a STRUCTURED QUIZ format.
+A structured quiz format means the text PRIMARILY consists of:
+1. Questions
+2. Followed by specific multiple-choice options (A/B/C/D, bullet points, or similar list format)
+
+Examples of STRUCTURED QUIZ:
+1. Question text?
+A) Option
+B) Option
+C) Option
+
+Examples of NOT structured quiz:
+- A textbook chapter with a few review questions at the end
+- An article about history
+- A list of questions WITHOUT options
+
+Does this text look like a pre-formatted quiz with questions AND options?
+Return ONLY valid JSON: {"is_structured_quiz": boolean, "confidence": float}
+TEXT TO ANALYZE:
+"""
+
+QUIZ_FULL_EXTRACTION_PROMPT = """You are an expert data extractor. The text below contains a quiz with questions and their options.
+Your task is to extract EVERY question along with its options and correct answer (if indicated).
+
+Rules:
+- Extract textual questions exactly as they appear.
+- Extract all provided options for each question.
+- If the correct answer is marked (e.g., bolded, asterisk *, underlined, explicitly stated, or in a separate key), mark `is_correct: true` for that option.
+- If no correct answer is indicated, mark ALL options as `is_correct: false` (or make a best guess if you are confident).
+- Return a valid JSON array of objects.
+
+JSON Format:
+[
+  {
+    "question_text": "...",
+    "question_type": "MCQ",
+    "options": [
+      {"text": "...", "is_correct": boolean},
+      ...
+    ],
+    "explanation": "..."
+  }
+]
+
+TEXT TO EXTRACT:
+"""
+
 
 def _clean_json_response(text: str) -> str:
     """Strip markdown code fences and whitespace from Gemini response."""
@@ -276,6 +323,30 @@ async def generate_quiz_questions(
 
     max_len = settings.MAX_TEXT_LENGTH
     truncated = text[:max_len] if len(text) > max_len else text
+
+    # NEW: Attempt to identify if the file is ALREADY a structured quiz
+    # This prevents the AI from generating 1500 questions from a 250-question file
+    # by correctly parsing the existing structure instead of treating it as raw content.
+    if num_questions <= 0 or num_questions > 2:
+        try:
+            structured_questions = await try_extract_structured_quiz(truncated, progress_callback=progress_callback)
+            if structured_questions and len(structured_questions) > 0:
+                logger.info(f"Structured quiz extraction successful: {len(structured_questions)} questions found.")
+                
+                # If the user asked for a specific number but we found more, return what was asked? 
+                # Or if the user asked for 10 and we found 250, maybe return all?
+                # The user's complaint suggests they want the real questions, not generated ones.
+                # So we prioritize the extracted questions.
+                
+                if num_questions > 0 and len(structured_questions) > num_questions:
+                    # If the difference is huge (e.g. asked 20, found 200), return 20.
+                    # But if asked 250 and found 252, return all.
+                     return structured_questions[:num_questions]
+                
+                return structured_questions
+                
+        except Exception as e:
+            logger.warning(f"Structured quiz extraction check failed: {e}")
 
     # "All questions" mode: detect questions first, then generate in batches.
     if num_questions <= 0:
@@ -1216,3 +1287,65 @@ QUESTIONS (generate one quiz object per question):
         f"Stepwise generation finished: {len(all_quizzes)}/{len(detected_questions)} questions",
     )
     return all_quizzes
+
+async def try_extract_structured_quiz(
+    text: str,
+    progress_callback: ProgressCallback = None,
+) -> Optional[list]:
+    """
+    Attempt to detect and extract questions from a file that is ALREADY formatted as a quiz.
+    Returns a list of Valid AI Quiz Objects if successful, or None if detection failed/not applicable.
+    """
+    # 1. Quick detection using the first chunk
+    chunk_size = 4000
+    sample = text[:chunk_size]
+    
+    check_prompt = QUIZ_STRUCTURE_CHECK_PROMPT + sample
+    
+    is_structured = False
+    try:
+        raw = await _call_gemini_with_fallback(check_prompt, temperature=0.0)
+        resp = json.loads(_clean_json_response(raw))
+        is_structured = bool(resp.get("is_structured_quiz"))
+        logger.info(f"Structured quiz detection: {is_structured} (confidence {resp.get('confidence')})")
+    except Exception as e:
+        logger.warning(f"Structure check failed: {e}")
+        return None
+
+    if not is_structured:
+        return None
+
+    # 2. Extract full objects from chunks
+    await _emit_progress(progress_callback, 10, "Structured quiz detected - extracting...")
+    
+    # Use larger chunks for extraction since we want context for options
+    chunks = _chunk_text_for_detection(text, chunk_chars=25000, overlap_chars=2000)
+    all_questions = []
+    
+    for idx, chunk in enumerate(chunks):
+        prompt = QUIZ_FULL_EXTRACTION_PROMPT + chunk
+        try:
+             # Generous token limit for extraction
+             raw = await _call_gemini_with_fallback(prompt, temperature=0.1, max_output_tokens=65536)
+             batch = json.loads(_clean_json_response(raw))
+             
+             if not isinstance(batch, list):
+                 continue
+
+             validated = _validate_questions(batch)
+             
+             # Dedup
+             existing_keys = {_question_key(q["question_text"]) for q in all_questions}
+             new_unique = [q for q in validated if _question_key(q["question_text"]) not in existing_keys]
+             
+             all_questions.extend(new_unique)
+             logger.info(f"Structured extraction chunk {idx+1}/{len(chunks)}: found {len(new_unique)} new questions")
+             
+             progress = 10 + int(((idx + 1) / len(chunks)) * 80)
+             await _emit_progress(progress_callback, progress, f"Extracted {len(all_questions)} structured questions")
+             
+        except Exception as e:
+             logger.error(f"Structured extraction error in chunk {idx}: {e}")
+
+    await _emit_progress(progress_callback, 100, f"Finished structured extraction: {len(all_questions)} total")
+    return all_questions
