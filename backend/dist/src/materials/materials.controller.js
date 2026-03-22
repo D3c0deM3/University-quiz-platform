@@ -43,6 +43,7 @@ const ALLOWED_EXTENSIONS = [
     '.xlsx',
     '.xls',
     '.txt',
+    '.json',
 ];
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const storage = (0, multer_1.diskStorage)({
@@ -68,6 +69,20 @@ let MaterialsController = class MaterialsController {
         this.materialsService = materialsService;
         this.processingQueue = processingQueue;
         this.subscriptionsService = subscriptionsService;
+    }
+    async uploadJson(files, subjectId, title, userId) {
+        if (!files || files.length === 0) {
+            throw new common_1.BadRequestException('A JSON file is required');
+        }
+        if (!subjectId) {
+            throw new common_1.BadRequestException('subjectId is required');
+        }
+        const result = await this.materialsService.uploadJson(files[0], subjectId, userId, title);
+        return {
+            message: 'JSON file processed and quiz created successfully',
+            material: result.material,
+            quiz: result.quiz
+        };
     }
     async upload(files, subjectId, numQuestionsRaw, userId) {
         if (!files || files.length === 0) {
@@ -318,6 +333,18 @@ let MaterialsController = class MaterialsController {
     }
 };
 exports.MaterialsController = MaterialsController;
+__decorate([
+    (0, common_1.Post)('upload-json'),
+    (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('file', 1, multerOptions)),
+    __param(0, (0, common_1.UploadedFiles)()),
+    __param(1, (0, common_1.Body)('subjectId')),
+    __param(2, (0, common_1.Body)('title')),
+    __param(3, (0, index_js_2.CurrentUser)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Array, String, String, String]),
+    __metadata("design:returntype", Promise)
+], MaterialsController.prototype, "uploadJson", null);
 __decorate([
     (0, common_1.Post)('upload'),
     (0, index_js_2.Roles)(client_1.Role.ADMIN, client_1.Role.TEACHER),

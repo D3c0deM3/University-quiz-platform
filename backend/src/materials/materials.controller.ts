@@ -55,6 +55,7 @@ const ALLOWED_EXTENSIONS = [
   '.xlsx',
   '.xls',
   '.txt',
+  '.json',
 ];
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
@@ -88,6 +89,36 @@ export class MaterialsController {
     @InjectQueue('material-processing') private processingQueue: Queue,
     private subscriptionsService: SubscriptionsService,
   ) {}
+
+  
+  @Post('upload-json')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @UseInterceptors(FilesInterceptor('file', 1, multerOptions))
+  async uploadJson(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body('subjectId') subjectId: string,
+    @Body('title') title: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('A JSON file is required');
+    }
+    if (!subjectId) {
+      throw new BadRequestException('subjectId is required');
+    }
+
+    const result = await this.materialsService.uploadJson(
+      files[0],
+      subjectId,
+      userId,
+      title
+    );
+    return {
+      message: 'JSON file processed and quiz created successfully',
+      material: result.material,
+      quiz: result.quiz
+    };
+  }
 
   @Post('upload')
   @Roles(Role.ADMIN, Role.TEACHER)

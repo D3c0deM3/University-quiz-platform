@@ -194,6 +194,16 @@ export const materialsApi = {
   list: (params: { page?: number; limit?: number; status?: string; subjectId?: string }) =>
     api.get('/materials', { params }),
   get: (id: string) => api.get(`/materials/${id}`),
+
+  uploadJson: (file: File, subjectId: string, title?: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('subjectId', subjectId);
+    if (title) form.append('title', title);
+    return api.post('/materials/upload-json', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   upload: (files: File[], subjectId: string, numQuestions: number = 10) => {
     const form = new FormData();
     files.forEach((file) => form.append('files', file));

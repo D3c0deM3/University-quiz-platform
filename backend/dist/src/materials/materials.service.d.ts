@@ -9,6 +9,54 @@ export declare class MaterialsService {
     private configService;
     constructor(prisma: PrismaService, configService: ConfigService);
     validateFile(file: Express.Multer.File): void;
+    uploadJson(file: Express.Multer.File, subjectId: string, uploadedById: string, title?: string): Promise<{
+        material: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            status: import("@prisma/client").$Enums.MaterialStatus;
+            uploadedById: string;
+            fileName: string;
+            originalName: string;
+            filePath: string;
+            fileType: string;
+            fileSize: number;
+            processingProgress: number;
+            processingStage: string | null;
+            errorMessage: string | null;
+            subjectId: string;
+        };
+        quiz: {
+            questions: ({
+                options: {
+                    id: string;
+                    createdAt: Date;
+                    optionText: string;
+                    isCorrect: boolean;
+                    orderIndex: number;
+                    questionId: string;
+                }[];
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                explanation: string | null;
+                quizId: string;
+                orderIndex: number;
+                questionText: string;
+                questionType: import("@prisma/client").$Enums.QuestionType;
+            })[];
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            title: string;
+            description: string | null;
+            isPublished: boolean;
+            subjectId: string;
+            materialId: string | null;
+        };
+    }>;
     upload(file: Express.Multer.File, subjectId: string, uploadedById: string): Promise<{
         subject: {
             id: string;

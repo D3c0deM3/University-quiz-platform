@@ -1,3 +1,4 @@
+import * as fsSync from 'fs';
 import {
   Injectable,
   NotFoundException,
@@ -23,6 +24,7 @@ const ALLOWED_MIME_TYPES = [
   'image/png',
   'image/jpeg',
   'image/jpg',
+  'application/json',
 ];
 const uploadDir = process.env.UPLOAD_DIR || '../uploads';
 const resolvedUploadDir = isAbsolute(uploadDir)
@@ -49,6 +51,88 @@ export class MaterialsService {
         `File size exceeds the maximum allowed size of ${Math.round(maxSize / 1048576)}MB`,
       );
     }
+  }
+
+  
+  async uploadJson(
+    file: Express.Multer.File,
+    subjectId: string,
+    uploadedById: string,
+    title?: string,
+  ) {
+    const subject = await this.prisma.subject.findUnique({
+      where: { id: subjectId },
+    });
+    if (!subject) throw new NotFoundException('Subject not found');
+
+    this.validateFile(file);
+
+    const rawBuf = fsSync.readFileSync(file.path);
+    let jsonContent = rawBuf.toString('utf8');
+    if (jsonContent.charCodeAt(0) === 0xFEFF) jsonContent = jsonContent.slice(1);
+    let parsedData;
+    try {
+      parsedData = JSON.parse(jsonContent);
+    } catch (e) {
+      console.error('JSON ERROR:', e.message, 'BODY:', jsonContent.substring(0, 100)); throw new BadRequestException('Invalid JSON file format. Make sure the file contains valid JSON.');
+    }
+
+    const questions = parsedData.questions || parsedData;
+    if (!Array.isArray(questions) || questions.length === 0) {
+      throw new BadRequestException('JSON must contain an array of questions');
+    }
+
+    const material = await this.prisma.material.create({
+      data: {
+        fileName: file.filename,
+        originalName: Buffer.from(file.originalname, 'latin1').toString('utf8'),
+        filePath: this.normalizeRelativePath(file.path),
+        fileType: 'JSON',
+        fileSize: file.size,
+        subjectId,
+        uploadedById,
+        status: MaterialStatus.PROCESSED,
+        processingProgress: 100,
+        processingStage: 'Imported via JSON',
+        metadata: {
+          create: {
+            title: title || 'Imported JSON Quiz',
+            contentType: 'JSON Quiz',
+          },
+        },
+      },
+    });
+
+    const quiz = await this.prisma.quiz.create({
+      data: {
+        title: title || 'Imported Quiz',
+        subjectId,
+        materialId: material.id,
+        isPublished: false,
+        questions: {
+          create: questions.map((q: any, i: number) => ({
+            questionText: q.questionText || q.question || '',
+            questionType: q.questionType || 'MCQ',
+            explanation: q.explanation || '',
+            orderIndex: i,
+            options: {
+              create: (q.options || []).map((opt: any, optIdx: number) => ({
+                optionText: opt.optionText || opt.text || '',
+                isCorrect: !!(opt.isCorrect || opt.correct),
+                orderIndex: optIdx,
+              })),
+            },
+          })),
+        },
+      },
+      include: {
+        questions: {
+          include: { options: true }
+        }
+      }
+    });
+
+    return { material, quiz };
   }
 
   async upload(
