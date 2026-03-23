@@ -19,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { TermsPopup } from '@/components/terms-popup';
 import {
   GraduationCap,
   ArrowLeft,
@@ -57,6 +58,7 @@ export default function RegisterPage() {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [formData, setFormData] = useState<RegisterForm | null>(null);
+  const [showTermsPopup, setShowTermsPopup] = useState(false);
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -170,7 +172,7 @@ export default function RegisterPage() {
         otpCode,
       });
       toast.success(t('register.success'));
-      router.push('/dashboard');
+      setShowTermsPopup(true);
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data
@@ -339,6 +341,7 @@ export default function RegisterPage() {
 
   // ─── Step 2: OTP Verification ───────────────────────
   return (
+    <>
     <Card>
       <CardHeader className="text-center">
         <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
@@ -443,5 +446,14 @@ export default function RegisterPage() {
         </div>
       </CardContent>
     </Card>
+    
+    <TermsPopup 
+      open={showTermsPopup} 
+      onAccept={() => {
+        setShowTermsPopup(false);
+        router.push('/dashboard');
+      }} 
+    />
+    </>
   );
 }
