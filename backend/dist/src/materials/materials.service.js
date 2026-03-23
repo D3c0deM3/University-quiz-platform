@@ -154,6 +154,24 @@ let MaterialsService = class MaterialsService {
                 }
             }
         });
+        const manualQuestionsData = questions.map((q) => {
+            const allOpts = q.options || [];
+            const correctOpt = allOpts.find((o) => o.isCorrect || o.correct);
+            const answerText = correctOpt?.optionText || correctOpt?.text || q.explanation || allOpts[0]?.optionText || 'No answer provided';
+            return {
+                questionText: q.questionText || q.question || '',
+                answerText,
+                subjectId,
+                createdById: uploadedById,
+                materialId: material.id,
+                status: client_1.QuestionStatus.APPROVED,
+            };
+        });
+        if (manualQuestionsData.length > 0) {
+            await this.prisma.manualQuestion.createMany({
+                data: manualQuestionsData
+            });
+        }
         return { material, quiz };
     }
     async upload(file, subjectId, uploadedById) {
@@ -319,7 +337,7 @@ let MaterialsService = class MaterialsService {
         }
         return material;
     }
-    async updateStatus(id, status, errorMessage) {
+    async updateStatus(id, status, QuestionStatus, errorMessage) {
         const material = await this.prisma.material.findUnique({ where: { id } });
         if (!material) {
             throw new common_1.NotFoundException('Material not found');

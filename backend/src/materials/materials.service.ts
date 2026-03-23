@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { promises as fs } from 'fs';
 import { basename, isAbsolute, join, relative, resolve } from 'path';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { MaterialStatus, DifficultyLevel, QuestionType, SubscriptionStatus } from '@prisma/client';
+import { MaterialStatus, QuestionStatus, DifficultyLevel, QuestionType, SubscriptionStatus } from '@prisma/client';
 import { UpdateMetadataDto } from './dto/update-metadata.dto.js';
 import { UpdateQuizDto } from './dto/update-quiz.dto.js';
 import { CreateQuizQuestionDto, UpdateSingleQuestionDto } from './dto/quiz-question.dto.js';
@@ -132,7 +132,31 @@ export class MaterialsService {
       }
     });
 
+    
+    const manualQuestionsData = questions.map((q: any) => {
+      const allOpts = q.options || [];
+      const correctOpt = allOpts.find((o: any) => o.isCorrect || o.correct);
+      const answerText = correctOpt?.optionText || correctOpt?.text || q.explanation || allOpts[0]?.optionText || 'No answer provided';
+      return {
+        questionText: q.questionText || q.question || '',
+        answerText,
+        subjectId,
+        createdById: uploadedById,
+        materialId: material.id,
+        status: QuestionStatus.APPROVED,
+      };
+    });
+
+    if (manualQuestionsData.length > 0) {
+      // Prisma does not return created relations easily with createMany, but createMany is faster.
+      // Q&A Bank needs this.
+      await this.prisma.manualQuestion.createMany({
+        data: manualQuestionsData
+      });
+    }
+
     return { material, quiz };
+
   }
 
   async upload(
@@ -347,7 +371,7 @@ export class MaterialsService {
     return material;
   }
 
-  async updateStatus(id: string, status: MaterialStatus, errorMessage?: string) {
+  async updateStatus(id: string, status: MaterialStatus, QuestionStatus, errorMessage?: string) {
     const material = await this.prisma.material.findUnique({ where: { id } });
     if (!material) {
       throw new NotFoundException('Material not found');

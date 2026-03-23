@@ -239,7 +239,7 @@ export declare class MaterialsService {
         errorMessage: string | null;
         subjectId: string;
     }>;
-    updateStatus(id: string, status: MaterialStatus, errorMessage?: string): Promise<{
+    updateStatus(id: string, status: MaterialStatus, QuestionStatus: any, errorMessage?: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
