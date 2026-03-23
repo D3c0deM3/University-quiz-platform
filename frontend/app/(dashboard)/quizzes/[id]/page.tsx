@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/auth-store';
 import {
  ClipboardList,
  ArrowLeft,
@@ -34,6 +35,7 @@ export default function QuizTakePage() {
  const { id } = useParams<{ id: string }>();
  const router = useRouter();
  const { t } = useTranslation();
+ const { user } = useAuthStore();
 
  const [quiz, setQuiz] = useState<Quiz | null>(null);
  const [attempt, setAttempt] = useState<QuizAttempt | null>(null);
@@ -47,17 +49,37 @@ export default function QuizTakePage() {
  const [rangeStart, setRangeStart] = useState<number | ''>(1);
  const [rangeEnd, setRangeEnd] = useState<number | ''>(1);
  const [questionCount, setQuestionCount] = useState<number | ''>(1);
+ const [randomizeQuestions, setRandomizeQuestions] = useState(false);
  const prevIndexRef = useRef<number>(0);
 
  // Load quiz details
  useEffect(() => {
- if (!id) return;
+ if (!id || !user?.id) return;
  quizzesApi
  .get(id)
- .then((res) => setQuiz(res.data))
+ .then((res) => {
+ const savedState = localStorage.getItem(`quiz_state_${user.id}_${id}`);
+ if (savedState) {
+ try {
+ const parsed = JSON.parse(savedState);
+ if (parsed.attempt && parsed.quiz) {
+ setAttempt(parsed.attempt);
+ setQuiz(parsed.quiz);
+ setAnswers(parsed.answers || {});
+ setRevealed(parsed.revealed || {});
+ setCurrentIndex(parsed.currentIndex || 0);
+ setFeedbackMode(parsed.feedbackMode || 'end');
+ return; // Skip setting from API response
+ }
+ } catch (err) {
+ console.error('Failed to parse saved state', err);
+ }
+ }
+ setQuiz(res.data);
+ })
  .catch(() => toast.error(t('common.error')))
  .finally(() => setLoading(false));
- }, [id, t]);
+ }, [id, user?.id, t]);
 
 
  // Prevent pull-to-refresh and accidental navigation
@@ -90,6 +112,19 @@ export default function QuizTakePage() {
  setRangeEnd(totalQuizQuestions);
  setQuestionCount(totalQuizQuestions);
  }, [quizId, totalQuizQuestions]);
+
+ useEffect(() => {
+ if (attempt && quiz && id && user?.id) {
+ localStorage.setItem(`quiz_state_${user.id}_${id}`, JSON.stringify({
+ attempt,
+ quiz,
+ answers,
+ revealed,
+ currentIndex,
+ feedbackMode
+ }));
+ }
+ }, [attempt, quiz, answers, revealed, currentIndex, feedbackMode, id, user?.id]);
 
  // Reveal answer when navigating away in instant mode (belt-and-suspenders)
  useEffect(() => {
@@ -175,8 +210,24 @@ export default function QuizTakePage() {
  });
  setAttempt(data);
  const questions: QuizQuestion[] = data.quiz?.questions || [];
+ 
+ let processedQuestions = questions.map((q) => {
+ if (q.options) {
+ return { ...q, options: [...q.options].sort(() => Math.random() - 0.5) };
+ }
+ return q;
+ });
+
+ if (randomizeQuestions) {
+ processedQuestions.sort(() => Math.random() - 0.5);
+ }
+
+ if (data.quiz) {
+ data.quiz.questions = processedQuestions;
+ }
+
  const initial: AnswerMap = {};
- questions.forEach((q) => {
+ processedQuestions.forEach((q) => {
  initial[q.id] = {};
  });
  setAnswers(initial);
@@ -188,7 +239,7 @@ export default function QuizTakePage() {
  } finally {
  setStarting(false);
  }
- }, [id, quiz, questionCount, rangeStart, rangeEnd, t]);
+ }, [id, quiz, questionCount, rangeStart, rangeEnd, randomizeQuestions, t]);
 
  const setAnswer = (questionId: string, value: { selectedOptionId?: string; textAnswer?: string }) => {
  // Don't allow changing answer if already revealed
@@ -213,6 +264,7 @@ export default function QuizTakePage() {
  textAnswer: ans.textAnswer || undefined,
  }));
  await quizzesApi.submitAttempt(attempt.id, answerArray);
+ if (user?.id) localStorage.removeItem(`quiz_state_${user.id}_${id}`);
  toast.success(t('common.success'));
  router.push(`/quizzes/${id}/results/${attempt.id}`);
  } catch {
@@ -317,6 +369,17 @@ export default function QuizTakePage() {
  value={questionCount}
  onChange={(e) => setQuestionCount(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
  />
+ </div>
+ <div className="space-y-1 col-span-2 mt-2">
+ <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm text-gray-700 dark:text-zinc-300">
+ <input
+ type="checkbox"
+ checked={randomizeQuestions}
+ onChange={(e) => setRandomizeQuestions(e.target.checked)}
+ className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white"
+ />
+ {t('quiz.randomizeQuestions') || 'Randomize Question Order'}
+ </label>
  </div>
  </div>
  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">
