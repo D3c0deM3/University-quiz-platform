@@ -59,7 +59,30 @@ export default function QuizTakePage() {
  .finally(() => setLoading(false));
  }, [id, t]);
 
+
+ // Prevent pull-to-refresh and accidental navigation
+ useEffect(() => {
+   // Disable pull-to-refresh on mobile
+   document.body.style.overscrollBehaviorY = 'none';
+
+   // Warn on refresh/close
+   const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+     if (attempt) {
+       e.preventDefault();
+       e.returnValue = ''; // Standard way to trigger browser's leave prompt
+     }
+   };
+
+   window.addEventListener('beforeunload', handleBeforeUnload);
+
+   return () => {
+     document.body.style.overscrollBehaviorY = 'auto'; // Reset on unmount
+     window.removeEventListener('beforeunload', handleBeforeUnload);
+   };
+ }, [attempt]);
+
  const quizId = quiz?.id;
+
  const totalQuizQuestions = quiz?.questions?.length || 0;
  useEffect(() => {
  if (totalQuizQuestions < 1) return;
